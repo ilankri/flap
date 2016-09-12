@@ -42,7 +42,7 @@
      - 1 point si vous avez contribué à la réussite globale du projet
        en faisant au moins 5 "pull requests" sur le projet GIT public.
      - 1 point si la moyenne de la promo (moins les "fantômes") est supérieur à 13.
-*** TODO Cloner le GIT via le gitlab: 
+*** TODO Forker le GIT via le gitlab: 
     http://moule.informatique.univ-paris-diderot.fr:8080
     DEADLINE:<2016-09-19>
 *** TODO Remplir le fichier AUTEURS (2 étudiants par groupes)
