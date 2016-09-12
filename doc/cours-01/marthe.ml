@@ -50,7 +50,9 @@ let fixme () = raise TODO
 let loop read eval print =
   let rec aux () =
     try
-      fixme ();
+      let p = read () in
+      let v = eval p in
+      print v;
       aux ()
     with exn ->
       (** On utilise le module de la bibliothèque standard de Caml
@@ -122,7 +124,8 @@ let loop read eval print =
 let read lexer parse =
   Printf.printf "marthe> %!";
   let s = input_line stdin in
-  fixme ()
+  let tokens = lexer s in
+  parse tokens
 
 (** Les lexèmes, aussi appelés "terminaux", sur lesquels
     la grammaire du langage est définie. *)
@@ -382,7 +385,7 @@ let parse : token list -> e = fun tokens ->
       par la fin de l'entrée. *)
   let rec phrase () =
     let e = expression () in
-    fixme ();
+    accept EOF;
     e
 
   (** Pour analyser une expression, ... *)
@@ -410,7 +413,8 @@ let parse : token list -> e = fun tokens ->
     let t = factor () in
     match current () with
       | Star ->
-	fixme ();
+	next ();
+        EMult (t, factor ())
 
       | token -> t
 
@@ -524,7 +528,7 @@ let interpret : e -> int =
     | EPlus (e1, e2) -> aux env e1 + aux env e2
 
     (** Même raisonnement pour la multiplication. *)
-    | EMult (e1, e2) -> fixme ()
+    | EMult (e1, e2) -> aux env e1 * aux env e2
 
     (** Une expression qui est un entier s'évalue en cet entier. *)
     | EInt x -> x
@@ -553,7 +557,8 @@ let interpret : e -> int =
 
     (** Une expression qui est variable s'évalue en la valeur
         associée à cette variable dans l'environnement. *)
-    | EVar x -> fixme ()
+    | EVar x ->
+      List.assoc x env
   in
   aux []
 
@@ -735,7 +740,10 @@ let compile : e -> instruction array =
         (pos + 1, instrs_e1 @ instrs_e2 @ [ Add ])
 
       | EMult (e1, e2) ->
-	fixme ()
+        let (pos, instrs_e1) = aux nb_idx variable_idx pos e1 in
+        let (pos, instrs_e2) = aux nb_idx variable_idx pos e2 in
+        (pos + 1, instrs_e1 @ instrs_e2 @ [ Mul ])
+
 
       | ESum (x, start, stop, body) ->
         let variable_idx'       = (x, nb_idx + 1) :: variable_idx in
@@ -759,7 +767,7 @@ let compile : e -> instruction array =
              PushAccu nb_idx' ])
 
       | EVar x ->
-	fixme ()
+	(pos + 1, [ Get (List.assoc x variable_idx) ])
     in
     let (_, code) = aux 0 [] 0 e in
     Array.of_list (code @ [ Halt ])

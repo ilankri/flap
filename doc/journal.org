@@ -42,13 +42,17 @@
      - 1 point si vous avez contribué à la réussite globale du projet
        en faisant au moins 5 "pull requests" sur le projet GIT public.
      - 1 point si la moyenne de la promo (moins les "fantômes") est supérieur à 13.
-*** TODO Cloner le GIT via le gitlab: http:moule.informatique.univ-paris-diderot.fr:8080
+*** TODO Cloner le GIT via le gitlab: 
+    http://moule.informatique.univ-paris-diderot.fr:8080
     DEADLINE:<2016-09-19>
 *** TODO Remplir le fichier AUTEURS (2 étudiants par groupes)
     DEADLINE:<2016-09-19>
 *** TODO Rajouter les enseignants (via gitlab)
     DEADLINE:<2016-09-19>
-*** TODO Faire une pull-request pour mettre à jour le fichier doc/.mr
+    Pierre Letouzey
+    Michele Pagani
+    Yann Regis-Gianas
+*** TODO Faire une pull-request pour mettre à jour le fichier /.mrconfig
     DEADLINE:<2016-09-19>
 *** TODO S'inscrire sur http://faq.compilation.hackojo.org
     DEADLINE:<2016-09-19>
