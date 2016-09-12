@@ -1,0 +1,58 @@
+#+STARTUP: hidestars
+#+TODO: TODO(t!) STARTED(s@/!) WAITING(w@/!) SOMEDAY(S@/!) | DONE(d!) CANCELED(c@!)
+#+PRIORITIES: A C B
+
+			   *Cours de Compilation*
+
+(Il est préférable d'ouvrir ce fichier texte sous Emacs.)
+(Appuyez sur [TAB] pour dérouler les items suivis de "...")
+
+* Cours 1 <2016-09-12>
+** Introduction du cours
+*** Qu'est-ce qu'un compilateur?
+    - définition informelle
+    - syntaxe et sémantique d'un langage de programmation
+    - définition formelle
+*** Pourquoi un cours de compilation en M1?
+    - devenir de meilleurs programmeurs
+    - apprendre des techniques de programmation utiles au développement
+    - un sujet transversal de l'informatique
+** Préliminaire: un sondage
+   - Qui a déjà programmé en OCaml?
+   - Qui a déjà écrit un analyseur syntaxique?
+   - Qui a suivi le cours de machine virtuelle?
+** Un mini-compilateur pour le langage Marthe
+   - voir le fichier marthe.ml
+** Le projet de compilation
+   - description du projet
+   - architecture du projet
+   - travail demandé
+   - présentation de l'arbre des sources
+** Fonctionnement du cours
+   - un cours dans Emacs et au tableau
+   - un cours orienté "projet"
+   - deux semestres pour un premier "gros" projet
+   - les jalons et leurs validations
+   - des soutenances
+   - modalités d'évaluation:
+     70% projet + 30% examen sur papier (portant sur le projet)
+     Sur la note de projet, 3 points réservés:
+     - 1 point si vous avez posé (ou répondu à) au moins 5 questions
+       (productions pertinentes, bien formulées) sur le forum.
+     - 1 point si vous avez contribué à la réussite globale du projet
+       en faisant au moins 5 "pull requests" sur le projet GIT public.
+     - 1 point si la moyenne de la promo (moins les "fantômes") est supérieur à 13.
+*** TODO Cloner le GIT via le gitlab: http:moule.informatique.univ-paris-diderot.fr:8080
+    DEADLINE:<2016-09-19>
+*** TODO Remplir le fichier AUTEURS (2 étudiants par groupes)
+    DEADLINE:<2016-09-19>
+*** TODO Rajouter les enseignants (via gitlab)
+    DEADLINE:<2016-09-19>
+*** TODO Faire une pull-request pour mettre à jour le fichier doc/.mr
+    DEADLINE:<2016-09-19>
+*** TODO S'inscrire sur http://faq.compilation.hackojo.org
+    DEADLINE:<2016-09-19>
+*** TODO S'inscrire sur https://groups.google.com/forum/#!forum/compilix
+    DEADLINE: <2016-09-19>
+*** TODO Travailler régulièrement sur le GIT.
+*** TODO Poser des questions sur le site FAQ
