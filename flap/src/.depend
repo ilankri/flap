@@ -1,0 +1,264 @@
+common/positions.cmo : common/positions.cmi
+common/positions.cmx : common/positions.cmi
+common/errors.cmo : common/positions.cmi common/errors.cmi
+common/errors.cmx : common/positions.cmx common/errors.cmi
+common/unionFind.cmo : common/unionFind.cmi
+common/unionFind.cmx : common/unionFind.cmi
+common/infiniteArray.cmo : common/infiniteArray.cmi
+common/infiniteArray.cmx : common/infiniteArray.cmi
+common/basicSetEquations.cmo : common/unionFind.cmi \
+    common/basicSetEquations.cmi
+common/basicSetEquations.cmx : common/unionFind.cmx \
+    common/basicSetEquations.cmi
+common/misc.cmo : common/infiniteArray.cmi common/misc.cmi
+common/misc.cmx : common/infiniteArray.cmx common/misc.cmi
+common/mark.cmo : common/mark.cmi
+common/mark.cmx : common/mark.cmi
+name.cmo : name.cmi
+name.cmx : name.cmi
+types.cmo : common/positions.cmi name.cmi common/errors.cmi types.cmi
+types.cmx : common/positions.cmx name.cmx common/errors.cmx types.cmi
+AST.cmo : types.cmi common/positions.cmi name.cmi
+AST.cmx : types.cmx common/positions.cmx name.cmx
+IAST.cmo : types.cmi AST.cmo IAST.cmi
+IAST.cmx : types.cmx AST.cmx IAST.cmi
+XAST.cmo : types.cmi AST.cmo XAST.cmi
+XAST.cmx : types.cmx AST.cmx XAST.cmi
+parsing/tokens.cmo : parsing/tokens.cmi
+parsing/tokens.cmx : parsing/tokens.cmi
+parsing/parser.cmo : types.cmi parsing/tokens.cmi common/positions.cmi \
+    name.cmi common/errors.cmi AST.cmo parsing/parser.cmi
+parsing/parser.cmx : types.cmx parsing/tokens.cmx common/positions.cmx \
+    name.cmx common/errors.cmx AST.cmx parsing/parser.cmi
+inference/intRank.cmo : inference/intRank.cmi
+inference/intRank.cmx : inference/intRank.cmi
+inference/inferenceTypes.cmo : common/positions.cmi name.cmi common/misc.cmi \
+    common/infiniteArray.cmi inference/inferenceTypes.cmi
+inference/inferenceTypes.cmx : common/positions.cmx name.cmx common/misc.cmx \
+    common/infiniteArray.cmx inference/inferenceTypes.cmi
+inference/multiEquation.cmo : common/unionFind.cmi common/positions.cmi \
+    name.cmi common/misc.cmi common/mark.cmi inference/intRank.cmi \
+    inference/inferenceTypes.cmi inference/multiEquation.cmi
+inference/multiEquation.cmx : common/unionFind.cmx common/positions.cmx \
+    name.cmx common/misc.cmx common/mark.cmx inference/intRank.cmx \
+    inference/inferenceTypes.cmx inference/multiEquation.cmi
+inference/typeAlgebra.cmo : types.cmi common/positions.cmi name.cmi \
+    inference/multiEquation.cmi common/misc.cmi inference/inferenceTypes.cmi \
+    IAST.cmi inference/typeAlgebra.cmi
+inference/typeAlgebra.cmx : types.cmx common/positions.cmx name.cmx \
+    inference/multiEquation.cmx common/misc.cmx inference/inferenceTypes.cmx \
+    IAST.cmx inference/typeAlgebra.cmi
+parsing/prettyPrint.cmo : types.cmi inference/typeAlgebra.cmi \
+    common/positions.cmi name.cmi AST.cmo parsing/prettyPrint.cmi
+parsing/prettyPrint.cmx : types.cmx inference/typeAlgebra.cmx \
+    common/positions.cmx name.cmx AST.cmx parsing/prettyPrint.cmi
+parsing/lexer.cmo : parsing/tokens.cmi common/errors.cmi
+parsing/lexer.cmx : parsing/tokens.cmx common/errors.cmx
+parsing/ASTio.cmo : XAST.cmi types.cmi parsing/prettyPrint.cmi \
+    parsing/parser.cmi parsing/lexer.cmo IAST.cmi AST.cmo parsing/ASTio.cmi
+parsing/ASTio.cmx : XAST.cmx types.cmx parsing/prettyPrint.cmx \
+    parsing/parser.cmx parsing/lexer.cmx IAST.cmx AST.cmx parsing/ASTio.cmi
+inference/env.cmo : inference/env.cmi
+inference/env.cmx : inference/env.cmi
+inference/inferenceExceptions.cmo : common/positions.cmi name.cmi \
+    inference/multiEquation.cmi inference/inferenceExceptions.cmi
+inference/inferenceExceptions.cmx : common/positions.cmx name.cmx \
+    inference/multiEquation.cmx inference/inferenceExceptions.cmi
+inference/kindInferencer.cmo : common/unionFind.cmi types.cmi \
+    common/positions.cmi name.cmi inference/multiEquation.cmi common/misc.cmi \
+    inference/inferenceTypes.cmi inference/inferenceExceptions.cmi \
+    common/basicSetEquations.cmi inference/kindInferencer.cmi
+inference/kindInferencer.cmx : common/unionFind.cmx types.cmx \
+    common/positions.cmx name.cmx inference/multiEquation.cmx common/misc.cmx \
+    inference/inferenceTypes.cmx inference/inferenceExceptions.cmx \
+    common/basicSetEquations.cmx inference/kindInferencer.cmi
+inference/constraint.cmo : common/unionFind.cmi common/positions.cmi \
+    name.cmi inference/multiEquation.cmi common/misc.cmi \
+    inference/inferenceTypes.cmi inference/constraint.cmi
+inference/constraint.cmx : common/unionFind.cmx common/positions.cmx \
+    name.cmx inference/multiEquation.cmx common/misc.cmx \
+    inference/inferenceTypes.cmx inference/constraint.cmi
+inference/typingEnvironment.cmo : common/unionFind.cmi \
+    inference/typeAlgebra.cmi common/positions.cmi name.cmi \
+    inference/multiEquation.cmi common/misc.cmi inference/kindInferencer.cmi \
+    inference/inferenceTypes.cmi inference/inferenceExceptions.cmi \
+    inference/env.cmi inference/constraint.cmi \
+    inference/typingEnvironment.cmi
+inference/typingEnvironment.cmx : common/unionFind.cmx \
+    inference/typeAlgebra.cmx common/positions.cmx name.cmx \
+    inference/multiEquation.cmx common/misc.cmx inference/kindInferencer.cmx \
+    inference/inferenceTypes.cmx inference/inferenceExceptions.cmx \
+    inference/env.cmx inference/constraint.cmx \
+    inference/typingEnvironment.cmi
+inference/alphaRename.cmo : common/positions.cmi name.cmi common/misc.cmi \
+    IAST.cmi inference/alphaRename.cmi
+inference/alphaRename.cmx : common/positions.cmx name.cmx common/misc.cmx \
+    IAST.cmx inference/alphaRename.cmi
+inference/internalizeTypes.cmo : inference/typingEnvironment.cmi types.cmi \
+    inference/typeAlgebra.cmi common/positions.cmi name.cmi \
+    inference/multiEquation.cmi common/misc.cmi inference/kindInferencer.cmi \
+    inference/inferenceTypes.cmi inference/inferenceExceptions.cmi IAST.cmi \
+    inference/constraint.cmi inference/internalizeTypes.cmi
+inference/internalizeTypes.cmx : inference/typingEnvironment.cmx types.cmx \
+    inference/typeAlgebra.cmx common/positions.cmx name.cmx \
+    inference/multiEquation.cmx common/misc.cmx inference/kindInferencer.cmx \
+    inference/inferenceTypes.cmx inference/inferenceExceptions.cmx IAST.cmx \
+    inference/constraint.cmx inference/internalizeTypes.cmi
+inference/unifier.cmo : common/unionFind.cmi common/positions.cmi \
+    inference/multiEquation.cmi common/misc.cmi common/mark.cmi \
+    inference/intRank.cmi inference/inferenceTypes.cmi inference/unifier.cmi
+inference/unifier.cmx : common/unionFind.cmx common/positions.cmx \
+    inference/multiEquation.cmx common/misc.cmx common/mark.cmx \
+    inference/intRank.cmx inference/inferenceTypes.cmx inference/unifier.cmi
+inference/constraintSimplifier.cmo : common/unionFind.cmi \
+    inference/unifier.cmi name.cmi inference/multiEquation.cmi \
+    inference/inferenceTypes.cmi inference/constraintSimplifier.cmi
+inference/constraintSimplifier.cmx : common/unionFind.cmx \
+    inference/unifier.cmx name.cmx inference/multiEquation.cmx \
+    inference/inferenceTypes.cmx inference/constraintSimplifier.cmi
+inference/externalizeTypes.cmo : common/unionFind.cmi types.cmi \
+    common/positions.cmi name.cmi inference/multiEquation.cmi common/misc.cmi \
+    common/mark.cmi inference/internalizeTypes.cmi inference/intRank.cmi \
+    inference/inferenceTypes.cmi inference/inferenceExceptions.cmi \
+    inference/constraintSimplifier.cmi inference/externalizeTypes.cmi
+inference/externalizeTypes.cmx : common/unionFind.cmx types.cmx \
+    common/positions.cmx name.cmx inference/multiEquation.cmx common/misc.cmx \
+    common/mark.cmx inference/internalizeTypes.cmx inference/intRank.cmx \
+    inference/inferenceTypes.cmx inference/inferenceExceptions.cmx \
+    inference/constraintSimplifier.cmx inference/externalizeTypes.cmi
+inference/constraintSolver.cmo : common/unionFind.cmi inference/unifier.cmi \
+    inference/typeAlgebra.cmi common/positions.cmi name.cmi \
+    inference/multiEquation.cmi common/misc.cmi common/mark.cmi \
+    inference/intRank.cmi inference/inferenceTypes.cmi \
+    inference/inferenceExceptions.cmi inference/constraintSimplifier.cmi \
+    inference/constraint.cmi inference/constraintSolver.cmi
+inference/constraintSolver.cmx : common/unionFind.cmx inference/unifier.cmx \
+    inference/typeAlgebra.cmx common/positions.cmx name.cmx \
+    inference/multiEquation.cmx common/misc.cmx common/mark.cmx \
+    inference/intRank.cmx inference/inferenceTypes.cmx \
+    inference/inferenceExceptions.cmx inference/constraintSimplifier.cmx \
+    inference/constraint.cmx inference/constraintSolver.cmi
+inference/constraintGeneration.cmo : inference/typingEnvironment.cmi \
+    types.cmi inference/typeAlgebra.cmi common/positions.cmi name.cmi \
+    inference/multiEquation.cmi common/misc.cmi inference/kindInferencer.cmi \
+    inference/internalizeTypes.cmi inference/inferenceTypes.cmi \
+    inference/inferenceExceptions.cmi IAST.cmi \
+    inference/constraintSimplifier.cmi inference/constraint.cmi \
+    inference/constraintGeneration.cmi
+inference/constraintGeneration.cmx : inference/typingEnvironment.cmx \
+    types.cmx inference/typeAlgebra.cmx common/positions.cmx name.cmx \
+    inference/multiEquation.cmx common/misc.cmx inference/kindInferencer.cmx \
+    inference/internalizeTypes.cmx inference/inferenceTypes.cmx \
+    inference/inferenceExceptions.cmx IAST.cmx \
+    inference/constraintSimplifier.cmx inference/constraint.cmx \
+    inference/constraintGeneration.cmi
+inference/inferenceErrors.cmo : common/positions.cmi name.cmi \
+    inference/inferenceExceptions.cmi inference/externalizeTypes.cmi \
+    common/errors.cmi inference/alphaRename.cmi inference/inferenceErrors.cmi
+inference/inferenceErrors.cmx : common/positions.cmx name.cmx \
+    inference/inferenceExceptions.cmx inference/externalizeTypes.cmx \
+    common/errors.cmx inference/alphaRename.cmx inference/inferenceErrors.cmi
+inference/inferTypes.cmo : XAST.cmi types.cmi common/positions.cmi name.cmi \
+    common/misc.cmi inference/inferenceErrors.cmi IAST.cmi \
+    inference/externalizeTypes.cmi inference/constraintSolver.cmi \
+    inference/constraintGeneration.cmi inference/alphaRename.cmi \
+    parsing/ASTio.cmi inference/inferTypes.cmi
+inference/inferTypes.cmx : XAST.cmx types.cmx common/positions.cmx name.cmx \
+    common/misc.cmx inference/inferenceErrors.cmx IAST.cmx \
+    inference/externalizeTypes.cmx inference/constraintSolver.cmx \
+    inference/constraintGeneration.cmx inference/alphaRename.cmx \
+    parsing/ASTio.cmx inference/inferTypes.cmi
+elaboration/elaborationExceptions.cmo : types.cmi common/positions.cmi \
+    name.cmi elaboration/elaborationExceptions.cmi
+elaboration/elaborationExceptions.cmx : types.cmx common/positions.cmx \
+    name.cmx elaboration/elaborationExceptions.cmi
+elaboration/elaborationErrors.cmo : XAST.cmi name.cmi common/errors.cmi \
+    elaboration/elaborationExceptions.cmi parsing/ASTio.cmi \
+    elaboration/elaborationErrors.cmi
+elaboration/elaborationErrors.cmx : XAST.cmx name.cmx common/errors.cmx \
+    elaboration/elaborationExceptions.cmx parsing/ASTio.cmx \
+    elaboration/elaborationErrors.cmi
+elaboration/elaborationEnvironment.cmo : XAST.cmi types.cmi \
+    common/positions.cmi name.cmi elaboration/elaborationExceptions.cmi \
+    elaboration/elaborationEnvironment.cmi
+elaboration/elaborationEnvironment.cmx : XAST.cmx types.cmx \
+    common/positions.cmx name.cmx elaboration/elaborationExceptions.cmx \
+    elaboration/elaborationEnvironment.cmi
+elaboration/elaborateDictionaries.cmo : XAST.cmi types.cmi \
+    common/positions.cmi name.cmi common/misc.cmi \
+    inference/internalizeTypes.cmi elaboration/elaborationExceptions.cmi \
+    elaboration/elaborationErrors.cmi elaboration/elaborationEnvironment.cmi \
+    parsing/ASTio.cmi elaboration/elaborateDictionaries.cmi
+elaboration/elaborateDictionaries.cmx : XAST.cmx types.cmx \
+    common/positions.cmx name.cmx common/misc.cmx \
+    inference/internalizeTypes.cmx elaboration/elaborationExceptions.cmx \
+    elaboration/elaborationErrors.cmx elaboration/elaborationEnvironment.cmx \
+    parsing/ASTio.cmx elaboration/elaborateDictionaries.cmi
+options.cmo : common/errors.cmi options.cmi
+options.cmx : common/errors.cmx options.cmi
+front.cmo : XAST.cmi options.cmi inference/inferTypes.cmi IAST.cmi \
+    common/errors.cmi elaboration/elaborateDictionaries.cmi parsing/ASTio.cmi
+front.cmx : XAST.cmx options.cmx inference/inferTypes.cmx IAST.cmx \
+    common/errors.cmx elaboration/elaborateDictionaries.cmx parsing/ASTio.cmx
+common/positions.cmi :
+common/errors.cmi : common/positions.cmi
+common/unionFind.cmi :
+common/infiniteArray.cmi :
+common/basicSetEquations.cmi :
+common/misc.cmi :
+common/mark.cmi :
+name.cmi :
+types.cmi : common/positions.cmi name.cmi
+IAST.cmi : types.cmi AST.cmo
+XAST.cmi : types.cmi AST.cmo
+parsing/tokens.cmi :
+parsing/parser.cmi : parsing/tokens.cmi AST.cmo
+inference/intRank.cmi :
+inference/inferenceTypes.cmi : name.cmi
+inference/multiEquation.cmi : common/unionFind.cmi common/positions.cmi \
+    name.cmi common/misc.cmi common/mark.cmi inference/intRank.cmi \
+    inference/inferenceTypes.cmi
+inference/typeAlgebra.cmi : types.cmi common/positions.cmi name.cmi \
+    inference/inferenceTypes.cmi IAST.cmi
+parsing/prettyPrint.cmi : types.cmi AST.cmo
+parsing/ASTio.cmi : XAST.cmi types.cmi IAST.cmi AST.cmo
+inference/env.cmi :
+inference/inferenceExceptions.cmi : common/positions.cmi name.cmi \
+    inference/multiEquation.cmi inference/inferenceTypes.cmi
+inference/kindInferencer.cmi : types.cmi common/positions.cmi name.cmi
+inference/constraint.cmi : common/positions.cmi name.cmi \
+    inference/multiEquation.cmi common/misc.cmi inference/inferenceTypes.cmi
+inference/typingEnvironment.cmi : common/positions.cmi name.cmi \
+    inference/multiEquation.cmi inference/kindInferencer.cmi \
+    inference/inferenceTypes.cmi
+inference/alphaRename.cmi : common/positions.cmi name.cmi IAST.cmi
+inference/internalizeTypes.cmi : inference/typingEnvironment.cmi types.cmi \
+    common/positions.cmi name.cmi inference/multiEquation.cmi common/misc.cmi \
+    inference/inferenceTypes.cmi IAST.cmi inference/constraint.cmi
+inference/unifier.cmi : common/positions.cmi inference/multiEquation.cmi \
+    inference/inferenceTypes.cmi
+inference/constraintSimplifier.cmi : common/positions.cmi name.cmi \
+    inference/multiEquation.cmi
+inference/externalizeTypes.cmi : types.cmi common/positions.cmi name.cmi \
+    inference/multiEquation.cmi
+inference/constraintSolver.cmi : common/positions.cmi name.cmi \
+    inference/multiEquation.cmi inference/inferenceTypes.cmi \
+    inference/constraint.cmi
+inference/constraintGeneration.cmi : inference/typingEnvironment.cmi \
+    IAST.cmi inference/constraint.cmi
+inference/inferenceErrors.cmi : common/positions.cmi \
+    inference/multiEquation.cmi
+inference/inferTypes.cmi : XAST.cmi IAST.cmi
+elaboration/elaborationExceptions.cmi : types.cmi common/positions.cmi \
+    name.cmi
+elaboration/elaborationErrors.cmi :
+elaboration/elaborationEnvironment.cmi : XAST.cmi types.cmi \
+    common/positions.cmi name.cmi
+elaboration/elaborateDictionaries.cmi : XAST.cmi
+options.cmi :
+parsing/parser.cmo : types.cmi parsing/tokens.cmi common/positions.cmi \
+    name.cmi common/errors.cmi AST.cmo parsing/parser.cmi
+parsing/parser.cmx : types.cmx parsing/tokens.cmx common/positions.cmx \
+    name.cmx common/errors.cmx AST.cmx parsing/parser.cmi
+parsing/lexer.cmo : parsing/tokens.cmi common/errors.cmi
+parsing/lexer.cmx : parsing/tokens.cmx common/errors.cmx
