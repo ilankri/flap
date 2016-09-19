@@ -60,3 +60,41 @@
     DEADLINE: <2016-09-19>
 *** TODO Travailler régulièrement sur le GIT.
 *** TODO Poser des questions sur le site FAQ
+* Cours 2 <2016-09-19>
+** Retour sur le fonctionnement du cours
+   - Forker le GIT.
+   - Lire les TODOs dans doc/journal.org
+   - 2 cours puis 1 TP
+   - Prendre des notes
+** L'arbre de sources du compilateur Flap
+   - Makefile
+   - Arborescence
+   - Modules généraux: Languages, Compilers, Flap
+   - MiniHopix
+   - Méthode de développement dirigée par les tests et incrémentale.
+** Les générateurs de code
+   - Qu'est-ce que c'est?
+   - Pourquoi les utiliser?
+** Analyse lexicale
+   - Définition
+   - Lexèmes et valeurs sémantiques
+   - ocamllex
+** Analyse syntaxique: les définitions
+   - Langages
+   - Grammaire algébrique
+   - Hiérarchie de Chomsky
+   - Dérivation d'un mot par une grammaire
+   - Multiples dérivations, dérivations équivalentes pour l'analyse
+   - Arbre de dérivation d'un mot
+   - Ambiguïté
+   - Formalisation du problème de l'analyse syntaxique
+   - Arbre de syntaxe concrète et arbre de syntaxe abstraite
+** Classification des algorithmes d'analyses syntaxiques
+   - Algorithmes ascendants
+   - Algorithmes descendants
+** Références bibliographiques
+   - Appel, "Modern Compiler Implementation" (à la bibliothèque)
+   - Grune, "Parsing techniques" (PDF en ligne)
+** TODO Lire la documentation de OCamllex
+** TODO Lire la documentation de Menhir
+** TODO TD1
