@@ -1,3 +1,2 @@
-[students/vador-skywalker]
-checkout = git clone 'git@moule.informatique.univ-paris-diderot.fr:vador/compilation-2015.git' vador-skywalker
-
+[students/krimo-hamadi]
+checkout = git clone 'git@moule.informatique.univ-paris-diderot.fr:krimo/compilation2016.git' krimo-hamadi
