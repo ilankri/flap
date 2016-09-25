@@ -7,6 +7,8 @@
 
 all: all-generic
 
+STUDENTS  = $(shell cat AUTEURS | tr '\n' ',' | cut -d, -f1,4 | tr ',' '-')
+
 VERSION	  = 16.1
 TARGET	  = flap
 TARGETEXT = flap
