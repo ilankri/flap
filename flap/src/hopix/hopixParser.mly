@@ -4,12 +4,15 @@
 
 %}
 
+%token STAR PLUS MINUS SLASH
 %token VAL
 %token EQUAL
 %token EOF
 %token<string> ID
 %token<Int32.t> INT
 
+%left PLUS MINUS
+%left STAR SLASH
 %start<HopixAST.t> program
 
 %%
@@ -26,13 +29,35 @@ VAL x=located(identifier) EQUAL e=located(expression)
 }
 
 expression:
-x=located(identifier)
+x=identifier
 {
   Variable x
 }
-| l=located(literal)
+| l=literal
 {
   Literal l
+}
+| lhs=located(expression) b=located(binop) rhs=located(expression)
+{
+  Apply (b, [ lhs; rhs ])
+}
+
+%inline binop:
+STAR
+{
+  Variable (Id "*")
+}
+| PLUS
+{
+  Variable (Id "+")
+}
+| MINUS
+{
+  Variable (Id "*")
+}
+| SLASH
+{
+  Variable (Id "/")
 }
 
 literal:

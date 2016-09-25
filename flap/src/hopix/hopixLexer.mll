@@ -43,6 +43,12 @@ rule token = parse
   (** Identifiers *)
   | identifier as i  { ID i  }
 
+  (** Operators *)
+  | "*"		    { STAR  }
+  | "+"		    { PLUS  }
+  | "-"		    { MINUS }
+  | "/"		    { SLASH }
+
   (** Literals *)
   | digit+ as d     { INT (Int32.of_string d) }
   | eof             { EOF       }

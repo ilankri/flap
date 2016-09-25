@@ -9,11 +9,14 @@ let error positions msg =
 (** Every expression of hopix evaluates into a [value]. *)
 type value =
   | VInt          of Int32.t
+  | VPrimitive    of (value list -> value)
 
 let print_value v =
   match v with
     | VInt x ->
       Int32.to_string x
+    | VPrimitive _ ->
+      "<primitive>"
 
 module Environment : sig
   type t
@@ -79,9 +82,24 @@ type observable = {
   new_memory : value Memory.t;
 }
 
+let bind_many env l =
+  List.fold_left (fun env (x, v) -> Environment.bind env x v) env l
+
+let binary_arithmetic op vs =
+  match vs with
+    | [ VInt x; VInt y ] -> VInt (op x y)
+    | _ -> assert false (* By typing *)
+
+let primitives = bind_many Environment.empty [
+  Id "*", VPrimitive (binary_arithmetic Int32.mul);
+  Id "+", VPrimitive (binary_arithmetic Int32.add);
+  Id "/", VPrimitive (binary_arithmetic Int32.add);
+  Id "-", VPrimitive (binary_arithmetic Int32.sub);
+]
+
 let initial_runtime () = {
   memory      = Memory.create (640 * 1024);
-  environment = Environment.empty
+  environment = primitives
 }
 
 let rec evaluate runtime ast =
@@ -118,10 +136,27 @@ and expression' environment memory e =
 *)
 and expression position environment memory = function
   | Literal l ->
-    literal (Position.value l), memory
+    literal l, memory
 
   | Variable x ->
-    Environment.lookup (Position.position x) (Position.value x) environment, memory
+    Environment.lookup position x environment, memory
+
+  | Apply (f, args) ->
+    let fvalue, memory = expression' environment memory f in
+    match fvalue with
+      | VPrimitive p ->
+	let vargs, memory = expressions' environment memory args in
+	p vargs, memory
+      | VInt _ ->
+	assert false (* By typing. *)
+
+and expressions' environment memory = function
+  | [] ->
+    [], memory
+  | e :: es ->
+    let v, memory = expression' environment memory e in
+    let vs, memory = expressions' environment memory es in
+    v :: vs, memory
 
 and literal = function
   | Literal.LInt x -> VInt x

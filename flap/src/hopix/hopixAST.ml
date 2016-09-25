@@ -30,9 +30,11 @@ and definition =
 
 and expression =
   (** A literal is a constant written "as is". *)
-  | Literal of literal located
+  | Literal of literal
   (** A variable identifies a value. *)
-  | Variable of identifier located
+  | Variable of identifier
+  (** Function application. *)
+  | Apply of expression located * expression located list
 
 and literal = Literal.t
 

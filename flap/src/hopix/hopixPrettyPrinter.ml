@@ -22,10 +22,26 @@ and value_definition what (x, e) =
 
 and expression = function
   | Literal l ->
-    located literal l
+    literal l
 
   | Variable x ->
-    located identifier x
+    identifier x
+
+  | Apply (f, args) ->
+    nest 2 (may_paren_expression (Position.value f) `AtLeftOfApplication
+	    ++ tuple args)
+
+and expression' e =
+  expression (Position.value e)
+
+and may_paren_expression what where =
+  match what, where with
+    | (Variable _, _) -> expression what
+    | (_, `AtLeftOfApplication) -> parens (expression what)
+
+and tuple es =
+  parens (separate_map (comma ^^ break 1) expression' es)
+
 
 let to_string f x =
   let b = Buffer.create 13 in
