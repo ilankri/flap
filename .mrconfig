@@ -1,4 +1,9 @@
 [students/krimo-hamadi]
 checkout = git clone 'git@moule.informatique.univ-paris-diderot.fr:krimo/compilation2016.git' krimo-hamadi
+
 [students/masselot-hucher]
 checkout = git clone 'git@moule.informatique.univ-paris-diderot.fr:masselot/compilation-m1.git' masselot-hucher
+
+[students/acker-dionision]
+checkout = git clone 'git@moule.informatique.univ-paris-diderot.fr:acker/compilation-m1-2016.git' acker-dionisio
+
