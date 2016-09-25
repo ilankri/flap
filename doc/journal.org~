@@ -1,8 +1,0 @@
-#+STARTUP: hidestars
-#+TODO: TODO(t!) STARTED(s@/!) WAITING(w@/!) SOMEDAY(S@/!) | DONE(d!) CANCELED(c@!)
-#+PRIORITIES: A C B
-
-			   *Qui fait quoi et quand?*
-
-(Il est préférable d'ouvrir ce fichier texte sous Emacs.)
-(Appuyez sur [TAB] pour dérouler les items suivis de "...")
