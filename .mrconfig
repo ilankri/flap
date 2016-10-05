@@ -9,3 +9,7 @@ checkout = git clone 'git@moule.informatique.univ-paris-diderot.fr:acker/compila
 
 [students/lankri-hsieh]
 checkout = git clone 'git@moule.informatique.univ-paris-diderot.fr:lankri/compilation-m1-2016.git' lankri-hsieh
+
+[students/deplaix-skoda]
+checkout = git clone 'git@moule.informatique.univ-paris-diderot.fr:deplaix/compilation-m1-2016.git' deplaix-skoda
+
