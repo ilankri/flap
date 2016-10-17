@@ -79,6 +79,10 @@
    - Définition
    - Lexèmes et valeurs sémantiques
    - ocamllex
+** TODO Lire la documentation de OCamllex
+** TODO Lire la documentation de Menhir
+** TODO TD1
+* Cours 3 <2016-10-03>
 ** Analyse syntaxique: les définitions
    - Langages
    - Grammaire algébrique
@@ -92,9 +96,10 @@
 ** Classification des algorithmes d'analyses syntaxiques
    - Algorithmes ascendants
    - Algorithmes descendants
+** Menhir, point de vue utilisateur
 ** Références bibliographiques
    - Appel, "Modern Compiler Implementation" (à la bibliothèque)
    - Grune, "Parsing techniques" (PDF en ligne)
-** TODO Lire la documentation de OCamllex
-** TODO Lire la documentation de Menhir
-** TODO TD1
+* Cours 4 <2016-10-17>
+** Unger
+** LL(1)

@@ -1,0 +1,71 @@
+* Exemple sans non terminal annulable
+A -> { B }
+B -> x : A B | C
+C -> !
+
+FIRST (A) = {
+FIRST (B) = x !
+FIRST (C) = !
+
+FIRST (A B) = {
+FIRST (x B) = x
+
+|---+-------+---------+---+---+---|
+|   | {     | x       | ! | } | : |
+|---+-------+---------+---+---+---|
+| A | { B } | ⊥       | ⊥ | ⊥ | ⊥ |
+|---+-------+---------+---+---+---|
+| B | ⊥     | x : A B | C | ⊥ | ⊥ |
+|---+-------+---------+---+---+---|
+| C | ⊥     | ⊥       | ! | ⊥ | ⊥ |
+|---+-------+---------+---+---+---|
+
+** Parseur récursif descendant
+
+let rec parseA () =
+  if next () = '{' then begin
+     accept '{';
+     parseB ();
+     accept '}'
+  end else syntax_error ()
+and parseB () =
+  match next () with
+  | 'x' -> accept 'x'; accept ':'; parseA (); parseB ()
+  | '!' -> parseC ()
+  | _ -> syntax_error ()
+and parseC () =
+  accept '!'
+
+* Exemple avec non terminal annulable
+A -> { B }
+B -> x : A B | ε
+
+FIRST (A) = {
+FIRST (B) = x
+
+B est annulable. A n'est pas annulable.
+
+FOLLOW (A) = x
+FOLLOW (B) = }
+
+|---+-------+---------+---+---|
+|   | {     | x       | } | : |
+|---+-------+---------+---+---|
+| A | { B } | ⊥       | ⊥ | ⊥ |
+|---+-------+---------+---+---|
+| B | ⊥     | x : A B | ε | ⊥ |
+|---+-------+---------+---+---|
+
+** Parseur récursif descendant
+
+let rec parseA () =
+  if next () = '{' then begin
+     accept '{';
+     parseB ();
+     accept '}'
+  end else syntax_error ()
+and parseB () =
+  match next () with
+  | 'x' -> accept 'x'; accept ':'; parseA (); parseB ()
+  | '}' -> ()
+  | _ -> syntax_error ()
