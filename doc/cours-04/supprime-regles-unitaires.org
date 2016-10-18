@@ -1,0 +1,7 @@
+A → a B | c | ε
+B → c | ε
+
+S → A | ε
+A → a B | a | c
+B → c
+
