@@ -1,0 +1,20 @@
+A → a B | B
+B → c | C
+C → ε | B
+
+* Première étape:
+A → a B | B
+B → c | C' | ε
+C' → B
+
+* Seconde étape:
+A → a B'| a | ε | B'
+B' → c | C'
+C' → ε | B'
+
+* Troisième étape:
+A → a B'| a | ε | B'
+B' → c | ε | C'
+
+
+On boucle?
