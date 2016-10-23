@@ -2,7 +2,7 @@
 
     Ce module implémente une boucle interactive pour le langage
     "Marthe", un langage d'expressions arithmétiques avec un
-    opérateurs de sommation.
+    opérateur de sommation.
 
     Pour le compiler, utilisez par exemple la commande :
 
@@ -43,10 +43,10 @@ let fixme () = raise TODO
 *)
 
 (** Cette fonction implémente une boucle interactive à
-  l'aide de trois fonctions:
-  - [read ()] demande une chaîne [s] à l'utilisateur ;
-  - [eval s] évalue le programme Marthe ;
-  - [print r] affiche la valeur résultat de l'évaluation de [s]. *)
+    l'aide de trois fonctions:
+    - [read ()] demande une chaîne [s] à l'utilisateur ;
+    - [eval s] évalue le programme Marthe ;
+    - [print r] affiche la valeur résultat de l'évaluation de [s]. *)
 let loop read eval print =
   let rec aux () =
     try
@@ -81,7 +81,7 @@ let loop read eval print =
    de la forme "e₁ + e₂" en évaluant e₁ en un entier n₁ puis e₂ en
    un entier n₂ puis en faisant la somme de n₁ et n₂.
 
-   Voici des exemples de programmes Marthe pour illustrent ces idées:
+   Voici des exemples de programmes Marthe qui illustrent ces idées:
 
    * Exemple 1:
    On veut traduire "1 + 2" en "EPlus (EInt 1, EInt 2)".
@@ -138,6 +138,8 @@ type token =
   | Lparen       (** "("                        *)
   | Rparen       (** ")"                        *)
   | Comma        (** ","                        *)
+  | Dash
+  | Slash
   | EOF          (** La fin de l'entrée.        *)
 
 let string_of_token = function
@@ -149,13 +151,15 @@ let string_of_token = function
   | Lparen  -> "Lparen"
   | Rparen  -> "Rparen"
   | Comma   -> "Comma"
+  | Dash -> "Dash"
+  | Slash -> "Slash"
   | EOF     -> "EOF"
 
 exception LexingError of string
 
-(** L'analyse lexixale produit une liste de lexèmes à partir de la
+(** L'analyse lexicale produit une liste de lexèmes à partir de la
     chaîne de caractères d'entrée. Il s'agit essentiellement d'un
-    automate fini implémentée à la main. *)
+    automate fini implémenté à la main. *)
 let lexer : string -> token list =
   fun s ->
     let at_the_end i = i >= String.length s in
@@ -187,32 +191,59 @@ let lexer : string -> token list =
 
     (** La fonction récursive suivante itère sur la chaîne
         à partir de [i] et tente de reconnaître un lexème. *)
-    let rec aux i =
+    let rec aux i comment_level =
       (** Par défaut, pour continuer sur le caractère suivant, on augmente
           l'indice et on fait un appel récursif. Dans certains cas,
           l'indice [where] est fourni. *)
-      let continue ?(where=(i + 1)) () = aux where in
+      let continue ?(where=(i + 1)) () = aux where comment_level in
 
       (** Pour retourner un lexème reconnu, on le met en tête
           de la liste des tokens produite par les appels récursifs. *)
-      let produce_and_continue ?where token = token :: (continue ?where ()) in
+      let produce_and_continue ?where token =
+        if comment_level = 0 then token :: (continue ?where ())
+        else continue ?where () in
+
+      let maybe_close_comment ?(where = i + 1) () =
+        let produce_star_and_continue () =
+          produce_and_continue ~where:where Star in
+        try
+          match s.[where] with
+          | ')' -> aux (succ where) (pred comment_level)
+          | _ -> produce_star_and_continue ()
+        with
+        | Invalid_argument _ -> produce_star_and_continue () in
+
+      let maybe_open_comment ?(where = i + 1) () =
+        let produce_lparen_and_continue () =
+          produce_and_continue ~where:where Lparen in
+        try
+          match s.[where] with
+          | '*' -> aux (succ where) (succ comment_level)
+          | _ -> produce_lparen_and_continue ()
+        with
+        | Invalid_argument _ -> produce_lparen_and_continue () in
 
       if at_the_end i then
-        (** Le lexème EOF marque la fin de l'entrée. *)
-        [EOF]
+        if comment_level = 0 then
+          (** Le lexème EOF marque la fin de l'entrée. *)
+          [EOF]
+        else raise (LexingError "Unbalanced comment.")
+
       else
         (** Sinon, on peut décider quel lexème essayer de reconnaître
             à l'aide du premier caractère croisé. *)
         match s.[i] with
         (** On saute les espaces. *)
-        | ' ' -> continue ()
+        | ' ' | '\t' -> continue ()
 
         (** Les symboles. *)
-        | '*' -> produce_and_continue Star
+        | '*' -> maybe_close_comment ()
         | '+' -> produce_and_continue Plus
-        | '(' -> produce_and_continue Lparen
+        | '(' -> maybe_open_comment ()
         | ')' -> produce_and_continue Rparen
         | ',' -> produce_and_continue Comma
+        | '-' -> produce_and_continue Dash
+        | '/' -> produce_and_continue Slash
 
         (** Les nombres. *)
         | c when is_digit c ->
@@ -232,7 +263,7 @@ let lexer : string -> token list =
         | _ ->
           raise (LexingError "Invalid character")
     in
-    aux 0
+    aux 0 0
 
 (** Tests de l'analyseur lexical. *)
 let test_title s =
@@ -269,12 +300,17 @@ let test_lexer () =
     "("    --> [Lparen; EOF];
     ")"    --> [Rparen; EOF];
     ","    --> [Comma; EOF];
+    "-"    --> [Dash; EOF];
+    "/"    --> [Slash; EOF];
     "sum"  --> [Sum; EOF];
     "a"    --> [Id "a"; EOF];
     "sumx" --> [Id "sumx"; EOF];
     "(  )" --> [Lparen; Rparen; EOF];
     "()"   --> [Lparen; Rparen; EOF];
     "42,"  --> [Int 42; Comma; EOF];
+    "\t"   --> [EOF];
+    "(* a comment *)" --> [EOF];
+    "(* a (* nested *) comment *)" --> [EOF];
     ""     --> [EOF]
   ];
 
@@ -283,6 +319,8 @@ let test_lexer () =
     "#"    --> [];
     "!"    --> [];
     "\n"   --> [];
+    "(* an unbalanced comment" --> [];
+    "another unbalanced comment *)"--> []
   ]
 
 (** Exercices de programmation:
@@ -304,6 +342,8 @@ type e =
   | EVar  of string              (** Ex: "x", "y", "foo"         *)
   | EPlus of e * e               (** Ex: "1 + 2", "2 * 3 + 4"    *)
   | EMult of e * e               (** Ex: "1 * 2", "(1 + 2) * 3"  *)
+  | ESub of e * e
+  | EDiv of e * e
   | ESum  of string * e * e * e  (** Ex: "sum (x, 1, 10, x * x)" *)
 
 exception ParseError of string * token
@@ -314,11 +354,13 @@ exception ParseError of string * token
     phrase ::= expression EOF
 
     expression ::=
-      term PLUS expression
-    | term
+      term
+    | term PLUS expression
+    | term DASH expression
 
     term ::=
       factor STAR term
+    | factor SLASH term
     | factor
 
     factor ::=
@@ -349,20 +391,20 @@ let parse : token list -> e = fun tokens ->
         des lexèmes à traiter. *)
     let next () =
       match !tokens_stream with
-        | [] -> raise (ParseError ("No more token", EOF))
-        | tok :: tokens ->
-          tokens_stream := tokens
+      | [] -> raise (ParseError ("No more token", EOF))
+      | _ :: tokens ->
+        tokens_stream := tokens
     in
 
     (** La fonction [current] renvoie le lexème courant. *)
     let current () =
       match !tokens_stream with
-        | [] -> assert false
-        | tok :: _ ->
-          tok
+      | [] -> assert false
+      | tok :: _ ->
+        tok
     in
 
-    (** [accept t] vérifie que le lexème courante est [t] et
+    (** [accept t] vérifie que le lexème courant est [t] et
         passe alors au lexème suivant. *)
     let accept token =
       if (current () <> token) then
@@ -393,86 +435,118 @@ let parse : token list -> e = fun tokens ->
     (** ... on commence par analyser un terme. *)
     let e = term () in
     match current () with
-      (** Si ce terme est suivi par un "Plus", on
-          est dans la seconde règle de la grammaire,
-          on doit donc accepter ce "Plus" et passer à
-          la suite pour reconnaître une expression. *)
-      | Plus ->
-        next ();
-        EPlus (e, expression ())
+    (** Si ce terme est suivi par un "Plus", on
+        est dans la seconde règle de la grammaire,
+        on doit donc accepter ce "Plus" et passer à
+        la suite pour reconnaître une expression. *)
+    | Plus ->
+      next ();
+      EPlus (e, expression ())
 
-      (** Dans les autres cas, nous étions dans
-          la première règle et nous avons reconnu
-          une expression [e]. Le travail est terminé. *)
-      | token ->
-        e
+    | Dash ->
+      next ();
+      let right_expr = expression () in
+      (* On doit analyser l'expression droite afin d'obtenir le
+         comportement voulu, à savoir :
+
+           a - b - c = (a - b) - c
+
+           a - b + c = (a - b) + c *)
+      begin match right_expr with
+        | ESub (e1, e2) -> ESub (ESub (e, e1), e2)
+        | EPlus (e1, e2) -> EPlus (ESub (e, e1), e2)
+        | EInt _ | EVar _ | ESum _ | EMult _ | EDiv _ -> ESub (e, right_expr)
+      end
+
+    (** Dans les autres cas, nous étions dans
+        la première règle et nous avons reconnu
+        une expression [e]. Le travail est terminé. *)
+    | Int _ | Id _ | Sum | Star | Lparen | Rparen |
+      Comma | Slash | EOF -> e
 
   (** Pour analyser un terme, on suit le même schéma que pour
       les expressions. *)
   and term () =
     let t = factor () in
     match current () with
-      | Star ->
-	next ();
-        EMult (t, factor ())
+    | Star ->
+      next ();
+      EMult (t, term ())
 
-      | token -> t
+    | Slash ->
+      next ();
+      let right_term = term () in
+      (* On doit analyser le terme droit afin d'obtenir le
+         comportement voulu, à savoir :
+
+           a / b / c = (a / b) / c
+
+           a / b * c = (a / b) * c *)
+      begin match right_term with
+        | EDiv (e1, e2) -> EDiv (EDiv (t, e1), e2)
+        | EMult (e1, e2) -> EMult (EDiv (t, e1), e2)
+        | EInt _ | EVar _ | ESum _ | EPlus _ | ESub _ -> EDiv (t, right_term)
+      end
+
+    | Int _ | Id _ | Sum | Plus | Lparen | Rparen | Comma | Dash | EOF -> t
 
   (** Pour décider dans quelle règle on se trouve, ... *)
   and factor () =
     (** on commence par observer le lexème courant. *)
     match current () with
-      (** C'est une parenthèse ouvrante? C'est la règle 4. *)
-      | Lparen ->
-        next ();
-        (** On doit reconnaître une expression ... *)
-        let e = expression () in
-        (** ... suivie d'une parenthèse fermante. *)
-        accept Rparen;
-        e
+    (** C'est une parenthèse ouvrante? C'est la règle 4. *)
+    | Lparen ->
+      next ();
+      (** On doit reconnaître une expression ... *)
+      let e = expression () in
+      (** ... suivie d'une parenthèse fermante. *)
+      accept Rparen;
+      e
 
-      (** C'est le mot-clé "sum"? C'est la règle 3. *)
-      | Sum ->
-        next ();
-        (** On attend une parenthèse ouvrante. *)
-        accept Lparen;
-        (** Puis, un identificateur. *)
-        let id =
-          match current () with
-            | Id s -> next (); s
-            | token -> raise (ParseError ("Expecting an identifier", token))
-        in
-        (** Une virgule. *)
-        accept Comma;
-        (** L'expression correspondante à l'initialisation de la variable
-            de sommation. *)
-        let start = expression () in
-        (** Une virgule. *)
-        accept Comma;
-        (** L'expression correspondante à la valeur finale de la variable
-            de sommation. *)
-        let stop = expression () in
-        (** Une virgule. *)
-        accept Comma;
-        (** L'expression correspondante au corps de la sommation. *)
-        let body = expression () in
-        (** Et enfin, une parenthèse fermante. *)
-        accept Rparen;
-        ESum (id, start, stop, body)
+    (** C'est le mot-clé "sum"? C'est la règle 3. *)
+    | Sum ->
+      next ();
+      (** On attend une parenthèse ouvrante. *)
+      accept Lparen;
+      (** Puis, un identificateur. *)
+      let id =
+        match current () with
+        | Id s -> next (); s
+        | Int _ | Sum | Plus | Star | Lparen | Rparen |
+          Comma | Dash | Slash | EOF as token ->
+          raise (ParseError ("Expecting an identifier", token))
+      in
+      (** Une virgule. *)
+      accept Comma;
+      (** L'expression correspondante à l'initialisation de la variable
+          de sommation. *)
+      let start = expression () in
+      (** Une virgule. *)
+      accept Comma;
+      (** L'expression correspondante à la valeur finale de la variable
+          de sommation. *)
+      let stop = expression () in
+      (** Une virgule. *)
+      accept Comma;
+      (** L'expression correspondante au corps de la sommation. *)
+      let body = expression () in
+      (** Et enfin, une parenthèse fermante. *)
+      accept Rparen;
+      ESum (id, start, stop, body)
 
-      (** C'est un identificateur? C'est la règle 2. *)
-      | Id x ->
-        next ();
-        EVar x
+    (** C'est un identificateur? C'est la règle 2. *)
+    | Id x ->
+      next ();
+      EVar x
 
-      (** C'est un entier? C'est la règle 1. *)
-      | Int x ->
-        next ();
-        EInt x
+    (** C'est un entier? C'est la règle 1. *)
+    | Int x ->
+      next ();
+      EInt x
 
-      (** Les autres cas sont des cas d'erreur. *)
-      | token ->
-        raise (ParseError ("Unexpected token", token))
+    (** Les autres cas sont des cas d'erreur. *)
+    | Plus | Star | Rparen | Comma | Dash | Slash | EOF as token ->
+      raise (ParseError ("Unexpected token", token))
 
   in
   phrase ()
@@ -488,7 +562,11 @@ let test_parser () =
     (lexer "1 + 2 * 3")        --> EPlus (EInt 1, EMult (EInt 2, EInt 3));
     (lexer "1 * 2 + 3")        --> EPlus (EMult (EInt 1, EInt 2), EInt 3);
     (lexer "sum (x, 1, 2, x * x)")
-     --> ESum ("x", EInt 1, EInt 2, EMult (EVar "x", EVar "x"))
+    --> ESum ("x", EInt 1, EInt 2, EMult (EVar "x", EVar "x"));
+    (lexer "1 - 2 - 3") --> ESub (ESub (EInt 1, EInt 2), EInt 3);
+    (lexer "1 - 2 + 3") --> EPlus (ESub (EInt 1, EInt 2), EInt 3);
+    (lexer "1 / 2 / 3") --> EDiv (EDiv (EInt 1, EInt 2), EInt 3);
+    (lexer "1 / 2 * 3") --> EMult (EDiv (EInt 1, EInt 2), EInt 3)
   ];
 
   (** Tests négatifs. *)
@@ -499,6 +577,7 @@ let test_parser () =
   List.iter (do_test invalid display_tokens parse) [
     [EOF]                         --> fail;
     (lexer "1 + 2 *")             --> fail;
+    (lexer "1 - 2 /")             --> fail;
     (lexer "1 * (2)) + 3")        --> fail;
     (lexer "sum (x, 1, 2, x * x") --> fail
   ]
@@ -767,7 +846,7 @@ let compile : e -> instruction array =
              PushAccu nb_idx' ])
 
       | EVar x ->
-	(pos + 1, [ Get (List.assoc x variable_idx) ])
+        (pos + 1, [ Get (List.assoc x variable_idx) ])
     in
     let (_, code) = aux 0 [] 0 e in
     Array.of_list (code @ [ Halt ])
@@ -828,12 +907,12 @@ let batch_mode = ref false
 
 let _ =
   Arg.parse (Arg.align [
-    "-bench", Arg.Unit benchmark_interactive_loop,
-    " Launch a toplevel that uses several evaluation strategies.";
-    "--", Arg.Set batch_mode, " Only interpret stdin.";
-    "-test", Arg.Unit test_suite,
-    " Launch the test suite of the program."
-  ]) ignore ("marthe [options]");
+      "-bench", Arg.Unit benchmark_interactive_loop,
+      " Launch a toplevel that uses several evaluation strategies.";
+      "--", Arg.Set batch_mode, " Only interpret stdin.";
+      "-test", Arg.Unit test_suite,
+      " Launch the test suite of the program."
+    ]) ignore ("marthe [options]");
   if !batch_mode then
     batch ()
   else
