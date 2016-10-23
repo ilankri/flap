@@ -1,0 +1,378 @@
+%; whizzy paragraph
+\documentclass[a4paper,8pt]{article}
+\usepackage[francais]{babel}
+\usepackage{fancybox}
+%% Encodage et police
+\usepackage{hyperref}
+\usepackage{ucs}
+\usepackage[utf8x]{inputenc}
+\usepackage{lmodern}
+\usepackage[T1]{fontenc}
+\usepackage{geometry}
+\usepackage{xcolor}
+\geometry{hmargin=0.7cm, vmargin=2.5cm}
+%% BNF
+\usepackage{tabularx}
+\usepackage{array}
+\def\colsep@widearray{\,}
+\newcolumntype{C}{@{\colsep@widearray}>{\({}}c<{{}\)}@{\colsep@widearray}}
+\newcolumntype{S}{@{\colsep@widearray}>{{}}r<{{}}@{\colsep@widearray}}
+\newcolumntype{L}{@{\colsep@widearray}>{{}}l<{{}}@{\colsep@widearray}}
+\newcolumntype{R}{@{\colsep@widearray}>{\sl{}}r<{{}}@{\colsep@widearray}}
+\newcolumntype{Z}{@{\colsep@widearray}>{{}}X<{{}}@{\colsep@widearray}}
+\newcommand{\comment}[1]{\hfill \mbox{\textit{#1}}}
+\newenvironment{BNF}[1][\linewidth]%
+{\quote\tabularx{#1}{RSZ}\relax}%
+{\endtabularx\endquote}
+\newcommand{\kwd}[1]{\texttt{#1}}
+\newcommand{\lex}[1]{\textsf{#1}}
+\newcommand{\rul}[1]{\textsl{#1}}
+\newcommand{\car}[1]{\texttt{#1}}
+\newcommand{\plus}{$^+$ }
+\newcommand{\mult}{$^*$ }
+\newcommand{\opt}{$^*$ }
+\newcommand{\meta}[1]{\textcolor{gray}{#1}}
+\newcommand{\repeatseq}[1]{\textsl{\meta{\{}} #1 \textsl{\meta{\}}}}
+\newcommand{\repeatseqplus}[1]{\textsl{\meta{\{}} #1 \textsl{\meta{\}}}⁺}
+\newcommand{\optw}[1]{\textsl{\meta{[}} #1 \textsl{\meta{]}}}
+\newcommand{\optseq}[1]{\optw{#1}}
+
+\newlength\codewidth
+\setlength\codewidth{15cm}
+\newenvironment{code}[1][\codewidth]{
+\begin{center}
+\Sbox
+\hspace{0.3cm}\minipage{#1}\small
+}{
+\endminipage
+\endSbox\fbox{\TheSbox}
+\end{center}
+}
+
+%%
+\title{
+\vspace{-1.5cm}
+Projet du cours «~Compilation~» \\
+Jalon 1~: Analyse lexicale et syntaxique de \textsc{Hopix}}
+\date{\scriptsize version numéro \input{version}}
+
+\begin{document}
+
+\maketitle
+
+\section{Spécification de la grammaire}
+
+\subsection{Notations extra-lexicales}
+
+Les commentaires, espaces, les tabulations et les sauts de ligne
+jouent le rôle de séparateurs. Leur nombre entre les différents
+symboles terminaux peut donc être arbitraire. Ils sont ignorés
+par l'analyse lexicale: ce ne sont pas des lexèmes.
+
+Les commentaires sont entourés des deux symboles «~\verb!{-!~» et
+«~\verb!-}!~». Par ailleurs, ils peuvent être imbriqués.
+
+On peut aussi introduire un commentaire à l'aide du symbole
+«~\verb!--!~» : tout ce qui le suit jusqu'à la fin de la ligne
+est interprété comme un commentaire.
+
+\subsection{Symboles}
+
+\paragraph{Symboles terminaux}
+Les terminaux sont répartis en trois catégories : les mots-clés, les
+identificateurs et la ponctuation.
+
+Les mots-clés sont les noms réservés aux constructions du langage.
+Ils seront écrits avec des caractères de machine à écrire
+(comme par exemple les mots-clés \kwd{if} et \kwd{while}).
+
+Les identificateurs sont constitués des identificateurs de variables,
+d'étiquettes, de constructeurs de données et de types ainsi que des
+littéraux, comprenant les constantes entières, les
+caractères et les chaînes de caractères.  Ils seront écrits dans une
+police \textsf{sans-serif} (comme par exemple \lex{type\_con} ou
+\lex{int}). La classification des identificateurs est définie par les
+expressions rationnelles suivantes~:
+
+\begin{code}
+\begin{BNF}
+\rm \lex{alien\_infix\_id} & ≡ & \car{`} [A-Z a-z 0-9 \car{+} \car{-} \car{*} \car{/} \car{<} \car{=} \car{>} \car{\_}]$^+$ \car{`}
+\comment{Identificateur d'opérateurs infixes}\\
+\rm \lex{alien\_prefix\_id} & ≡ & \car{`} [A-Z a-z 0-9 \car{+} \car{-} \car{*} \car{/} \car{<} \car{=} \car{>} \car{\_}]$^+$
+\comment{Identificateur d'opérateurs préfixes}\\
+\rm \lex{var\_id}    & ≡ & [a-z] [A-Z a-z 0-9 \car{\_}]$^*$ | \lex{alien\_prefix\_id}
+\comment{Identificateur de variables}\\
+\rm \lex{constr\_id} & ≡ & [A-Z \car{\_}] [A-Z a-z 0-9 \car{\_}]$^*$
+\comment{Identificateur de constructeurs de données}\\
+\rm \lex{type\_con}   & ≡ & [a-z] [A-Z a-z 0-9 \car{\_}]$^*$
+\comment{Identificateur de constructeurs de type}\\
+\rm \lex{type\_variable}   & ≡ & \car{'} [a-z] [A-Z a-z 0-9 \car{\_}]$^*$
+\comment{Identificateur de variables de type}\\
+\rm \lex{int}        & ≡ &  [0-9]⁺ | 0[xX][0-9 a-f A-F]$^+$ | 0[Bb][0-1]$^+$ | 0[Oo][0-7]$^+$
+\comment{Littéraux entiers}\\
+\rm \lex{char}        & ≡ & '\lex{atom}'
+\comment{Littéraux caractères}\\
+\rm \lex{atom}       & ≡ & $\backslash$000 | \dots{} | $\backslash$255
+| $\backslash$0[xX][0-9 a-f A-F]$^2$ | $\backslash$0[oO][0-7]+ | $\backslash$0[bB][0-1]+ | [\lex{printable}] \\
+& | & \car{$\backslash\backslash$}
+| \car{$\backslash${}'}
+| \car{$\backslash$n}
+| \car{$\backslash$t}
+| \car{$\backslash$b}
+| \car{$\backslash$r}
+\\
+\rm \lex{string}       & ≡ & " ( \lex{atom} $- \{$ \car{"} $\}$ | $\backslash$\car{"} )$^*$ "
+\comment{Littéraux chaîne de caractères}\\
+
+\end{BNF}
+\end{code}
+
+Autrement dit, les identificateurs de variables, de constructeurs de
+type et de champs commencent par une lettre minuscule et peuvent
+comporter ensuite des majuscules, des minuscules, des chiffres et le
+caractère souligné~\car{\_}. Les identificateurs de constructeurs de
+données peuvent comporter les mêmes caractères, mais doivent commencer
+par une majuscule ou par un caractère~\car{\_}, tandis que les
+variables de type commencent par un~caractère~\car{'}. Par ailleurs,
+un identificateur d'opérateur est formé de symboles et de caractères
+alphanumériques. S'il est entouré de deux~\car{`}, il est dit
+\textit{infixe}. S'il est préfixé par un \car{`}, il est dit
+\textit{préfixe}.
+
+Les constantes entières sont constituées de chiffres en notation
+décimale, en notation hexadécimale, en notation binaire ou en notation
+octale. Les constantes entières sont prises dans
+$[-2^{31}; 2^{31} - 1]$.
+
+Les constantes de caractères sont décrites entre guillemets simples
+(ce qui signifie en particulier que les guillemets simples doivent
+être échappés dans les constantes de caractères). On y trouve en
+particulier les symboles ASCII affichables. Par ailleurs, sont des
+caractères valides~: les séquences d'échappement usuelles, ainsi que
+les séquences d'échappement de trois chiffres décrivant le code ASCII
+du caractère en notation décimale ou encore les séquences
+d'échappement de deux chiffres décrivant le code ASCII en notation
+hexadécimale.
+
+Les constantes de chaîne de caractères sont formées d'une séquence de
+caractères. Cette séquence est entourée de guillemets (ce qui signifie
+en particulier que les guillemets doivent être échappés dans les
+chaînes).
+
+Les symboles seront notés avec la police "\car{machine à écrire}"
+(comme par exemple~«~\car{(}~» ou ~«~\car{=}~»).
+
+\paragraph{Symboles non-terminaux}
+Les symboles non-terminaux seront notés à l'aide d'une police
+légèrement inclinée (comme par exemple \rul{expr}).
+
+Une séquence entre crochets est optionnelle (comme par exemple
+«~\optw{\kwd{ref}}~»). Attention à ne pas confondre ces crochets
+avec les symboles terminaux de ponctuation notés \car{[} et
+  \car{]}. Une séquence entre accolades se répète zéro fois ou plus,
+(comme par exemple
+«~\car{(}~\rul{arg}~\repeatseq{\car{,}~\rul{arg}}~\car{)}~»).
+
+\section{Grammaire en format BNF}
+
+La grammaire du langage est spécifiée à l'aide du format BNF.
+
+\paragraph{Programme} Un programme est constitué d'une séquence
+de définitions de types et de valeurs.
+
+\begin{code}[20cm]
+\begin{BNF}
+p  & $::=$  & \repeatseq{\rul{definition}} \comment{Programme} \\
+\\
+definition
+& $::=$
+& \kwd{type}
+ \lex{type\_con} \optw{\car{(} \lex{type\_variable} \optw{\repeatseq{\car{,} \lex{type\_variable}}} \car{)}}
+ \optw{\car{=} \rul{tdefinition}}
+ \comment{Définition de type}
+\\
+& | &
+\kwd{extern} \lex{var\_id} \car{:} \rul{type}
+\comment{Valeurs externes}
+\\
+& | &  \rul{vdefinition}
+\comment{Définition de valeur(s)}
+\\
+\\
+tdefinition
+& $::=$ &
+\optw{\car{|}}
+\lex{constr\_id}
+\optw{\car{(} \rul{type} \repeatseq{\car{,} \rul{type}} \car{)}}
+\comment{Type somme}
+\\
+&& \repeatseq{\car{|} \lex{constr\_id} \optw{\car{(} \rul{type} \repeatseq{\car{,} \rul{type}} \car{)}}}
+\\
+\\
+vdefinition & $::=$ &
+\kwd{val} \lex{var\_id} \optw{\car{:} \rul{type}}  \car{=} \rul{expr}
+\comment{Valeur simple}
+\\
+& | & 
+\kwd{fun}
+\lex{var\_id}
+\optw{\car{[} \rul{type\_variable} \repeatseq{\car{,} \rul{type\_variable}} \car{]}}
+\car{(} \rul{pattern} \repeatseq{\car{,} \rul{pattern}} \car{)} \optw{\car{:} \rul{type}}  \car{=} \rul{expr}
+\comment{Fonction}
+\\
+&&\repeatseq{\kwd{and} \lex{var\_id}
+\optw{\car{[} \rul{type\_variable} \repeatseq{\car{,} \rul{type\_variable}} \car{]}}
+\car{(} \rul{pattern} \repeatseq{\car{,} \rul{pattern}} \car{)} \optw{\car{:} \rul{type}}  \car{=} \rul{expr}}
+\end{BNF}\smallskip
+\end{code}
+
+\paragraph{Types de données}
+\noindent La syntaxe des types est donnée par la grammaire suivante:
+
+\begin{code}
+\begin{BNF}
+type
+& $::=$ & \lex{type\_con} \optw{\car{(} \rul{type} \repeatseq{\car{,} \rul{type}} \car{)}} \\
+& | & \rul{type} \car{->} \rul{type} \\
+& | & \lex{type\_variable} \\
+& | & \car{(} \rul{type} \car{)}
+\end{BNF}\smallskip
+\end{code}
+
+\paragraph{Expression}
+
+La syntaxe des expressions du langage est donnée par la grammaire suivante.
+\begin{code}[18cm]
+\begin{center}
+\begin{BNF}
+expr      & $::=$ & \lex{int} \comment{Entier} \\
+          &   | & \lex{char} \comment{Caractère} \\
+          &   | & \lex{string} \comment{Chaîne de caractères} \\
+          &   | & \lex{var\_id}                            \comment{Variable} \\
+          &   | & \lex{constr\_id}
+                  \optw{\car{[} \rul{type} \repeatseq{\car{,} \rul{type}} \car{]}}
+                  \optw{\car{(} \rul{expr} \repeatseq{\car{,} \rul{expr}} \car{)}}
+                  \comment{Construction d'une donnée étiquetée} \\
+          &   | & \car{(} \rul{expr} \car{:} \rul{type} \car{)} \comment{Annotation de type} \\
+                   &   | & \rul{expr} \repeatseq{\car{;} \rul{expr}}
+                   \comment{Séquencement} \\
+          &   | & \rul{vdefinition} \car{;} \rul{expr}
+                  \comment{Définition locale} \\
+                  &   | & \rul{expr}
+                  \optw{\car{[} \rul{type} \repeatseq{\car{,} \rul{type}} \car{]}}
+                  \car{(} \rul{expr} \repeatseq{\car{,} \rul{expr}} \car{)} \comment{Application} \\
+          &   | & \car{$\backslash$}
+                  \optw{\car{[} \rul{type\_variable} \repeatseq{\car{,} \rul{type\_variable}} \car{]}}
+                  \car{(} \rul{pattern} \repeatseq{\car{,} \rul{pattern}} \car{)} \car{=>} \rul{expr}
+                  \comment{Fonction anonyme} \\
+          &   | & \rul{expr} \rul{binop} \rul{expr} \comment{Opérations binaires}\\
+          &   | & \rul{expr} \car{?} \rul{branches}  \comment{Analyse de motifs} \\
+          &   | & \kwd{if} \rul{expr} \kwd{then} \rul{expr}
+          \repeatseq{\kwd{elif} \rul{expr}}
+          \optw{\kwd{else} \rul{expr}}
+          \comment{Conditionnelle} \\
+          &   | & \kwd{ref} \rul{expr} \comment{Allocation} \\
+          &   | & \rul{expr} \car{:=} \rul{expr} \comment{Affectation} \\
+          &   | & \car{!} \rul{expr} \comment{Lecture} \\
+          &   | & \kwd{while} \rul{expr} \car{\{} \rul{expr} \car{\}} \comment{Boucle} \\
+          &   | & \car{(} \rul{expr} \car{)} \comment{Parenthésage} \\
+\\
+binop       & $::=$ & \car{+} | \car{-} | \car{*} | \car{/} | \car{\&\&} | \car{||} |
+\car{=} | \car{<=} | \car{>=} | \car{<} | \car{>} | \lex{alien\_prefix\_id}
+\comment{Opérateurs binaires}
+\\\\
+branches  & $::=$ & \optw{\car{|}} \rul{branch} \repeatseq{\car{|} \rul{branch}} \comment{Liste de cas} \\
+& | & \car{\{} \optseq{\car{|}} \rul{branch} \repeatseq{\car{|} \rul{branch}} \car{\}} \comment{... avec des accolades}
+\\\\
+branch    & $::=$ & \rul{pattern} \car{=>} \rul{expr} \comment{Cas d'analyse} \\
+\end{BNF}
+\end{center}
+\end{code}
+
+\paragraph{Motifs}
+\noindent Les motifs (\textsl{patterns} en anglais), utilisés par
+l'analyse de motifs, ont la syntaxe suivante:
+
+\begin{code}
+\begin{center}
+  \begin{BNF}
+pattern & $::=$ & \lex{constr\_id} \comment{Etiquette} \\
+          &   | & \lex{var\_id} \comment{Motif universel liant}\\
+          &   | & \car{\_} \comment{Motif universel non liant}\\
+          &   | & \car{(} \rul{pattern} \car{)} \comment{Parenthésage} \\
+          &   | & \rul{pattern} \car{:} \rul{type} \comment{Annotation de type} \\
+          &   | & \lex{int} \comment{Entier} \\
+          &   | & \lex{char} \comment{Caractère} \\
+          &   | & \lex{string} \comment{Chaîne de caractères} \\
+           &  | & \lex{constr\_id} {\car{(} \rul{pattern} \repeatseq{\car{,} \rul{pattern}} \car{)}}
+          \comment{Valeurs étiquetées}\\
+          &   | & \rul{pattern} \car{|} \rul{pattern} \comment{Disjonction} \\
+          &   | & \rul{pattern} \car{\&} \rul{pattern} \comment{Conjonction} \\
+\end{BNF}
+\end{center}
+\end{code}
+
+\paragraph{Remarques}
+
+Notez bien que la grammaire spécifiée plus haut est ambiguë! Vous devez fixer
+des priorités entre les différentes constructions ainsi que des associativités
+aux différents opérateurs. \textit{In fine}, c'est la batterie de tests en
+ligne qui vous permettra de valider vos choix. Cependant, il est fortement
+conseillé de poser des questions sur la liste de diffusion du cours pour
+obtenir des informations supplémentaires sur les règles de disambiguation
+associées à cette grammaire.
+
+\section{Code fourni}
+
+Un squelette de code vous est fourni, il est disponible sur le dépot GIT du cours.
+\begin{center}
+\url{git@moule.informatique.univ-paris-diderot.fr:Yann/compilation-m1-2016.git}
+\end{center}
+
+Vous devez vous connecter sur le Gitlab disponible ici:
+\begin{center}
+\url{http://moule.informatique.univ-paris-diderot.fr:8080}
+\end{center}
+
+et vous créer un dépot par branchement (\textit{fork}) du projet \verb!compilation-m1-2016!.
+
+L'arbre de sources contient des \verb!Makefile!s ainsi que des modules
+\textsc{O'Caml} à compléter.
+
+La commande \verb!make! produit un exécutable appelé \verb!flap!. On
+doit pouvoir l'appeler avec un nom de fichier en argument. En cas
+de réussite (de l'analyse syntaxique), le code de retour de
+ce programme doit être $0$. Dans le cas d'un échec, le code
+de retour doit être $1$.
+
+\section{Travail à effectuer}
+
+La première partie du projet est l'écriture de l'analyseur lexical et
+de l'analyseur syntaxique spécifiés par la grammaire précédente.
+
+La compilation s'effectue par la commande«~\verb!make!~».
+
+Le projet est à rendre \textbf{avant le}~:
+
+\begin{code}
+\begin{center}
+\large\textbf{22 novembre 2016 à 23h59}
+\end{center}
+\end{code}
+
+Pour finir, vous devez vous assurer des points suivants~:
+\begin{code}
+\begin{itemize}
+\item Le projet contenu dans cette archive \textbf{doit compiler}.
+\item Vous devez \textbf{être les auteurs} de ce projet.
+\item Il doit être rendu \textbf{à temps}.
+\end{itemize}
+\end{code}
+
+Si l'un de ces points n'est pas respecté, la note de $0$ vous sera affectée.
+
+\section{Log}
+
+\input{changes}
+
+\end{document}
