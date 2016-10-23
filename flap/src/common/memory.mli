@@ -23,6 +23,9 @@ exception OutOfMemory
 (** [dereference mem location] returns the block pointed by [location]. *)
 val dereference : 'a t -> location -> 'a block
 
+(** [size block] returns the length of a block. *)
+val size : 'a block -> int
+
 (** [read block i] returns the content of the i-th cell of the block *)
 val read : 'a block -> int -> 'a
 

@@ -36,6 +36,9 @@ let dereference mem location =
     | None -> raise (InvalidDereference location)
     | Some b -> b
 
+let size block =
+  Array.length block.cells
+
 let read block i =
   block.cells.(i)
 
