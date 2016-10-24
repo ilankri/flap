@@ -12,12 +12,14 @@ build = $(OCAMLBUILD) $(OCAMLCFLAGS) $(OCAMLLFLAGS) $(OCAMLLIBS) $@
 clean = $(OCAMLBUILD) -clean
 
 .SUFFIXES:
-.PHONY: all $(TARGET) clean
+.PHONY: all $(TARGET) test clean
 
 all: $(TARGET)
 
 $(TARGET):
 	$(build)
 
+test: $(TARGET)
+	./$(TARGET) -test
 clean:
 	$(clean)
