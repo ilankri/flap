@@ -138,8 +138,8 @@ type token =
   | Lparen       (** "("                        *)
   | Rparen       (** ")"                        *)
   | Comma        (** ","                        *)
-  | Dash
-  | Slash
+  | Dash         (** "-"                        *)
+  | Slash        (** "/"                        *)
   | EOF          (** La fin de l'entrée.        *)
 
 let string_of_token = function
@@ -151,8 +151,8 @@ let string_of_token = function
   | Lparen  -> "Lparen"
   | Rparen  -> "Rparen"
   | Comma   -> "Comma"
-  | Dash -> "Dash"
-  | Slash -> "Slash"
+  | Dash    -> "Dash"
+  | Slash   -> "Slash"
   | EOF     -> "EOF"
 
 exception LexingError of string
@@ -342,8 +342,8 @@ type e =
   | EVar  of string              (** Ex: "x", "y", "foo"         *)
   | EPlus of e * e               (** Ex: "1 + 2", "2 * 3 + 4"    *)
   | EMult of e * e               (** Ex: "1 * 2", "(1 + 2) * 3"  *)
-  | ESub of e * e
-  | EDiv of e * e
+  | ESub of e * e                (** Ex: "2 - 1", "3 * 2 - 1"    *)
+  | EDiv of e * e                (** Ex: "4 / 2", "4 / 2 + 1"    *)
   | ESum  of string * e * e * e  (** Ex: "sum (x, 1, 10, x * x)" *)
 
 exception ParseError of string * token
@@ -606,8 +606,12 @@ let interpret : e -> int =
         entiers. *)
     | EPlus (e1, e2) -> aux env e1 + aux env e2
 
+    | ESub (e1, e2) -> aux env e1 - aux env e2
+
     (** Même raisonnement pour la multiplication. *)
     | EMult (e1, e2) -> aux env e1 * aux env e2
+
+    | EDiv (e1, e2) -> aux env e1 / aux env e2
 
     (** Une expression qui est un entier s'évalue en cet entier. *)
     | EInt x -> x
@@ -662,6 +666,10 @@ let test_interpreter () =
     "1 + 1"             --> 2;
     "6 * 7"             --> 42;
     "1 + 2 * 3"         --> 7;
+    "10 / 5 / 2"        --> 1;
+    "1 - 2 - 3"         --> -4;
+    "1 - 2 + 3"         --> 2;
+    "10 / 5 * 2"        --> 4;
     "sum (i, 1, 10, i)" --> 55;
     "sum (i, 1, 10, sum (j, 1, i, i * j))"
     --> 1705
