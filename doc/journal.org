@@ -84,9 +84,12 @@
    - Définition
    - Lexèmes et valeurs sémantiques
    - ocamllex
-** TODO Lire la documentation de OCamllex
-** TODO Lire la documentation de Menhir
-** TODO TD1
+** DONE Lire la documentation de OCamllex
+   - State "DONE"       from "TODO"       [2016-11-01 Tue 15:45]
+** DONE Lire la documentation de Menhir
+   - State "DONE"       from "TODO"       [2016-11-01 Tue 15:45]
+** DONE TD1
+   - State "DONE"       from "TODO"       [2016-11-01 Tue 15:46]
 * Cours 3 <2016-10-03>
 ** Analyse syntaxique: les définitions
    - Langages
