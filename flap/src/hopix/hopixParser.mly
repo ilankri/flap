@@ -22,13 +22,24 @@ program:
   | p = located(definition)* EOF {p}
 
 definition:
+  | EXTERN ext_id = located(identifier) COLON ty_name = located(ty)
+    {
+          DeclareExtern (ext_id, ty_name) 
+    }
+  | vd = vdefinition { vd }
+
+vdefinition:
   | VAL i = located(identifier) EQUAL e = located(expression)
     {
       DefineValue (i, e)
     }
 
+ty:
+  | tv = type_variable { TyVar tv }
+
 expression:
   | l = located(literal) {Literal l}
+  | id = located(identifier) {Variable id}
 
 %inline identifier:
   | i = BASIC_ID {Id i}
