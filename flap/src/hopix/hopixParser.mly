@@ -43,6 +43,13 @@ expression:
 
 %inline identifier:
   | i = BASIC_ID {Id i}
+  | i = PREFIX_ID
+
+%inline type_constructor:
+  | tc = BASIC_ID {TCon tc}
+
+%inline type_variable:
+  | tid = TID {TId tid}
 
 %inline literal:
   | i = INT {LInt i}
