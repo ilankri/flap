@@ -43,7 +43,7 @@ expression:
 
 %inline identifier:
   | i = BASIC_ID {Id i}
-  | i = PREFIX_ID
+  | i = PREFIX_ID {Id i}
 
 %inline type_constructor:
   | tc = BASIC_ID {TCon tc}
