@@ -1,5 +1,9 @@
 %{
   open HopixAST
+
+  let list_of_option_list = function
+    | None -> []
+    | Some l -> l
 %}
 
 %token EOF
@@ -24,7 +28,7 @@ program:
 definition:
   | EXTERN ext_id = located(var_id) COLON ty_name = located(ty)
     {
-      DeclareExtern (ext_id, ty_name) 
+      DeclareExtern (ext_id, ty_name)
     }
   | vd = vdefinition { vd }
 
@@ -34,8 +38,24 @@ vdefinition:
       DefineValue (id, exp)
     }
 
-ty:
+simple_ty:
   | tv = type_variable { TyVar tv }
+  | LPAREN t = ty RPAREN { t }
+  | tc = type_con tl = option(ty_list(LPAREN, RPAREN))
+    {
+      TyCon (tc, list_of_option_list tl)
+    }
+
+ty:
+  | t = simple_ty { t }
+  (* We force the right associativity of the type operator '->'.  *)
+  | t1 = located(simple_ty) ARROW t2 = located(ty)
+    {
+      TyCon (TCon "->", [t1; t2])
+    }
+
+ty_list(START_SEP, END_SEP):
+  | START_SEP tl = separated_nonempty_list(COMMA, located(ty)) END_SEP { tl }
 
 expression:
   | li = located(literal) { Literal li }
