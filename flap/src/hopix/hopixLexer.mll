@@ -48,16 +48,31 @@ let letter = uppercase_letter | lowercase_letter
 
 let alphanum = letter | digit | '_'
 
+(** 
+ * basic_id is a string starting with lowercase letter followed by any
+ * alphabet(uppercase or lowercase) or number or underline.  
+ * Regex : [a-z] [A-Z a-z 0-9 _]*
+ **)
 let basic_id = lowercase_letter alphanum*
 
 let alien_id = (alphanum | mathsymb)+
 
+(** ‘ [A-Z a-z 0-9 + - * / < = > _]+  **)
 let alien_prefix_id = '`' alien_id
 
+(** ‘ [A-Z a-z 0-9 + - * / < = > _]+ ‘ **)
 let alien_infix_id = alien_prefix_id '`'
 
+(** [a-z] [A-Z a-z 0-9 _]∗ | alien_prefix_id **)
+let var_id = basic_id | alien_prefix_id
+
+(** [A-Z _] [A-Z a-z 0-9 _]* **)
 let constr_id = (uppercase_letter | '_') alphanum*
 
+(** [a-z] [A-Z a-z 0-9_]* **)
+let type_con = basic_id
+
+(** ' [a-z] [A-Z a-z 0-9 _]* **)
 let type_variable = '\'' basic_id
 
 let hexa_prefix = '0' ['x' 'X']
@@ -80,7 +95,7 @@ let bin_int = bin_prefix bin_digit+
 
 let octal_int = octal_prefix octal_digit+
 
-let int = deci_int | hexa_int | octal_int | bin_int
+let integers = deci_int | hexa_int | octal_int | bin_int
 
 let printable = [' '-'~']
 
@@ -96,57 +111,57 @@ rule token = parse
   (** Layout *)
   | newline         { next_line_and token lexbuf }
   | blank+          { token lexbuf               }
-  | eof             { EOF       }
+  | eof             { EOF                        }
 
   (** Keywords *)
-  | "type" {TYPE}
-  | "extern" {EXTERN}
-  | "val" {VAL}
-  | "fun" {FUN}
-  | "and" {AND}
-  | "if" {IF}
-  | "then" {THEN}
-  | "elif" {ELIF}
-  | "else" {ELSE}
-  | "ref" {REF}
-  | "while" {WHILE}
-  | "false" {FALSE}
-  | "true" {TRUE}
+  | "type"   { TYPE }
+  | "extern" { EXTERN }
+  | "val"    { VAL }
+  | "fun"    { FUN }
+  | "and"    { AND }
+  | "if"     { IF }
+  | "then"   { THEN }
+  | "elif"   { ELIF }
+  | "else"   { ELSE }
+  | "ref"    { REF }
+  | "while"  { WHILE }
+  | "false"  { FALSE }
+  | "true"   { TRUE }
 
   (** Operators *)
-  | '+' {PLUS}
-  | '-' {MINUS}
-  | '*' {TIMES}
-  | '/' {DIV}
-  | "&&" {LAND}
-  | "||" {LOR}
-  | "=" {EQUAL}
-  | "<=" {LEQ}
-  | ">=" {GEQ}
-  | '<' {LT}
-  | '>' {GT}
+  | '+'  { PLUS }
+  | '-'  { MINUS }
+  | '*'  { TIMES }
+  | '/'  { DIV }
+  | "&&" { LAND }
+  | "||" { LOR }
+  | "="  { EQUAL }
+  | "<=" { LEQ }
+  | ">=" { GEQ }
+  | '<'  { LT }
+  | '>'  { GT }
 
   (** Punctuation *)
-  | '(' {LPAREN}
-  | ')' {RPAREN}
-  | '[' {LBRACKET}
-  | ']' {RBRACKET}
-  | '{' {LBRACE}
-  | '}' {RBRACE}
-  | ':' {COLON}
-  | ',' {COMMA}
-  | '\\' {BACKSLASH}
-  | '?' {QMARK}
-  | '!' {EMARK}
-  | '|' {PIPE}
-  | '&' {AMPERSAND}
-  | '_' {UNDERSCORE}
-  | "->" {ARROW}
-  | "=>" {IMPL}
-  | ":=" {COLONEQ}
+  | '('  { LPAREN }
+  | ')'  { RPAREN }
+  | '['  { LBRACKET }
+  | ']'  { RBRACKET }
+  | '{'  { LBRACE }
+  | '}'  { RBRACE }
+  | ':'  { COLON }
+  | ','  { COMMA }
+  | '\\' { BACKSLASH }
+  | '?'  { QMARK }
+  | '!'  { EMARK }
+  | '|'  { PIPE }
+  | '&'  { AMPERSAND } 
+  | '_'  { UNDERSCORE }
+  | "->" { ARROW }
+  | "=>" { IMPL }
+  | ":=" { COLONEQ }
 
   (** Literals *)
-  | int as s
+  | integers as s
     {
       try INT (Int32.of_string s) with
       | Failure _ -> error lexbuf "Invalid integer literal."
@@ -163,11 +178,12 @@ rule token = parse
     }
 
   (** Identifiers *)
-  | basic_id as id {BASIC_ID id}
-  | alien_prefix_id as id {PREFIX_ID id}
-  | alien_infix_id as id {INFIX_ID id}
-  | constr_id as id {KID id}
-  | type_variable as id {TID id}
+  | alien_prefix_id as id { PREFIX_ID id }
+  | alien_infix_id as id { INFIX_ID id }
+  | var_id as id { VAR_ID id }
+  | constr_id as id { CONSTR_ID id }
+  | type_con as id { TYPE_CON id }
+  | type_variable as id { TYPE_VAR id }
 
   (** Comments *)
   | "--" {comment_endline lexbuf}

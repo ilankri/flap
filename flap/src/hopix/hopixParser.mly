@@ -12,51 +12,53 @@
 %token<Int32.t> INT
 %token<char>    CHAR
 %token<string>  STRING
-%token<string>  BASIC_ID PREFIX_ID INFIX_ID KID TID
+%token<string>  PREFIX_ID INFIX_ID VAR_ID CONSTR_ID TYPE_CON TYPE_VAR
 
 %start<HopixAST.t> program
 
 %%
 
 program:
-| p = located(definition)* EOF { p }
+  | p = located(definition)* EOF { p }
 
 definition:
-| EXTERN ext_id = located(identifier) COLON ty_name = located(ty)
-  {
-    DeclareExtern (ext_id, ty_name) 
-  }
-| vd = vdefinition { vd }
+  | EXTERN ext_id = located(var_id) COLON ty_name = located(ty)
+    {
+      DeclareExtern (ext_id, ty_name) 
+    }
+  | vd = vdefinition { vd }
 
 vdefinition:
-| VAL i = located(identifier) EQUAL e = located(expression)
-  {
-    DefineValue (i, e)
-  }
+  | VAL id = located(var_id) EQUAL exp = located(expression)
+    {
+      DefineValue (id, exp)
+    }
 
 ty:
-| tv = type_variable { TyVar tv }
+  | tv = type_variable { TyVar tv }
 
 expression:
-| l = located(literal) { Literal l }
-| id = located(identifier) { Variable id }
+  | li = located(literal) { Literal li }
+  | id = located(var_id) { Variable id }
 
-%inline identifier:
-| basic = BASIC_ID {Id basic}
-| prefix = PREFIX_ID {Id prefix}
+%inline var_id:
+  | id = VAR_ID { Id id }
 
-%inline type_constructor:
-| typecon = BASIC_ID {TCon typecon}
+%inline constr_id:
+  | id = CONSTR_ID { KId id }
+
+%inline type_con:
+  | id = TYPE_CON { TCon id }
 
 %inline type_variable:
-| typevar = TID {TId typevar}
+  | id = TYPE_VAR { TId id }
 
 %inline literal:
-| i = INT { LInt i }
-| c = CHAR { LChar c }
-| str = STRING { LString str }
-| FALSE { LBool false }
-| TRUE { LBool true }
+  | i = INT { LInt i }
+  | c = CHAR { LChar c }
+  | str = STRING { LString str }
+  | FALSE { LBool false }
+  | TRUE { LBool true }
 
 %inline located(X):
-| x = X { Position.with_poss $startpos $endpos x }
+  | x = X { Position.with_poss $startpos $endpos x }
