@@ -34,7 +34,7 @@ let char_of_char_atom = function
 
 let newline = '\n' | '\r' | "\r\n"
 
-let blank   = [' ' '\t' '\012']
+let blank = [' ' '\t' '\012']
 
 let digit = ['0'-'9']
 
@@ -42,7 +42,7 @@ let lowercase_letter = ['a'-'z']
 
 let uppercase_letter = ['A'-'Z']
 
-let mathsymb = ['+' '-' '*' '/' '<' '=' '>']
+let math_symb = ['+' '-' '*' '/' '<' '=' '>']
 
 let letter = uppercase_letter | lowercase_letter
 
@@ -50,7 +50,7 @@ let alphanum = letter | digit | '_'
 
 let basic_id = lowercase_letter alphanum*
 
-let alien_id = (alphanum | mathsymb)+
+let alien_id = (alphanum | math_symb)+
 
 let alien_prefix_id = '`' alien_id
 
@@ -170,22 +170,22 @@ rule token = parse
   | type_variable as id {TID id}
 
   (** Comments *)
-  | "--" {comment_endline lexbuf}
-  | "{-" {comment_block 0 lexbuf}
+  | "--" {line_comment lexbuf}
+  | "{-" {block_comment 0 lexbuf}
 
   (** Lexing error. *)
   | _               { error lexbuf "Unexpected character." }
 
-and comment_endline = parse
+and line_comment = parse
   | newline {next_line_and token lexbuf}
   | eof {EOF}
-  | _ {comment_endline lexbuf}
+  | _ {line_comment lexbuf}
 
-and comment_block depth = parse
-  | "{-" {comment_block (succ depth) lexbuf}
+and block_comment depth = parse
+  | "{-" {block_comment (succ depth) lexbuf}
   | "-}"
     {
-      if depth = 0 then token lexbuf else comment_block (pred depth) lexbuf
+      if depth = 0 then token lexbuf else block_comment (pred depth) lexbuf
     }
   | eof {error lexbuf "Unterminated comment."}
-  | _ {comment_block depth lexbuf}
+  | _ {block_comment depth lexbuf}
