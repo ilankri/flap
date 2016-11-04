@@ -39,7 +39,14 @@ ty:
 
 expression:
   | li = located(literal) { Literal li }
-  | id = located(var_id) { Variable id }
+  | vid = located(var_id) { Variable id }
+  | cid = located(constr_id) tyl = option(tylist(LBRACKET, RBRACKET)) expl = option(expr_list)) 
+    {
+      Tagged(cid,tylist,explist)
+    }
+
+expr_list:
+  | LPAREN li = separated_nonempty_list(COMMA, located(expression)) RPAREN { li }
 
 %inline var_id:
   | id = VAR_ID { Id id }
