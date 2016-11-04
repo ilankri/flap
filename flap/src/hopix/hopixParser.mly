@@ -1,7 +1,7 @@
 %{
   open HopixAST
 
-  let list_of_option_list = function
+  let list_of_listoption = function
     | None -> []
     | Some l -> l
 %}
@@ -43,7 +43,7 @@ simple_ty:
   | LPAREN t = ty RPAREN { t }
   | tc = type_con tl = option(ty_list(LPAREN, RPAREN))
     {
-      TyCon (tc, list_of_option_list tl)
+      TyCon (tc, list_of_listoption tl)
     }
 
 ty:
@@ -59,10 +59,10 @@ ty_list(START_SEP, END_SEP):
 
 expression:
   | li = located(literal) { Literal li }
-  | vid = located(var_id) { Variable id }
-  | cid = located(constr_id) tyl = option(tylist(LBRACKET, RBRACKET)) expl = option(expr_list)) 
+  | vid = located(var_id) { Variable vid }
+  | cid = located(constr_id) tyl = option(ty_list(LBRACKET, RBRACKET)) expl = option(expr_list)
     {
-      Tagged(cid,tylist,explist)
+      Tagged(cid, list_of_listoption tyl, list_of_listoption expl)
     }
 
 expr_list:
