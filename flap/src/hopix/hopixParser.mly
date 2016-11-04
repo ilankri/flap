@@ -33,8 +33,14 @@ definition:
   | vd = vdefinition { vd }
 
 vdefinition:
-  | VAL id = located(var_id) EQUAL exp = located(expression)
+  | VAL id = located(var_id) COLON t = located(ty)? EQUAL
+    exp = located(expression)
     {
+      let exp =
+	match t with
+	| None -> exp
+	| Some t ->
+	  Position.with_pos (Position.position exp) (TypeAnnotation(exp, t)) in
       DefineValue (id, exp)
     }
 
