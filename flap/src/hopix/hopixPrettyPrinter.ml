@@ -21,7 +21,7 @@ and definition = function
   | DefineRecFuns rv ->
     rec_function_definition rv
   | DeclareExtern (x, t) ->
-    group (string "use" ++ located identifier x
+    group (string "extern" ++ located identifier x
 	   ++ string ":" ++ located ty t)
   | DefineType (t, ts, tdef) ->
     nest 2 (
