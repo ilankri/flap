@@ -8,15 +8,15 @@
 
 %token EOF
 %token TYPE EXTERN VAL FUN AND IF THEN ELIF ELSE REF WHILE FALSE TRUE
-%token PLUS MINUS TIMES DIV LAND LOR EQUAL LEQ GEQ LT GT
+%token PLUS MINUS TIMES DIV LAND LOR EQ LEQ GEQ LT GT
 %token LPAREN RPAREN LBRACKET RBRACKET LBRACE RBRACE
-%token COLON COMMA BACKSLASH QMARK EMARK PIPE AMPERSAND UNDERSCORE
+%token COLON COMMA SEMICOLON BACKSLASH QMARK EMARK PIPE AMPERSAND UNDERSCORE
 %token ARROW IMPL COLONEQ
 
 %token<Int32.t> INT
 %token<char>    CHAR
 %token<string>  STRING
-%token<string>  PREFIX_ID INFIX_ID VAR_ID CONSTR_ID TYPE_CON TYPE_VAR
+%token<string>  PREFIX_ID INFIX_ID BASIC_ID CONSTR_ID TYPE_VAR
 
 %start<HopixAST.t> program
 
@@ -33,21 +33,21 @@ definition:
   | vd = vdefinition { vd }
 
 vdefinition:
-  | VAL id = located(var_id) COLON t = located(ty)? EQUAL
+  | VAL id = located(var_id) t = preceded(COLON, located(ty))? EQ
     exp = located(expression)
     {
       let exp =
-	match t with
-	| None -> exp
-	| Some t ->
-	  Position.with_pos (Position.position exp) (TypeAnnotation(exp, t)) in
+        match t with
+        | None -> exp
+        | Some t ->
+          Position.with_pos (Position.position exp) (TypeAnnotation(exp, t)) in
       DefineValue (id, exp)
     }
 
 simple_ty:
   | tv = type_variable { TyVar tv }
   | LPAREN t = ty RPAREN { t }
-  | tc = type_con tl = option(ty_list(LPAREN, RPAREN))
+  | tc = type_con tl = ty_list(LPAREN, RPAREN)?
     {
       TyCon (tc, list_of_listoption tl)
     }
@@ -66,22 +66,26 @@ ty_list(START_SEP, END_SEP):
 expression:
   | li = located(literal) { Literal li }
   | vid = located(var_id) { Variable vid }
-  | cid = located(constr_id) tyl = option(ty_list(LBRACKET, RBRACKET)) expl = option(expr_list)
+  | cid = located(constr_id) tyl = ty_list(LBRACKET, RBRACKET)?
+    expl = expr_list?
     {
       Tagged(cid, list_of_listoption tyl, list_of_listoption expl)
     }
 
 expr_list:
-  | LPAREN li = separated_nonempty_list(COMMA, located(expression)) RPAREN { li }
+  | LPAREN li = separated_nonempty_list(COMMA, located(expression)) RPAREN
+  {
+    li
+  }
 
 %inline var_id:
-  | id = VAR_ID { Id id }
+  | id = BASIC_ID | id = PREFIX_ID { Id id }
 
 %inline constr_id:
   | id = CONSTR_ID { KId id }
 
 %inline type_con:
-  | id = TYPE_CON { TCon id }
+  | id = BASIC_ID { TCon id }
 
 %inline type_variable:
   | id = TYPE_VAR { TId id }

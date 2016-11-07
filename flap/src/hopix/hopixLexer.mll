@@ -48,9 +48,9 @@ let letter = uppercase_letter | lowercase_letter
 
 let alphanum = letter | digit | '_'
 
-(** 
+(**
  * basic_id is a string starting with lowercase letter followed by any
- * alphabet(uppercase or lowercase) or number or underline.  
+ * alphabet(uppercase or lowercase) or number or underline.
  * Regex : [a-z] [A-Z a-z 0-9 _]*
  **)
 let basic_id = lowercase_letter alphanum*
@@ -63,14 +63,8 @@ let alien_prefix_id = '`' alien_id
 (** ‘ [A-Z a-z 0-9 + - * / < = > _]+ ‘ **)
 let alien_infix_id = alien_prefix_id '`'
 
-(** [a-z] [A-Z a-z 0-9 _]∗ | alien_prefix_id **)
-let var_id = basic_id | alien_prefix_id
-
 (** [A-Z _] [A-Z a-z 0-9 _]* **)
 let constr_id = (uppercase_letter | '_') alphanum*
-
-(** [a-z] [A-Z a-z 0-9_]* **)
-let type_con = basic_id
 
 (** ' [a-z] [A-Z a-z 0-9 _]* **)
 let type_variable = '\'' basic_id
@@ -135,7 +129,7 @@ rule token = parse
   | '/'  { DIV }
   | "&&" { LAND }
   | "||" { LOR }
-  | "="  { EQUAL }
+  | "="  { EQ }
   | "<=" { LEQ }
   | ">=" { GEQ }
   | '<'  { LT }
@@ -150,11 +144,12 @@ rule token = parse
   | '}'  { RBRACE }
   | ':'  { COLON }
   | ','  { COMMA }
+  | ';'  { SEMICOLON }
   | '\\' { BACKSLASH }
   | '?'  { QMARK }
   | '!'  { EMARK }
   | '|'  { PIPE }
-  | '&'  { AMPERSAND } 
+  | '&'  { AMPERSAND }
   | '_'  { UNDERSCORE }
   | "->" { ARROW }
   | "=>" { IMPL }
@@ -180,9 +175,8 @@ rule token = parse
   (** Identifiers *)
   | alien_prefix_id as id { PREFIX_ID id }
   | alien_infix_id as id { INFIX_ID id }
-  | var_id as id { VAR_ID id }
+  | basic_id as id { BASIC_ID id }
   | constr_id as id { CONSTR_ID id }
-  | type_con as id { TYPE_CON id }
   | type_variable as id { TYPE_VAR id }
 
   (** Comments *)
