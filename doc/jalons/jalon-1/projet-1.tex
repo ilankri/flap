@@ -278,7 +278,7 @@ expr      & $::=$ & \lex{int} \comment{Entier} \\
           &   | & \car{(} \rul{expr} \car{)} \comment{Parenthésage} \\
 \\
 binop       & $::=$ & \car{+} | \car{-} | \car{*} | \car{/} | \car{\&\&} | \car{||} |
-\car{=} | \car{<=} | \car{>=} | \car{<} | \car{>} | \lex{alien\_prefix\_id}
+\car{=} | \car{<=} | \car{>=} | \car{<} | \car{>} | \lex{alien\_infix\_id}
 \comment{Opérateurs binaires}
 \\\\
 branches  & $::=$ & \optw{\car{|}} \rul{branch} \repeatseq{\car{|} \rul{branch}} \comment{Liste de cas} \\
