@@ -26,9 +26,28 @@ program:
   | p = located(definition)* EOF { p }
 
 definition:
+  | TYPE tc = located(type_con)
+    tv = paren_comma_nonempty_list(located(type_variable))?
+    td = preceded(EQ, tdefinition)?
+      {
+        let td =
+          match td with
+          | None -> Abstract
+          | Some td -> td
+        in
+        DefineType (tc, list_of_listoption tv, td)
+      }
   | EXTERN ext_id = located(var_id) COLON ty_name = located(ty)
       { DeclareExtern (ext_id, ty_name) }
   | vd = vdefinition { vd }
+
+tdefinition:
+  | PIPE? cdl = separated_nonempty_list(PIPE, constr_definition)
+      { DefineSumType cdl }
+
+constr_definition:
+  | c = located(constr_id) tl = paren_comma_nonempty_list(located(ty))?
+      { (c, list_of_listoption tl)}
 
 vdefinition:
   | VAL id = located(var_id) t = preceded(COLON, located(ty))? EQ
@@ -47,7 +66,7 @@ vdefinition:
 simple_ty:
   | tv = type_variable { TyVar tv }
   | LPAREN t = ty RPAREN { t }
-  | tc = type_con tl = ty_list(LPAREN, RPAREN)?
+  | tc = type_con tl = paren_comma_nonempty_list(located(ty))?
       { TyCon (tc, list_of_listoption tl) }
 
 ty:
@@ -55,9 +74,6 @@ ty:
   (* We force the right associativity of the type operator '->'.  *)
   | t1 = located(simple_ty) ARROW t2 = located(ty)
       { TyCon (TCon "->", [t1; t2]) }
-
-ty_list(START_SEP, END_SEP):
-  | START_SEP tl = separated_nonempty_list(COMMA, located(ty)) END_SEP { tl }
 
 simple_expr:
   | li = located(literal) { Literal li }
@@ -75,13 +91,10 @@ expr:
         match vd with
         | DefineValue (x1, e1) -> Define (x1, e1, e2)
       }
-  | cid = located(constr_id) tyl = ty_list(LBRACKET, RBRACKET)?
-    expl = expr_list?
+  | cid = located(constr_id) tyl = bracket_comma_nonempty_list(located(ty))?
+    expl = paren_comma_nonempty_list(located(expr))?
       { Tagged(cid, list_of_listoption tyl, list_of_listoption expl) }
   | e1 = located(simple_expr) COLONEQ e2 = located(expr) { Write (e1, e2) }
-
-expr_list:
-  | LPAREN li = separated_nonempty_list(COMMA, located(expr)) RPAREN { li }
 
 %inline var_id:
   | id = BASIC_ID | id = PREFIX_ID { Id id }
@@ -104,3 +117,15 @@ expr_list:
 
 %inline located(X):
   | x = X { Position.with_poss $startpos $endpos x }
+
+%inline delim_sep_nonempty_list(opening, separator, X, closing):
+  | opening l = separated_nonempty_list(separator, X) closing { l }
+
+%inline delim_comma_nonempty_list(opening, X, closing):
+  | l = delim_sep_nonempty_list(opening, COMMA, X, closing) { l }
+
+%inline paren_comma_nonempty_list(X):
+  | l = delim_comma_nonempty_list(LPAREN, X, RPAREN) { l }
+
+%inline bracket_comma_nonempty_list(X):
+  | l = delim_comma_nonempty_list(LBRACKET, X, RBRACKET) { l }
