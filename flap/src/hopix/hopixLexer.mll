@@ -194,8 +194,6 @@ and line_comment = parse
 and block_comment depth = parse
   | "{-" {block_comment (succ depth) lexbuf}
   | "-}"
-    {
-      if depth = 0 then token lexbuf else block_comment (pred depth) lexbuf
-    }
+    { if depth = 0 then token lexbuf else block_comment (pred depth) lexbuf }
   | eof {error lexbuf "Unterminated comment."}
   | _ {block_comment depth lexbuf}
