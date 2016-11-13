@@ -1,9 +1,9 @@
 %{
-  open HopixAST
+open HopixAST
 
-  let list_of_listoption = function
-    | None -> []
-    | Some l -> l
+let list_of_listoption = function
+  | None -> []
+  | Some l -> l
 %}
 
 %token EOF
@@ -39,7 +39,7 @@ definition:
       }
   | EXTERN ext_id = located(var_id) COLON ty_name = located(ty)
       { DeclareExtern (ext_id, ty_name) }
-  | vd = vdefinition { vd }
+  | vd = vdefinition(expr) { vd }
 
 tdefinition:
   | PIPE? cdl = separated_nonempty_list(PIPE, constr_definition)
@@ -49,9 +49,9 @@ constr_definition:
   | c = located(constr_id) tl = paren_comma_nonempty_list(located(ty))?
       { (c, list_of_listoption tl)}
 
-vdefinition:
+vdefinition(X):
   | VAL id = located(var_id) t = preceded(COLON, located(ty))? EQ
-    exp = located(expr)
+    exp = located(X)
       {
         let exp =
           match t with
@@ -88,7 +88,7 @@ ty:
 simple_expr:
   | li = located(literal) { Literal li }
   | vid = located(var_id) { Variable vid }
-  | LPAREN e = located(expr) SEMICOLON t = located(ty) RPAREN
+  | LPAREN e = located(expr) COLON t = located(ty) RPAREN
       { TypeAnnotation (e, t) }
   | LPAREN e = expr RPAREN { e }
   | REF e = located(simple_expr) { Ref e }
@@ -102,16 +102,34 @@ simple_expr:
  *       | expr := expr
  * **)
 expr:
+  | e = unseq_expr { e }
+  | e = seq_expr { e }
+
+unseq_expr:
   | e = simple_expr { e }
-  | vd = vdefinition COLON e2 = located(expr)
+  | cid = located(constr_id) tyl = bracket_comma_nonempty_list(located(ty))?
+    expl = paren_comma_nonempty_list(located(expr))?
+      { Tagged(cid, list_of_listoption tyl, list_of_listoption expl) }
+  | e1 = located(simple_expr) COLONEQ e2 = located(unseq_expr)
+      { Write (e1, e2) }
+  | WHILE e1 = located(expr) LBRACE e2 = located(expr) RBRACE { While (e1, e2) }
+  | e = located(simple_expr) tl = bracket_comma_nonempty_list(located(ty))?
+    el = paren_comma_nonempty_list(located(expr))
+      { Apply (e, list_of_listoption tl, el) }
+
+seq_expr:
+  | vd = vdefinition(unseq_expr) SEMICOLON e2 = located(expr)
       {
         match vd with
         | DefineValue (x1, e1) -> Define (x1, e1, e2)
       }
-  | cid = located(constr_id) tyl = bracket_comma_nonempty_list(located(ty))?
-    expl = paren_comma_nonempty_list(located(expr))?
-      { Tagged(cid, list_of_listoption tyl, list_of_listoption expl) }
-  | e1 = located(simple_expr) COLONEQ e2 = located(expr) { Write (e1, e2) }
+  | e = located(unseq_expr) SEMICOLON
+    el = separated_nonempty_list(SEMICOLON, located(unseq_expr))
+      {
+        let f e1 e2 =
+          Position.(unknown_pos (Define (unknown_pos (Id "_"), e1, e2))) in
+        Position.value (List.fold_left f e el)
+      }
 
 %inline var_id:
   | id = BASIC_ID | id = PREFIX_ID { Id id }
