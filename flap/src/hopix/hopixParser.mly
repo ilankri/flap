@@ -75,6 +75,16 @@ ty:
   | t1 = located(simple_ty) ARROW t2 = located(ty)
       { TyCon (TCon "->", [t1; t2]) }
 
+(** 
+ * For 
+ * expr := int
+ *       | char
+ *       | var_id
+ *       | ( expr : type )
+ *       | ( expr )
+ *       | ref expr
+ *       | ! expr
+ * **)
 simple_expr:
   | li = located(literal) { Literal li }
   | vid = located(var_id) { Variable vid }
@@ -82,8 +92,15 @@ simple_expr:
       { TypeAnnotation (e, t) }
   | LPAREN e = expr RPAREN { e }
   | REF e = located(simple_expr) { Ref e }
-  | QMARK e = located(simple_expr) { Read e }
+  | EMARK e = located(simple_expr) { Read e }
 
+(** 
+ * For
+ * expr := { simple_expr }
+ *       | vdefinition ; expr
+ *       | constr_id / [ [type { ,type }] ] [ (expr { ,expr } ) ]
+ *       | expr := expr
+ * **)
 expr:
   | e = simple_expr { e }
   | vd = vdefinition COLON e2 = located(expr)
