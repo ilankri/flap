@@ -112,3 +112,51 @@
 * Cours 6 <2016-11-14>
 ** Point projet
 ** Syntaxe!
+*** BNF d'arbres
+    e ::= n | e + e | e * e
+
+    type e = Int of int | Plus of e * e | Mul of e * e
+*** Sémantique à petits pas
+
+    ——————————
+     1 + 2 → 3
+    ———————————————————
+    (1 + 2) + 3 → 3 + 3
+
+    —————————
+    3 + 3 → 6
+
+*** Différence entre "let x = 1 in ..." et "int x = 1; ..."
+
+    int x = 1;
+    y = x + 1;
+    ...
+
+    let x = f y in
+    x + x
+
+*** Occurrences libres et liées
+
+    let y = *x* in
+    let x = 0 in
+      /x/ + y
+
+    (en gras : une occurrence libre de x.)
+    (en italique : une occurrence liée de x.)
+
+    On peut renommer une occurrence liée :
+
+    let y = *u* in
+    let z = 0 in
+      /z/ + y
+
+
+    let x = *x* in /x/
+
+*** Explicitation des fermetures
+
+    y ∈ FV (fun x -> x + y)
+
+    (fun x -> x + y)[ y = 10 ]
+
+
