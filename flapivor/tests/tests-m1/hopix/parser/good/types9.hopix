@@ -1,0 +1,1 @@
+type t2 = T2 (either (int, option (int)))

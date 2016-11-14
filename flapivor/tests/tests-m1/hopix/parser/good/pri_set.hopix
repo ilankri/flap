@@ -1,0 +1,21 @@
+{- priority of := -}
+
+val x = t := 1 + 2
+val x = t := true || false
+
+val x = t := u ? _ => 1
+val x = (t := u) ? _ => 1
+
+val x = t := u := 1
+val x = (t := u) := 1
+
+val x = x := u; v
+
+val x = ref u := v
+val x = ref (u := v)
+
+val x = u + u := v
+val x = (u+u) := v
+
+val x = if b then r := 1
+val x = (if b then r) := 1

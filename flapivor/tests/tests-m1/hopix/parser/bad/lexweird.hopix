@@ -1,0 +1,4 @@
+{- Just to check whether 0x and 0b require at least one digit. -}
+
+val x = 0x
+val b = 0b

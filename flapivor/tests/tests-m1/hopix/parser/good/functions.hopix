@@ -1,0 +1,15 @@
+fun f (x, y) = x + y
+fun f (x : int, y : int) : int = x + y
+
+val f : int -> int = \(x) => x + 1
+val g = \(x,y) => x+y
+val g = \(x) => \(y) => x+y
+
+fun identity ['a] (x : 'a) : 'a = x
+fun first ['a, 'b] (x : 'a, y : 'b) : 'a = x
+
+val id = \['a](x : 'a) => x
+val apply = \['a, 'b] (f : 'a -> 'b, x : 'a) => (f (x) : 'b)
+val compose =
+   \['a, 'b, 'c] (f : 'a -> 'b, g : 'b -> 'c) =>
+   \(x : 'a) => (g (f (x)) : 'c)

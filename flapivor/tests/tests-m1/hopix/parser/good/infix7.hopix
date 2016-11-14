@@ -1,0 +1,1 @@
+fun apply (`op, x, y) = x `op` y

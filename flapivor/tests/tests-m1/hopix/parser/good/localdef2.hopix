@@ -1,0 +1,4 @@
+val x = 1 +
+  val y = 1;
+  val z = 2;
+  y + z

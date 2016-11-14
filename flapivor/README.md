@@ -15,13 +15,11 @@ email to the authors and logs the evaluation in the global repository.
 
 The section describes what is done by `make init`.
 
-First, each evaluation is supposed to be run inside a docker to limit
-the risks implied by running untrusted code. The corresponding
-Dockerfile is the Dockerfile at the root of this source tree.
+Each evaluation is supposed to be run inside a docker to limit the
+risks implied by untrusted code. The corresponding Dockerfile is the
+Dockerfile at the root of this source tree.
 
-Providing that two files named `id_rsa` and `id_rsa.pub` are given at
-the root of this source tree, the initialization phase of the docker is
-obtained by running:
+The initialization phase of the docker is obtained by running:
 
 ```
 docker build -t flapivor .
@@ -39,20 +37,28 @@ ocamlbuild -use-ocamlfind flapivor
 ## flapivor
 
 `flapivor` will periodically run 'mr' to check for new commits in
-students projects. When a new commit is detected in a project P, a 
-`flapitest` is run for P. `flapivor` makes sure that a project P
-is tested by at most one `flapitest`.
+students projects. When a new commit C is detected in a project P, a 
+`flapitest` is run for P and C.
 
 ## flapitest
 
-`flapitest` clones the Docker image attached to the project repository
-and to the test suite. Inside this docker image, it simply runs
+`flapitest` clones the Docker image and attaches to the project
+repository and to the test suite. Inside this docker image, it simply
+runs:
+
+```
+make
+```
+
+in the source tree folder and, then
 
 ```
 make check
 ```
 
-in the test suite.
+in the test suite folder. The output log is extracted from the docker
+and stored in a folder named 'log' in the GIT repository. It is also
+sent by email to the authors.
 
 
 

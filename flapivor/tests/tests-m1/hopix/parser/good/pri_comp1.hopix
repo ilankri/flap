@@ -1,0 +1,5 @@
+
+{- Priorities of comparisons and boolean operators -}
+
+val x = 2 = 1 + 1
+

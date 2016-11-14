@@ -1,0 +1,19 @@
+
+fun odd
+  (n : int) =
+  (if `= (n, 0) then false
+  else
+  (if `= (n, 1) then true
+  else
+  even (`- (n, 1)))
+  : int)
+and even
+  (n : int) =
+  (if `= (n, 0) then true
+  elif
+  `= (n, 1)
+    then
+    false
+  else
+  odd (`- (n, 1))
+  : int)

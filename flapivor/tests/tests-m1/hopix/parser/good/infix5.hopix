@@ -1,0 +1,1 @@
+fun wow (cat, mouse) = cat `eats` mouse

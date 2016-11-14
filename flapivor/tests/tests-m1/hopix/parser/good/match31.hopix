@@ -1,0 +1,4 @@
+
+type enum = | A | B | C | D
+
+fun f (x) = x ? ((A|B)|(C|D)) => 1

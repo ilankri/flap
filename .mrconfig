@@ -15,3 +15,9 @@ checkout = git clone 'git@moule.informatique.univ-paris-diderot.fr:deplaix/compi
 
 [students/acker-dionisio]
 checkout = git clone 'git@moule.informatique.univ-paris-diderot.fr:acker/compilation-m1-2016.git' acker-dionisio
+
+[students/berkane-chen]
+checkout = git clone 'git@moule.informatique.univ-paris-diderot.fr:berkane/compilation-m1-2016.git' berkane-chen
+
+[students/lenczner-paul]
+checkout = git clone 'git@moule.informatique.univ-paris-diderot.fr:Lenczner/compilation-m1.git' lenczner-paul 

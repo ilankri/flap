@@ -1,0 +1,7 @@
+
+val x = ""
+val x = "abc"
+val x = "**"
+val x = "{-"
+val x = "-}"
+val x = "a'a"

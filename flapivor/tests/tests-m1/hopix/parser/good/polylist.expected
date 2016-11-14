@@ -1,0 +1,19 @@
+
+type list ('a) = Cons ('a , list ('a)) | Nil
+fun map
+  ['a] (f, l) =
+  (l ?
+  {
+  | Nil => Nil['a]
+  | Cons (x, xs) => Cons['a] (f (x), map['a] (f, xs))
+  }
+  : list ('a))
+fun append
+  ['a] (l1, l2) =
+  (l1 ?
+  {
+  | Nil => l2
+  | Cons (x, xs) => Cons['a] (x, append['a] (xs, l2))
+  }
+  : list ('a))
+val test = map[int] (\(x) => `+ (x, 1), Cons[int] (3, Nil[int]))

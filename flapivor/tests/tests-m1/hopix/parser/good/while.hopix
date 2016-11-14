@@ -1,0 +1,4 @@
+val while1 = while x { a; b  }
+val while2 = while 1=1 { a; b }
+val while3 = while f (x) { a; b }
+val while4 = while a; b { c; d }
