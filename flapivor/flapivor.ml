@@ -4,6 +4,12 @@ let force = false
 
 let testsuites = String.concat " " (List.tl (Array.to_list Sys.argv))
 
+let check_testsuites =
+  if testsuites = [] then (
+    Printf.printf "At least one testsuite is required.\n";
+    exit 1
+  )
+
 let update () =
   ignore (Sys.command "mr up 2> /dev/null 1> /dev/null")
 
