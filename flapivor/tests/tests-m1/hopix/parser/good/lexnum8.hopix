@@ -1,0 +1,3 @@
+{- negative literals -}
+
+val x = -1 - -3

@@ -1,0 +1,8 @@
+
+fun `++ (x, y) = x
+val z = `++ (0, 0)
+val k = `++ (0, 0)
+val `eats = \(x, y) => x
+fun wow (cat, mouse) = `eats (cat, mouse)
+val apply = \(`op, x, y) => `op (x, y)
+fun apply (`op, x, y) = `op (x, y)

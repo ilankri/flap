@@ -1,0 +1,74 @@
+
+val i0 = 0
+val i1 = -889271554
+val i2 = -889271554
+val i3 = 2739128
+val i4 = 2739128
+val i5 = 42
+val i6 = 42
+val i7 = 42
+val helloworld = "\tHelloWorld\n"
+val char0 = 'h'
+val char1 = 'Z'
+val char2 = '\022'
+val char3 = '\''
+val char4 = '7'
+val char5 = '\027'
+type t0  = I (int)
+type t1 ('a) = K ('a)
+type t2 ('a, 'b) = A ('a , 'b , 'a -> 'b)
+type t3 ('a, 'b) = B ('a -> t2 ('b, t0))
+type t4 ('a, 'b) = C (t2 ('a, 'b) -> t0)
+type t5 ('a, 'b, 'c) = D ('a -> 'b -> 'c)
+type t6 ('a, 'b, 'c) = E (('a -> 'b) -> 'c)
+type t7 ('a) = F (t1 ('a))
+type t8 ('a) = G (t1 ('a -> t0))
+type abs0  
+type abs1 ('a) 
+type abs2 ('a, 'b, 'c, 'd) 
+extern lemming : t8 -> t7
+fun identity_int (x : int) = (x : int)
+fun identity_int_arrow_int (x : int -> int) = (x : int -> int)
+fun first_int (x : int, y : int) = (x : int)
+fun f (x : int) = (g (x) : int)
+and g (y : int) = (x : int)
+fun identity ['a] (x : 'a) = (x : 'a)
+fun first ['a, 'b] (x : 'a, y : 'b) = (x : 'a)
+val x = I (42)
+val y = K[int] (42)
+val z = A[int, int] (73, 37, \(x : int) => x)
+val xint = (x : t0)
+val somefun = (\(x) => x : int -> int)
+val applyfun = (\(f, x) => f (x) : (int -> int) -> int -> int)
+val two_instructions = val nothing = f (42) ; f (1)
+val three_instructions =
+  val nothing = f (42) ; val nothing = g (31) ; f (1)
+val local_val = val x = 42 ; x
+val local_funs =
+  fun f (x) = x
+  and g (x) = x
+  ;
+  f (42)
+val ft = identity[int] (42)
+val firsty = first[int, int] (42, 33)
+val infix = `+ (1, 2)
+val notinfix = `+ (1, 2)
+fun `eats (cat, mouse) = cat
+val jerry = 42
+val tom = 21
+val oh = `eats (tom, jerry)
+val id = \['a] (x : 'a) => x
+val apply = \['a, 'b] (f : 'a -> 'b, x : 'a) => (f (x) : 'b)
+val compose =
+  \['a, 'b, 'c] (f : 'a -> 'b, g : 'b -> 'c) =>
+  \(x : 'a) => (g (f (x)) : 'c)
+val if1 = \(x) => if x then f (0)
+val if2 = \(x) => if x then f (0) else g (0)
+val if3 = \(x) => if x then f (0) elif x then g (0)
+val if4 = \(x) => if x then f (0) elif x then g (0) else g (3)
+val if5 =
+  \(x) =>
+  if x then (if x then f (0) elif x then g (0) else g (4))
+  else
+  g (5)
+val while1 = \(x) => while x {  val nothing = f (0) ; f (1)  }

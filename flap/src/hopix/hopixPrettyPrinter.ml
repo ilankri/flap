@@ -17,9 +17,9 @@ let rec program p =
 
 and definition = function
   | DefineValue (x, e) ->
-    group (value_definition "val" (x, e))
+    group (value_definition false (x, e))
   | DefineRecFuns rv ->
-    rec_function_definition rv
+    rec_function_definition false rv
   | DeclareExtern (x, t) ->
     group (string "extern" ++ located identifier x
 	   ++ string ":" ++ located ty t)
@@ -31,22 +31,23 @@ and definition = function
 	     ++ group (type_definition tdef))
     )
 
-and rec_function_definition rv =
+and rec_function_definition paren rv =
   group (string "fun"
 	 ^^ space
 	 ^^ separate_map (hardline ^^ string "and" ^^ space)
 	     (fun (x, d) ->
 	       nest 2 (
 		 group (located identifier x ^^ break 1 ^^
-			  (located (function_definition (space ^^ string "=" ^^ break 1))) d)))
+                        let sep = space ^^ string "=" ^^ break 1 in
+			located (function_definition paren sep) d)))
 	     rv)
 
-and function_definition sep = function
+and function_definition paren sep = function
   | FunctionDefinition (ts, ps, e) ->
     group (
       function_type_parameters ts
       ^^ parens (group (separate_map (comma ^^ break 1) (located pattern) ps))
-      ^^ sep ^^ located expression e)
+      ^^ sep ^^ located (if_paren_expression paren) e)
 
 and function_type_parameters = function
   | [] ->
@@ -84,9 +85,9 @@ and dataconstructor_definition (k, tys) =
 and dataconstructor (KId k) =
   string k
 
-and value_definition what (x, e) =
-  nest 2 (group (group (string what ++ located identifier x ++ string "=")
-		 ++ group (located expression e)))
+and value_definition paren (x, e) =
+  nest 2 (group (group (string "val" ++ located identifier x ++ string "=")
+		 ++ group (located (if_paren_expression paren) e)))
 
 and ty t = match t with
   | TyCon (TCon "->", [a; b]) ->
@@ -129,20 +130,23 @@ and expression = function
 
   | Define (x, e1, e2) ->
     nest 2 (
-      group (value_definition "val" (x, e1) ++ string "in"
+      group (value_definition true (x, e1) ++ string ";"
     ))
     ^^ break 1 ^^ group (located expression e2)
 
   | DefineRec (vs, e) ->
-    rec_function_definition vs ++ string "in"
+    rec_function_definition true vs ++ string ";"
     ^^ break 1 ^^ group (located expression e)
 
   | Fun (fdef) ->
-    string "\\" ^^ function_definition (space ^^ string "=>" ^^ break 1) fdef
+    (* /!\ rigorously, we should use (function_definition true)
+       below, but this adds many parenthesis that are almost ever
+       superfluous *)
+    string "\\" ^^ function_definition false (space ^^ string "=>" ^^ break 1) fdef
 
   | Apply (a, ts, bs) ->
     group (
-      parens_at_left_of_application a (located expression a)
+      located may_paren_expression a
       ^^ function_type_arguments ts
       ++ parens (separate_map (comma ^^ break 1) (located expression) bs)
     )
@@ -167,7 +171,7 @@ and expression = function
 
   | Case (e, bs) ->
     group (
-      group (located expression e ++ string "?")
+      group (located may_paren_expression e ++ string "?")
       ++ group (
 	string "{"
 	++ separate_map (break 1) (located branch) bs
@@ -175,18 +179,18 @@ and expression = function
     )
 
   | Ref e ->
-    string "ref" ++ parens (located expression e)
+    string "ref" ++ located may_paren_expression e
 
   | Write (lhs, rhs) ->
-    group (located expression lhs
+    group (located may_paren_expression lhs
     ++ string ":="
     ++ located expression rhs)
 
   | Read e ->
-    group (string "!" ++ parens (located expression e))
+    group (string "!" ++ located may_paren_expression e)
 
   | While (e, b) ->
-    nest 2 (group (string "while" ++ located expression e
+    nest 2 (group (string "while" ++ located may_paren_expression e
 		   ++ string "{" ^^ break 1
 		   ++ located expression b
 		   ++ break 1 ^^ string "}"))
@@ -216,15 +220,21 @@ and may_paren_under_if e = match e with
   | _ ->
     expression e
 
-and may_paren_record_expression e = match e with
-  | Case _ | Fun _ | Define _ | DefineRec _ ->
-    parens (expression e)
-  | _ ->
-    expression e
+and delimited = function
+  | Variable _ | Literal _ | Apply _ | Tagged _
+  | While _ | TypeAnnotation _ ->
+    (* Delimited expressions, no need to put parenthesis around.
+       Some inner sub-expressions may need parens, though *)
+    true
+  | Define _ | DefineRec _ | If _ | Fun _
+  | Ref _ | Read _ | Write _ | Case _ ->
+    false
 
-and may_paren_expression e = match e with
-  | Case _ | Fun _ | Define _ | DefineRec _ -> parens (expression e)
-  | _ -> expression e
+and may_paren_expression e =
+  if delimited e then expression e else parens (expression e)
+
+and if_paren_expression b e =
+  if b && not (delimited e) then parens (expression e) else expression e
 
 and branch (Branch (p, e)) =
   group (nest 2 (group (string "|" ++ located pattern p ++ string "=>") 
@@ -274,16 +284,6 @@ and char c =
 
 and string_literal s =
   group (string "\"" ^^ string (String.escaped s) ^^ string "\"")
-
-and parens_at_left_of_application e =
-  match Position.value e with
-  | Apply _ | Variable _ | Literal _ -> fun x -> x
-  | _ -> parens
-
-and parens_at_right_of_application e =
-  match Position.value e with
-  | Variable _ | Literal _ -> fun x -> x
-  | _ -> parens
 
 let to_string f x =
   let b = Buffer.create 13 in

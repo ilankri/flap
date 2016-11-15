@@ -1,0 +1,4 @@
+
+extern something : int
+extern some_function : int -> (int -> int) -> int
+

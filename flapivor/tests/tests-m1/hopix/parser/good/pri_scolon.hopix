@@ -1,0 +1,12 @@
+{- priority of ; -}
+
+val x =
+  val y = 1 + 1 ;
+  y + y
+
+val x =
+  val y = true ;
+  y || y
+
+val x =
+  val y = 1 ; y ? _ => 2

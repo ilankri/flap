@@ -1,0 +1,4 @@
+
+{- priority of => -}
+
+val x = \(x) => x + x

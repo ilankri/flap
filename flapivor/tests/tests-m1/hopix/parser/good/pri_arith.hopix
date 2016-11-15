@@ -1,0 +1,11 @@
+
+{- Arithmetical priorities -}
+
+val x = 1+2+3
+val x = 1+2-3-4+5
+val x = 1*2*3
+val x = 1/2/3
+val x = 1*2/3/4*5
+val x = 1+2*3-4
+val x = 1+2*3-4/5+6
+val x = (1+2)*3

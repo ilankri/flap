@@ -1,0 +1,2 @@
+
+fun wow (cat, mouse) = `eats (cat, mouse)

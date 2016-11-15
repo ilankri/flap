@@ -1,0 +1,8 @@
+
+{- Priorities of comparisons and boolean operators -}
+
+val x = 2 = 1 + 1
+
+val x = true || true || true && true && true
+
+val x = 1 + 1 < 2 + 2 && 4 = 7

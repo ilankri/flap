@@ -1,0 +1,8 @@
+val x =
+  val y =
+    (val z = 1;
+    2*z);
+  val t =
+    (val u = 2;
+    2*u);
+  y*t

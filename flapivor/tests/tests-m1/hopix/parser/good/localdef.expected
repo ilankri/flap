@@ -1,0 +1,15 @@
+
+val x = val y = 1 ; val z = 2 ; `+ (y, z)
+val x = `+ (1, val y = 1 ; val z = 2 ; `+ (y, z))
+val x = val a = 1 ; val b = 2 ; val nothing = 3 ; 4
+val x = val nothing = 1 ; val nothing = 2 ; 3
+val x = val nothing = (val nothing = 1 ; 2) ; 3
+val x = val y = (val z = 1 ; `* (2, z)) ; 2
+val x =
+  val y = (val z = 1 ; `* (2, z)) ;
+  val t = (val u = 2 ; `* (2, u)) ; `* (y, t)
+val even =
+  fun even (x) = (if `= (x, 0) then true else odd (`- (x, 1)))
+  and odd (x) = (if `= (x, 0) then false else even (`- (x, 1)))
+  ;
+  even

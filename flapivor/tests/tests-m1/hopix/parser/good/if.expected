@@ -1,0 +1,21 @@
+
+val if1 = if 0 then 0
+val if2 = if 0 then 0 else 0
+val if3 = if 0 then 0 elif 0 then 0
+val if4 = if 0 then 0 elif 0 then 0 else 0
+val if5 = if 0 then 0 elif 0 then 0 elif 0 then 0
+val if6 = if 0 then 0 elif 0 then 0 elif 0 then 0 else 0
+val if3b = if 0 then 0 else (if 0 then 0)
+val if4b = if 0 then 0 else (if 0 then 0 else 0)
+val if5b = if 0 then 0 else (if 0 then 0 else (if 0 then 0))
+val if6b =
+  if 0 then 0 else (if 0 then 0 else (if 0 then 0 else 0))
+val pri_if1 = if 0 then (if 0 then 0 else 0)
+val pri_if2 = if `|| (a, b) then `+ (1, 2) else f (3)
+val ifif = if if a then b else c then d
+val ifseq1 = val nothing = (if a then b) ; c
+val ifseq2 = val nothing = (if a then b else c) ; d
+val ifseq3 = if val nothing = a ; b then b
+val iflet1 = if a then val x = b ; c
+val iflet2 = if a then val x = b ; val nothing = c ; d
+val iflet3 = if a then b else val x = c ; d

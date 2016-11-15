@@ -1,0 +1,9 @@
+
+val x = `+ (! r, 2)
+val x = `|| (! r, false)
+val x = (! u) ? { | _ => 1 }
+val x = ! (u ? { | _ => 1 })
+val x = ! (! u)
+val x = val nothing = (! u) ; v
+val x = ! rf (1, 2)
+val x = (! rf) (1, 2)

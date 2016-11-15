@@ -1,0 +1,10 @@
+
+type some_abstract_type  
+type unit  = Unit
+type list  = Cons (int , list) | Nil
+type option ('a) = None | Some ('a)
+type prod ('a, 'b) = Pair ('a , 'b)
+type either ('a, 'b) = Left ('a) | Right ('b)
+type stream ('a) = Next (unit -> prod ('a, stream ('a)))
+type t1  = T1 ((option (int) -> int) -> int -> int)
+type t2  = T2 (either (int, option (int)))
