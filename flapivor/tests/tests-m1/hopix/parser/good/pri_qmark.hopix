@@ -1,0 +1,4 @@
+{- priority of ? -}
+
+val x = x * x ? _ => 3
+val x = x := a ? _ => 3

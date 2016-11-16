@@ -1,0 +1,2 @@
+
+type list  = Cons (int , list) | Nil

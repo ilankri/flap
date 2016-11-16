@@ -1,0 +1,7 @@
+
+fun f (x) = a; b
+
+and g (x) = c; d
+
+and h (x) = d; e
+

@@ -1,0 +1,6 @@
+
+val even =
+  fun even (x) = 1
+  and odd (x) = 2
+  ;
+  even

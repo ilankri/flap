@@ -1,0 +1,1 @@
+type stream ('a) = Next (unit -> prod ('a, stream('a)))

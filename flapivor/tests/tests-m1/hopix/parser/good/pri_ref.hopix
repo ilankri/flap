@@ -1,0 +1,17 @@
+{- priority of := -}
+
+val x = ref 1 + 2
+val x = ref (1 + 2)
+
+val x = ref u ? _ => 1
+val x = (ref u) ? _ => 1
+
+val x = ref ref u
+
+val x = ref u; v
+
+val x = ref u := v
+val x = ref (u := v)
+
+val x = ref f (x)
+val x = (ref f) (x)

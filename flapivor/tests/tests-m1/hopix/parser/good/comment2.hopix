@@ -1,0 +1,12 @@
+
+-- This is also a comment.
+
+val x = 1 + -- Another comment
+1
+
+val x = 1 +-- Still a comment
+2
+
+val x = 3-- Again...
+
+-- A final comment --

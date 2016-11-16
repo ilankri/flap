@@ -1,0 +1,10 @@
+{- This is a comment -}
+
+val a =
+{-
+   Another one.
+-}
+1
+
+val b = 1 {- Still a comment -} + 1
+

@@ -1,0 +1,2 @@
+
+val apply = \(`op, x, y) => `op (x, y)

@@ -1,0 +1,7 @@
+
+val f =
+  fun f (x) = 1
+  and g (x) = 2
+  and h (x) = 3
+  ;
+  f

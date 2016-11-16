@@ -1,0 +1,10 @@
+
+val x = \(x) => `+ (x, x)
+val x = \(x) => `&& (x, x)
+val x = \(x) => x := 1
+val x = \(x) => x := 1
+val x = (\(x) => x) := 1
+val x = val f = (\(x) => x) ; f
+val x = val nothing = (\(x) => x) ; y
+val x = fun f (y) = (y ? { | _ => 1 }) ; f (1)
+val x = val y = (z ? { | _ => 1 }) ; y

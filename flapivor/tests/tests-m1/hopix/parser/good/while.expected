@@ -1,0 +1,6 @@
+
+val while1 = while x {  val nothing = a ; b  }
+val while2 = while `= (1, 1) {  val nothing = a ; b  }
+val while3 = while f (x) {  val nothing = a ; b  }
+val while4 =
+  while (val nothing = a ; b) {  val nothing = c ; d  }

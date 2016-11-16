@@ -1,0 +1,17 @@
+
+type list = Cons (int, list) | Nil
+
+fun map (f, l) : list =
+  l ?
+  | Nil => Nil
+  | Cons (x, xs) => Cons (f (x), map (f, xs))
+
+
+fun append (l1, l2) : list =
+  l1 ? Nil => l2 | Cons (x, xs) => Cons (x, append (xs, l2))
+
+
+fun sum (l1, l2) : list =
+  l1 ?
+  | Nil => l2 ? { _ => l2 }
+  | Cons (x, xs) => l2 ? Cons (y, ys) => Cons (x + y, sum (xs, ys)) | _ => l1

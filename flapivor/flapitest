@@ -1,0 +1,118 @@
+#!/usr/bin/env bash
+
+LONGPROJECT=$1
+PROJECT=`basename $LONGPROJECT`
+COMMIT=$2
+LOG=$3
+SUBJECT=$4
+shift 4
+
+# Making sure that the log folder exists
+mkdir -p `dirname $LOG`
+
+function stop () {
+#
+# Shutdown docker machine
+#
+    echo "Shutting down the machine..."
+    docker stop $PROJECT
+    docker rm $PROJECT
+    exit 0
+}
+
+#
+# Announce
+#
+echo "Testing project $PROJECT [$COMMIT]"
+echo "(message $SUBJECT)"
+echo "(logging in $LOG)"
+echo "(starting `date --rfc-3339=ns`)"
+
+#
+# Extracting authors' emails
+#
+AUTHORS_FILE=$LONGPROJECT/flap/AUTEURS
+EMAIL1=`head -n 1 $AUTHORS_FILE | cut -f3 -d,`
+EMAIL2=`tail -n 1 $AUTHORS_FILE | cut -f3 -d,`
+echo email1: $EMAIL1
+echo email2: $EMAIL2
+
+#
+# Preparing the docker machine
+#
+echo "Preparing a fresh machine..."
+docker run -td --name $PROJECT flapivor /bin/bash
+docker cp $LONGPROJECT $PROJECT:/home/opam/source
+for ts in "$@"; do
+    docker cp $ts $PROJECT:/home/opam/source/flap/
+done
+docker exec --user root $PROJECT chown -R opam:opam /home/opam
+
+#
+# Compiling the project
+#
+echo "Compiling project..."
+docker exec $PROJECT /bin/bash -c "export PATH=/home/opam/.opam/4.03.0/bin:$PATH && make -C /home/opam/source/flap > /tmp/compilation.log"
+
+if [ ! $? -eq 0 ]; then
+    echo "Compilation failed!"
+    echo "Warning the authors..."
+    docker cp $PROJECT:/tmp/compilation.log $LOG-compilation.log
+    cd $LONGPROJECT
+    git add log/*
+    git commit -m 'flapivor: Compilation failed. [IGNORE]'
+    git push
+    cd -
+    mutt -x yann.regisgianas@gmail.com -a $LOG-compilation.log -s "[flap] $PROJECT $COMMIT" \
+    -c $EMAIL1 -c $EMAIL2 <<EOF
+Bonjour,
+
+le commit $COMMIT de votre projet de compilation ne compile pas.
+
+Cordialement,
+EOF
+    stop
+fi
+
+#
+# Running the test suite
+#
+echo "Running test suites..."
+
+L=""
+for ts in "$@"; do
+  ts=`basename $ts`
+  echo "  $ts"
+  docker exec $PROJECT /bin/bash -c \
+  "export PATH=/home/opam/.opam/4.03.0/bin:$PATH && VERBOSE=1 make -C /home/opam/source/flap/$ts check > /tmp/tests.log"
+  docker cp $PROJECT:/tmp/tests.log $LOG-$ts.log
+  echo -n $ts "[" `date` "] [" $COMMIT "] " >> $LONGPROJECT/log/scores
+  tail -n 4 $LOG-$ts.log | head -n 2 | tr '\n' ' ' >> $LONGPROJECT/log/scores
+  echo " | " >> $LONGPROJECT/log/scores
+  L=`echo $LOG-$ts.log $L`
+done
+
+cd $LONGPROJECT
+git add log/*
+git commit -m 'flapivor: Test. [IGNORE]'
+git push
+cd -
+
+cat > /tmp/$PROJECT.message <<EOF
+Bonjour,
+
+le commit $COMMIT de votre projet de compilation a produit les résultats suivants:
+
+EOF
+
+tail -n 1 $LONGPROJECT/log/scores >> /tmp/$PROJECT.message
+
+cat >> /tmp/$PROJECT.message <<EOF
+
+Cordialement,
+EOF
+
+cat /tmp/$PROJECT.message | mutt -x yann.regisgianas@gmail.com -s "[flap] $PROJECT $COMMIT" \
+    -c $EMAIL1 -c $EMAIL2 -a $L
+
+stop

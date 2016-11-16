@@ -1,0 +1,7 @@
+
+val x = `+ (f (a), b)
+val x = f (a) := b
+val x = f (g, a)
+val x = f (x) (y)
+val x = f[int] (x)[bool] (b)
+val x = f (x) ? { | _ => 1 }

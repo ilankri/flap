@@ -1,0 +1,4 @@
+
+fun f (x) = val nothing = a ; b
+and g (x) = val nothing = c ; d
+and h (x) = val nothing = d ; e
