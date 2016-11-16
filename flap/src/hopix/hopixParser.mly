@@ -1,4 +1,5 @@
 %{
+
 open HopixAST
 
 let list_of_listoption = function
@@ -39,12 +40,12 @@ definition:
     tv = paren_comma_nonempty_list(located(type_variable))?
     td = preceded(EQ, tdefinition)?
       {
-        let td =
-          match td with
-          | None -> Abstract
-          | Some td -> td
-        in
-        DefineType (tc, list_of_listoption tv, td)
+	let td =
+	  match td with
+	  | None -> Abstract
+	  | Some td -> td
+	in
+	DefineType (tc, list_of_listoption tv, td)
       }
   | EXTERN ext_id = located(var_id) COLON ty_name = located(ty)
       { DeclareExtern (ext_id, ty_name) }
@@ -58,20 +59,32 @@ constr_definition:
   | c = located(constr_id) tl = paren_comma_nonempty_list(located(ty))?
       { (c, list_of_listoption tl)}
 
+(**
+ * For
+ * vdefinition := val var_id [ :type ] = expr
+ *              | fun var_id [ type_variable { , type_variable } ] ]
+ *                           ( pattern { , pattern } ) [ : type ] = expr
+ *                           { and var_id [[type_variable {, type_variable } ]]
+ *                           (pattern { , pattern })[ :type ]=expr }
+ * **)
 vdefinition(X):
   | VAL id = located(var_id) t = preceded(COLON, located(ty))? EQ
     exp = located(X)
       {
-        let exp =
-          match t with
-          | None -> exp
-          | Some t ->
-            let pos = Position.position exp in
-            Position.with_pos pos (TypeAnnotation(exp, t))
-        in
-        DefineValue (id, exp)
+	let exp =
+	  match t with
+	  | None -> exp
+	  | Some t ->
+	    let pos = Position.position exp in
+	    Position.with_pos pos (TypeAnnotation(exp, t))
+	in
+	DefineValue (id, exp)
       }
-
+(**  | FUN id = located(var_id)
+    option( tv_list = bracket_comma_nonempty_list(located(type_variable)) )
+    LPAREN pattern_list = ... RPAREN EQ expr
+      { FunctionDefinition (tv_list, pattern_list, exp) }
+**)
 simple_ty:
   | tv = type_variable { TyVar tv }
   | LPAREN t = ty RPAREN { t }
@@ -84,27 +97,43 @@ ty:
   | t1 = located(simple_ty) ARROW t2 = located(ty)
       { TyCon (TCon "->", [t1; t2]) }
 
+(**
+ * For
+ * expr := int
+ *       | char
+ *       | var_id
+ *       | ( expr : type )
+ *       | ( expr )
+ *       | ref expr
+ *       | ! expr
+ * **)
 very_simple_expr:
   | li = located(literal) { Literal li }
   | vid = located(var_id) { Variable vid }
   | LPAREN e = located(expr) COLON t = located(ty) RPAREN
       { TypeAnnotation (e, t) }
   | LPAREN e = expr RPAREN { e }
-  | QMARK e = located(very_simple_expr) { Read e }
+  | EMARK e = located(very_simple_expr) { Read e }
 
 simple_expr:
   | e = very_simple_expr { e }
   | REF e = located(very_simple_expr) { Ref e }
   | e1 = located(simple_expr) b = located(binop) e2 = located(simple_expr)
       {
-        let f x = Variable (Position.map (fun x -> x) b)  in
-        Apply (Position.map f b, [], [e1; e2])
+	let f x = Variable (Position.map (fun x -> x) b)  in
+	Apply (Position.map f b, [], [e1; e2])
       }
 
 expr:
   | e = unseq_expr { e }
   | e = seq_expr { e }
 
+(**
+ * For
+ * expr := { simple_expr }
+ *       | constr_id / [ [type { ,type }] ] [ (expr { ,expr } ) ]
+ *       | expr := expr
+ **)
 unseq_expr:
   | e = simple_expr { e }
   | e1 = located(simple_expr) COLONEQ e2 = located(simple_expr)
@@ -117,18 +146,23 @@ unseq_expr:
     el = paren_comma_nonempty_list(located(expr))
       { Apply (e, list_of_listoption tl, el) }
 
+(**
+ * For
+ * expr := { simple_expr }
+ *       | vdefinition ; expr
+ **)
 seq_expr:
   | vd = vdefinition(unseq_expr) SEMICOLON e2 = located(expr)
       {
-        match vd with
-        | DefineValue (x1, e1) -> Define (x1, e1, e2)
+	match vd with
+	| DefineValue (x1, e1) -> Define (x1, e1, e2)
       }
   | e = located(unseq_expr) SEMICOLON
     el = separated_nonempty_list(SEMICOLON, located(unseq_expr))
       {
-        let f e1 e2 =
-          Position.(unknown_pos (Define (unknown_pos (Id "_"), e1, e2))) in
-        Position.value (List.fold_left f e el)
+	let f e1 e2 =
+	  Position.(unknown_pos (Define (unknown_pos (Id "_"), e1, e2))) in
+	Position.value (List.fold_left f e el)
       }
 
 %inline var_id:
