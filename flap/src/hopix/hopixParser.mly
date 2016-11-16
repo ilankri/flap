@@ -4,6 +4,8 @@ open HopixAST
 let list_of_listoption = function
   | None -> []
   | Some l -> l
+
+let prefix_id x = Id ("`" ^ x)
 %}
 
 %token EOF
@@ -17,6 +19,13 @@ let list_of_listoption = function
 %token<char>    CHAR
 %token<string>  STRING
 %token<string>  PREFIX_ID INFIX_ID BASIC_ID CONSTR_ID TYPE_VAR
+
+%left LOR
+%left LAND
+%left LT GT LEQ GEQ EQ
+%left PLUS MINUS
+%left TIMES DIV
+%left INFIX_ID
 
 %start<HopixAST.t> program
 
@@ -75,14 +84,22 @@ ty:
   | t1 = located(simple_ty) ARROW t2 = located(ty)
       { TyCon (TCon "->", [t1; t2]) }
 
-simple_expr:
+very_simple_expr:
   | li = located(literal) { Literal li }
   | vid = located(var_id) { Variable vid }
   | LPAREN e = located(expr) COLON t = located(ty) RPAREN
       { TypeAnnotation (e, t) }
   | LPAREN e = expr RPAREN { e }
-  | REF e = located(simple_expr) { Ref e }
-  | QMARK e = located(simple_expr) { Read e }
+  | QMARK e = located(very_simple_expr) { Read e }
+
+simple_expr:
+  | e = very_simple_expr { e }
+  | REF e = located(very_simple_expr) { Ref e }
+  | e1 = located(simple_expr) b = located(binop) e2 = located(simple_expr)
+      {
+        let f x = Variable (Position.map (fun x -> x) b)  in
+        Apply (Position.map f b, [], [e1; e2])
+      }
 
 expr:
   | e = unseq_expr { e }
@@ -90,13 +107,13 @@ expr:
 
 unseq_expr:
   | e = simple_expr { e }
+  | e1 = located(simple_expr) COLONEQ e2 = located(simple_expr)
+      { Write (e1, e2) }
   | cid = located(constr_id) tyl = bracket_comma_nonempty_list(located(ty))?
     expl = paren_comma_nonempty_list(located(expr))?
       { Tagged(cid, list_of_listoption tyl, list_of_listoption expl) }
-  | e1 = located(simple_expr) COLONEQ e2 = located(unseq_expr)
-      { Write (e1, e2) }
   | WHILE e1 = located(expr) LBRACE e2 = located(expr) RBRACE { While (e1, e2) }
-  | e = located(simple_expr) tl = bracket_comma_nonempty_list(located(ty))?
+  | e = located(very_simple_expr) tl = bracket_comma_nonempty_list(located(ty))?
     el = paren_comma_nonempty_list(located(expr))
       { Apply (e, list_of_listoption tl, el) }
 
@@ -132,6 +149,20 @@ seq_expr:
   | str = STRING { LString str }
   | FALSE { LBool false }
   | TRUE { LBool true }
+
+%inline binop:
+  | PLUS { prefix_id "+" }
+  | MINUS { prefix_id "-" }
+  | TIMES { prefix_id "*" }
+  | DIV { prefix_id "/" }
+  | LAND { prefix_id "&&" }
+  | LOR { prefix_id "||" }
+  | EQ { prefix_id "=" }
+  | LEQ { prefix_id "<=" }
+  | GEQ { prefix_id ">=" }
+  | LT { prefix_id "<" }
+  | GT { prefix_id ">" }
+  | s = INFIX_ID { Id s }
 
 %inline located(X):
   | x = X { Position.with_poss $startpos $endpos x }
