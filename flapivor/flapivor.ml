@@ -20,7 +20,9 @@ let lines_of command =
       | None -> List.rev lines
       | Some l -> aux (l :: lines)
   in
-  aux []
+  let lines = aux [] in
+  ignore (close_process_in out);
+  lines
 
 let list_projects () =
   lines_of "./list-projects.sh"

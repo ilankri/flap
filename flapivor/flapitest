@@ -87,7 +87,7 @@ for ts in "$@"; do
   "export PATH=/home/opam/.opam/4.03.0/bin:$PATH && VERBOSE=1 make -C /home/opam/source/flap/$ts check > /tmp/tests.log"
   docker cp $PROJECT:/tmp/tests.log $LOG-$ts.log
   echo -n $ts "[" `date` "] [" $COMMIT "] " >> $LONGPROJECT/log/scores
-  tail -n 4 $LOG-$ts.log | head -n 2 | tr '\n' '|' >> $LONGPROJECT/log/scores
+  tail -n 4 $LOG-$ts.log | head -n 2 | tr '\n' ' ' >> $LONGPROJECT/log/scores
   echo " | " >> $LONGPROJECT/log/scores
   L=`echo $LOG-$ts.log $L`
 done
@@ -102,11 +102,13 @@ cat > /tmp/$PROJECT.message <<EOF
 Bonjour,
 
 le commit $COMMIT de votre projet de compilation a produit les résultats suivants:
+
 EOF
 
-tail -n 1 $LONGPROJECT/log/scores
+tail -n 1 $LONGPROJECT/log/scores >> /tmp/$PROJECT.message
 
 cat >> /tmp/$PROJECT.message <<EOF
+
 Cordialement,
 EOF
 
