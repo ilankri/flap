@@ -1,9 +1,11 @@
 %{
+
 open HopixAST
 
 let list_of_listoption = function
   | None -> []
   | Some l -> l
+
 %}
 
 %token EOF
@@ -49,6 +51,14 @@ constr_definition:
   | c = located(constr_id) tl = paren_comma_nonempty_list(located(ty))?
       { (c, list_of_listoption tl)}
 
+(** 
+ * For
+ * vdefinition := val var_id [ :type ] = expr
+ *              | fun var_id [ type_variable { , type_variable } ] ] 
+ *                           ( pattern { , pattern } ) [ : type ] = expr
+ *                           { and var_id [[type_variable {, type_variable } ]]
+ *                           (pattern { , pattern })[ :type ]=expr }
+ * **)
 vdefinition(X):
   | VAL id = located(var_id) t = preceded(COLON, located(ty))? EQ
     exp = located(X)
@@ -62,7 +72,11 @@ vdefinition(X):
         in
         DefineValue (id, exp)
       }
-
+(**  | FUN id = located(var_id)
+    option( tv_list = bracket_comma_nonempty_list(located(type_variable)) ) 
+    LPAREN pattern_list = ... RPAREN EQ expr
+      { FunctionDefinition (tv_list, pattern_list, exp) }
+**)
 simple_ty:
   | tv = type_variable { TyVar tv }
   | LPAREN t = ty RPAREN { t }
@@ -88,23 +102,21 @@ ty:
 simple_expr:
   | li = located(literal) { Literal li }
   | vid = located(var_id) { Variable vid }
-  | LPAREN e = located(expr) COLON t = located(ty) RPAREN
-      { TypeAnnotation (e, t) }
+  | LPAREN e = located(expr) COLON t = located(ty) RPAREN { TypeAnnotation (e, t) }
   | LPAREN e = expr RPAREN { e }
   | REF e = located(simple_expr) { Ref e }
   | EMARK e = located(simple_expr) { Read e }
 
-(** 
- * For
- * expr := { simple_expr }
- *       | vdefinition ; expr
- *       | constr_id / [ [type { ,type }] ] [ (expr { ,expr } ) ]
- *       | expr := expr
- * **)
 expr:
   | e = unseq_expr { e }
   | e = seq_expr { e }
 
+(** 
+ * For
+ * expr := { simple_expr }
+ *       | constr_id / [ [type { ,type }] ] [ (expr { ,expr } ) ]
+ *       | expr := expr
+ **)
 unseq_expr:
   | e = simple_expr { e }
   | cid = located(constr_id) tyl = bracket_comma_nonempty_list(located(ty))?
@@ -117,6 +129,11 @@ unseq_expr:
     el = paren_comma_nonempty_list(located(expr))
       { Apply (e, list_of_listoption tl, el) }
 
+(** 
+ * For
+ * expr := { simple_expr }
+ *       | vdefinition ; expr
+ **)
 seq_expr:
   | vd = vdefinition(unseq_expr) SEMICOLON e2 = located(expr)
       {
