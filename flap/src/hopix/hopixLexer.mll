@@ -174,7 +174,7 @@ rule token = parse
 
   (** Identifiers *)
   | alien_prefix_id as id { PREFIX_ID id }
-  | alien_infix_id as id { INFIX_ID id }
+  | alien_infix_id as id { INFIX_ID String.(sub id 0 (length id - 1)) }
   | basic_id as id { BASIC_ID id }
   | constr_id as id { CONSTR_ID id }
   | type_variable as id { TYPE_VAR id }
