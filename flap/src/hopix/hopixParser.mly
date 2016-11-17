@@ -72,11 +72,54 @@ vdefinition(X):
         in
         DefineValue (id, exp)
       }
-(**  | FUN id = located(var_id)
-    option( tv_list = bracket_comma_nonempty_list(located(type_variable)) ) 
-    LPAREN pattern_list = ... RPAREN EQ expr
-      { FunctionDefinition (tv_list, pattern_list, exp) }
-**)
+  | FUN vlist = var_id_list more = option(and_var_id_list)
+      { 
+        let l = [vlist] in
+          match more with
+          | None -> DefineRecFuns(l)
+          | Some lmore -> DefineRecFuns(l @ lmore)
+      }
+
+and_var_id_list:
+  | li = separated_nonempty_list(AND, var_id_list) { li }
+
+var_id_list:
+  | id = located(var_id) typ_list = bracket_comma_nonempty_list(located(type_variable)) pat_list = paren_comma_nonempty_list(located(pattern)) EQ e = located(expr)
+    { (id, Position.with_poss $startpos $endpos (FunctionDefinition(typ_list,
+    pat_list, e))) }
+
+(**
+ * For
+ * pattern ::= constr_id 
+ * | ( pattern )
+ * | constr_id ( pattern { , pattern } ) | pattern | pattern
+ * | pattern & pattern
+ **)
+pattern:
+  | id = located(constr_id) pat_list =
+          option(paren_comma_nonempty_list(located(simple_pattern))) 
+    { PTaggedValue(id, list_of_listoption(pat_list)) }
+  | LPAREN p = simple_pattern RPAREN { p }
+  | p1 = located(pattern) PIPE p2 = located(pattern) { POr([p1;p2]) }
+  | p1 = located(pattern) AMPERSAND p2 = located(pattern) { PAnd([p1;p2]) } 
+
+(**
+ * For
+ * pattern ::= constr_id
+ * | var_id
+ * | int
+ * | char
+ * | string
+ * | _
+ * | pattern : type
+ * **)
+simple_pattern:
+  | id = located(constr_id) { PTaggedValue(id, []) }
+  | id = located(var_id) { PVariable id }
+  | li = located(literal) { PLiteral li }
+  | UNDERSCORE { PWildcard }
+  | p = located(simple_pattern) COLON t = located(ty) { PTypeAnnotation(p, t)     }
+
 simple_ty:
   | tv = type_variable { TyVar tv }
   | LPAREN t = ty RPAREN { t }
