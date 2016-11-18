@@ -213,7 +213,7 @@ vdefinition & $::=$ &
 \kwd{val} \lex{var\_id} \optw{\car{:} \rul{type}}  \car{=} \rul{expr}
 \comment{Valeur simple}
 \\
-& | & 
+& | &
 \kwd{fun}
 \lex{var\_id}
 \optw{\car{[} \rul{type\_variable} \repeatseq{\car{,} \rul{type\_variable}} \car{]}}
@@ -268,7 +268,7 @@ expr      & $::=$ & \lex{int} \comment{Entier} \\
           &   | & \rul{expr} \rul{binop} \rul{expr} \comment{Opérations binaires}\\
           &   | & \rul{expr} \car{?} \rul{branches}  \comment{Analyse de motifs} \\
           &   | & \kwd{if} \rul{expr} \kwd{then} \rul{expr}
-          \repeatseq{\kwd{elif} \rul{expr}}
+          \repeatseq{\kwd{elif} \rul{expr} \kwd{then} \rul{expr}}
           \optw{\kwd{else} \rul{expr}}
           \comment{Conditionnelle} \\
           &   | & \kwd{ref} \rul{expr} \comment{Allocation} \\
