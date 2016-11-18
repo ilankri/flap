@@ -201,7 +201,10 @@ seq_expr:
   | vd = vdefinition(unseq_expr) SEMICOLON e2 = located(expr)
       {
 	match vd with
-	| DefineValue (x1, e1) -> Define (x1, e1, e2)
+	| DefineValue(x1, e1) -> Define (x1, e1, e2)
+        | DefineRecFuns(li) -> DefineRec(li ,e2)
+        | _ -> failwith("Error: DefineType and DeclareExtern should not be in the
+        vdefinition")
       }
   | e = located(unseq_expr) SEMICOLON
     el = separated_nonempty_list(SEMICOLON, located(unseq_expr))
