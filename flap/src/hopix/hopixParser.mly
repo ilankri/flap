@@ -1,5 +1,4 @@
 %{
-
 open HopixAST
 
 let list_of_listoption = function
@@ -40,12 +39,12 @@ definition:
     tv = paren_comma_nonempty_list(located(type_variable))?
     td = preceded(EQ, tdefinition)?
       {
-	let td =
-	  match td with
-	  | None -> Abstract
-	  | Some td -> td
-	in
-	DefineType (tc, list_of_listoption tv, td)
+        let td =
+          match td with
+          | None -> Abstract
+          | Some td -> td
+        in
+        DefineType (tc, list_of_listoption tv, td)
       }
   | EXTERN ext_id = located(var_id) COLON ty_name = located(ty)
       { DeclareExtern (ext_id, ty_name) }
@@ -71,48 +70,47 @@ vdefinition(X):
   | VAL id = located(var_id) t = preceded(COLON, located(ty))? EQ
     exp = located(X)
       {
-	let exp =
-	  match t with
-	  | None -> exp
-	  | Some t ->
-	    let pos = Position.position exp in
-	    Position.with_pos pos (TypeAnnotation(exp, t))
-	in
-	DefineValue (id, exp)
+        let exp =
+          match t with
+          | None -> exp
+          | Some t ->
+            let pos = Position.position exp in
+            Position.with_pos pos (TypeAnnotation(exp, t))
+        in
+        DefineValue (id, exp)
       }
   | FUN vlist = var_id_list more = option(and_var_id_list)
-      { 
+      {
         let l = [vlist] in
-          match more with
-          | None -> DefineRecFuns(l)
-          | Some lmore -> DefineRecFuns(l @ lmore)
+        match more with
+        | None -> DefineRecFuns(l)
+        | Some lmore -> DefineRecFuns(l @ lmore)
       }
 
 and_var_id_list:
   | li = separated_nonempty_list(AND, var_id_list) { li }
 
 var_id_list:
-  | id = located(var_id) 
-    typ_list = bracket_comma_nonempty_list(located(type_variable)) 
-    pat_list = paren_comma_nonempty_list(located(pattern)) EQ 
+  | id = located(var_id)
+    typ_list = bracket_comma_nonempty_list(located(type_variable))
+    pat_list = paren_comma_nonempty_list(located(pattern)) EQ
     e = located(expr)
-    { (id, Position.with_poss $startpos $endpos (FunctionDefinition(typ_list,
-    pat_list, e))) }
+      { (id, Position.with_poss $startpos $endpos (FunctionDefinition(typ_list, pat_list, e))) }
 
 (**
  * For
- * pattern ::= constr_id 
+ * pattern ::= constr_id
  * | ( pattern )
  * | constr_id ( pattern { , pattern } ) | pattern | pattern
  * | pattern & pattern
  **)
 pattern:
-  | id = located(constr_id) 
-    pat_list = paren_comma_nonempty_list(located(simple_pattern))? 
-    { PTaggedValue(id, list_of_listoption(pat_list)) }
+  | id = located(constr_id)
+    pat_list = paren_comma_nonempty_list(located(simple_pattern))?
+      { PTaggedValue(id, list_of_listoption(pat_list)) }
   | LPAREN p = simple_pattern RPAREN { p }
-  | p1 = located(pattern) PIPE p2 = located(pattern) { POr([p1;p2]) }
-  | p1 = located(pattern) AMPERSAND p2 = located(pattern) { PAnd([p1;p2]) } 
+  | p1 = located(pattern) PIPE p2 = located(pattern) { POr [p1; p2] }
+  | p1 = located(pattern) AMPERSAND p2 = located(pattern) { PAnd [p1; p2] }
 
 (**
  * For
@@ -129,7 +127,8 @@ simple_pattern:
   | id = located(var_id) { PVariable id }
   | li = located(literal) { PLiteral li }
   | UNDERSCORE { PWildcard }
-  | p = located(simple_pattern) COLON t = located(ty) { PTypeAnnotation(p, t)     }
+  | p = located(simple_pattern) COLON t = located(ty)
+      { PTypeAnnotation(p, t)     }
 
 simple_ty:
   | tv = type_variable { TyVar tv }
@@ -166,8 +165,8 @@ simple_expr:
   | REF e = located(very_simple_expr) { Ref e }
   | e1 = located(simple_expr) b = located(binop) e2 = located(simple_expr)
       {
-	let f x = Variable (Position.map (fun x -> x) b)  in
-	Apply (Position.map f b, [], [e1; e2])
+        let f x = Variable (Position.map (fun x -> x) b)  in
+        Apply (Position.map f b, [], [e1; e2])
       }
 
 expr:
@@ -200,18 +199,19 @@ unseq_expr:
 seq_expr:
   | vd = vdefinition(unseq_expr) SEMICOLON e2 = located(expr)
       {
-	match vd with
-	| DefineValue(x1, e1) -> Define (x1, e1, e2)
+        match vd with
+        | DefineValue(x1, e1) -> Define (x1, e1, e2)
         | DefineRecFuns(li) -> DefineRec(li ,e2)
-        | _ -> failwith("Error: DefineType and DeclareExtern should not be in the
-        vdefinition")
+        | _ ->
+          failwith "Error: DefineType and DeclareExtern \
+                    should not be in the vdefinition"
       }
   | e = located(unseq_expr) SEMICOLON
     el = separated_nonempty_list(SEMICOLON, located(unseq_expr))
       {
-	let f e1 e2 =
-	  Position.(unknown_pos (Define (unknown_pos (Id "_"), e1, e2))) in
-	Position.value (List.fold_left f e el)
+        let f e1 e2 =
+          Position.(unknown_pos (Define (unknown_pos (Id "_"), e1, e2))) in
+        Position.value (List.fold_left f e el)
       }
 
 %inline var_id:
@@ -228,6 +228,7 @@ seq_expr:
 
 %inline literal:
   | i = INT { LInt i }
+  | MINUS i = INT { LInt (Int32.neg i) }
   | c = CHAR { LChar c }
   | str = STRING { LString str }
   | FALSE { LBool false }
