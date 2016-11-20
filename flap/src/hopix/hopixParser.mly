@@ -20,12 +20,15 @@ let prefix_id x = Id ("`" ^ x)
 %token<string>  STRING
 %token<string>  PREFIX_ID INFIX_ID BASIC_ID CONSTR_ID TYPE_VAR
 
+%nonassoc REF
+%right COLONEQ
 %left LOR
 %left LAND
 %left LT GT LEQ GEQ EQ
 %left PLUS MINUS
 %left TIMES DIV
 %left INFIX_ID
+%nonassoc EMARK
 
 %start<HopixAST.t> program
 
@@ -91,11 +94,13 @@ and_var_id_list:
   | li = separated_nonempty_list(AND, var_id_list) { li }
 
 var_id_list:
-  | id = located(var_id)
-    typ_list = bracket_comma_nonempty_list(located(type_variable))
+  | id = located(var_id) fd = located(function_definition) { (id, fd) }
+
+function_definition:
+  | typ_list = bracket_comma_nonempty_list(located(type_variable))
     pat_list = paren_comma_nonempty_list(located(pattern)) EQ
     e = located(expr)
-      { (id, Position.with_poss $startpos $endpos (FunctionDefinition(typ_list, pat_list, e))) }
+      { FunctionDefinition(typ_list, pat_list, e) }
 
 (**
  * For
@@ -105,10 +110,10 @@ var_id_list:
  * | pattern & pattern
  **)
 pattern:
+  | p = simple_pattern { p }
   | id = located(constr_id)
-    pat_list = paren_comma_nonempty_list(located(simple_pattern))?
-      { PTaggedValue(id, list_of_listoption(pat_list)) }
-  | LPAREN p = simple_pattern RPAREN { p }
+    pat_list = paren_comma_nonempty_list(located(simple_pattern))
+      { PTaggedValue(id, pat_list) }
   | p1 = located(pattern) PIPE p2 = located(pattern) { POr [p1; p2] }
   | p1 = located(pattern) AMPERSAND p2 = located(pattern) { PAnd [p1; p2] }
 
@@ -123,6 +128,7 @@ pattern:
  * | pattern : type
  * **)
 simple_pattern:
+  | LPAREN p = pattern RPAREN { p }
   | id = located(constr_id) { PTaggedValue(id, []) }
   | id = located(var_id) { PVariable id }
   | li = located(literal) { PLiteral li }
@@ -158,16 +164,26 @@ very_simple_expr:
   | LPAREN e = located(expr) COLON t = located(ty) RPAREN
       { TypeAnnotation (e, t) }
   | LPAREN e = expr RPAREN { e }
-  | EMARK e = located(very_simple_expr) { Read e }
 
 simple_expr:
   | e = very_simple_expr { e }
-  | REF e = located(very_simple_expr) { Ref e }
+  | EMARK e = located(simple_expr) { Read e }
+  | REF e = located(simple_expr) { Ref e }
+  | e1 = located(very_simple_expr) COLONEQ e2 = located(simple_expr)
+      { Write (e1, e2) }
   | e1 = located(simple_expr) b = located(binop) e2 = located(simple_expr)
       {
         let f x = Variable (Position.map (fun x -> x) b)  in
         Apply (Position.map f b, [], [e1; e2])
       }
+  (* We explicit the two rules for application because without this
+     (i.e.  when we use the nonterminal option for the type list), an
+     unsolvable reduce/reduce conflict appears.  *)
+  | e = located(very_simple_expr) el = paren_comma_nonempty_list(located(expr))
+      { Apply (e, [], el) }
+  | e = located(very_simple_expr) tl = bracket_comma_nonempty_list(located(ty))
+    el = paren_comma_nonempty_list(located(expr))
+      { Apply (e, tl, el) }
 
 expr:
   | e = unseq_expr { e }
@@ -181,15 +197,10 @@ expr:
  **)
 unseq_expr:
   | e = simple_expr { e }
-  | e1 = located(simple_expr) COLONEQ e2 = located(simple_expr)
-      { Write (e1, e2) }
   | cid = located(constr_id) tyl = bracket_comma_nonempty_list(located(ty))?
     expl = paren_comma_nonempty_list(located(expr))?
       { Tagged(cid, list_of_listoption tyl, list_of_listoption expl) }
   | WHILE e1 = located(expr) LBRACE e2 = located(expr) RBRACE { While (e1, e2) }
-  | e = located(very_simple_expr) tl = bracket_comma_nonempty_list(located(ty))?
-    el = paren_comma_nonempty_list(located(expr))
-      { Apply (e, list_of_listoption tl, el) }
 
 (**
  * For
