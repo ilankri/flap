@@ -208,7 +208,7 @@ unseq_expr:
     expl = paren_comma_nonempty_list(located(expr))?
       { Tagged(cid, list_of_listoption tyl, list_of_listoption expl) }
   | WHILE e1 = located(expr) LBRACE e2 = located(expr) RBRACE { While (e1, e2) }
-  | vd = vdefinition(unseq_expr) SEMICOLON e2 = located(unseq_expr)
+  | vd = vdefinition(simple_expr) SEMICOLON e2 = located(simple_expr)
       {
         match vd with
         | DefineValue(x1, e1) -> Define (x1, e1, e2)
@@ -233,12 +233,12 @@ unseq_expr:
  *       | vdefinition ; expr
  **)
 seq_expr:
-  | e = located(simple_expr) SEMICOLON
-    el = separated_nonempty_list(SEMICOLON, located(simple_expr))
+  | e = located(unseq_expr) SEMICOLON
+    el = separated_nonempty_list(SEMICOLON, located(unseq_expr))
       {
         let f e1 e2 =
           Position.(unknown_pos (Define (unknown_pos (Id "_"), e1, e2))) in
-        Position.value (List.fold_left f e el)
+        Position.value (List.fold_right f el e)
       }
 
 %inline var_id:
