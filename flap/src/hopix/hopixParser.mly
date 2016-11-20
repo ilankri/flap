@@ -208,7 +208,11 @@ unseq_expr:
     expl = paren_comma_nonempty_list(located(expr))?
       { Tagged(cid, list_of_listoption tyl, list_of_listoption expl) }
   | WHILE e1 = located(expr) LBRACE e2 = located(expr) RBRACE { While (e1, e2) }
-  | vd = vdefinition(simple_expr) SEMICOLON e2 = located(simple_expr)
+  | e = localdef_expr { e }
+  | e = cond_expr { e }
+
+localdef_expr:
+  | vd = vdefinition(simple_expr) SEMICOLON e2 = located(noncond_expr)
       {
         match vd with
         | DefineValue(x1, e1) -> Define (x1, e1, e2)
@@ -218,14 +222,17 @@ unseq_expr:
                     should not be in the vdefinition"
       }
 
+noncond_expr:
+  | e = simple_expr { e }
+  | e = localdef_expr { e }
 
-(* cond_expr: *)
-(*   | IF c1 = located(expr) THEN e1 = located(noncond_expr) *)
-(*     l = list(elif_branch) e = preceded(ELSE, located(simple_expr))? *)
-(*       { If ((c1, e1) :: l, e) } *)
+cond_expr:
+  | IF c1 = located(expr) THEN e1 = located(noncond_expr)
+    l = list(elif_branch) e = preceded(ELSE, located(noncond_expr))?
+      { If ((c1, e1) :: l, e) }
 
-(* elif_branch: *)
-(*   | ELIF c = located(expr) THEN e = located(noncond_expr) { (c, e) } *)
+elif_branch:
+  | ELIF c = located(expr) THEN e = located(noncond_expr) { (c, e) }
 
 (**
  * For
@@ -236,9 +243,13 @@ seq_expr:
   | e = located(unseq_expr) SEMICOLON
     el = separated_nonempty_list(SEMICOLON, located(unseq_expr))
       {
-        let f e1 e2 =
-          Position.(unknown_pos (Define (unknown_pos (Id "_"), e1, e2))) in
-        Position.value (List.fold_right f el e)
+        let el = e :: el in
+        let el = List.rev el in
+        (* It is risky to use a valid id like "nothing". *)
+        let dummy_id = Position.unknown_pos (Id "nothing") in
+        let f e2 e1 =
+          Position.(unknown_pos (Define (dummy_id, e1, e2))) in
+        Position.value (List.fold_left f (List.hd el) (List.tl el))
       }
 
 %inline var_id:
