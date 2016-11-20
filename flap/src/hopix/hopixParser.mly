@@ -71,9 +71,9 @@ constr_definition:
 vdefinition(X):
   | VAL id = located(var_id) exp = expr_with_return_type(X)
       {
-	DefineValue (id, exp)
+        DefineValue (id, exp)
       }
-  | FUN vlist = var_id_list more = option(and_var_id_list)
+  | FUN vlist = var_id_list(X) more = option(and_var_id_list(X))
       {
         let l = [vlist] in
         match more with
@@ -81,7 +81,7 @@ vdefinition(X):
         | Some lmore -> DefineRecFuns(l @ lmore)
       }
 
-(** 
+(**
  * EXPR := expr
  * For
  * [ : type ] = EXPR
@@ -90,24 +90,24 @@ expr_with_return_type(EXPR):
   | t = preceded(COLON, located(ty))? EQ exp = located(EXPR)
     {
       match t with
-      | None -> exp 
+      | None -> exp
       | Some t -> Position.with_poss $startpos $endpos (TypeAnnotation(exp, t))
     }
 
-and_var_id_list:
-  | AND li = separated_nonempty_list(AND, var_id_list) { li }
+and_var_id_list(X):
+  | AND li = separated_nonempty_list(AND, var_id_list(X)) { li }
 
-var_id_list:
-  | id = located(var_id) 
+var_id_list(X):
+  | id = located(var_id)
     typ_list = option(bracket_comma_nonempty_list(located(type_variable)))
     pat_list = paren_comma_nonempty_list(located(simple_pattern))
-    e = expr_with_return_type(expr)
+    e = expr_with_return_type(X)
     { (id, Position.with_poss $startpos $endpos
     (FunctionDefinition( list_of_listoption(typ_list), pat_list, e))) }
 
 (**
  * For
- * pattern ::= 
+ * pattern ::=
  * | ( pattern )
  * | pattern | pattern
  * | pattern & pattern
@@ -116,14 +116,14 @@ var_id_list:
 pattern:
   | LPAREN p = simple_pattern RPAREN { p }
   | p1 = located(pattern) PIPE p2 = located(pattern) { POr([p1;p2]) }
-  | p1 = located(pattern) AMPERSAND p2 = located(pattern) { PAnd([p1;p2]) } 
+  | p1 = located(pattern) AMPERSAND p2 = located(pattern) { PAnd([p1;p2]) }
   | id = located(constr_id) LPAREN pat_list =
           paren_comma_nonempty_list(located(simple_pattern)) RPAREN
     { PTaggedValue(id, pat_list) }
 
-(** 
- * For 
- * pattern ::= 
+(**
+ * For
+ * pattern ::=
  * pattern : type
  * **)
 simple_pattern:
@@ -132,7 +132,7 @@ simple_pattern:
 
 (**
  * For
- * pattern ::= 
+ * pattern ::=
  * | var_id
  * | int
  * | char
@@ -208,14 +208,7 @@ unseq_expr:
     expl = paren_comma_nonempty_list(located(expr))?
       { Tagged(cid, list_of_listoption tyl, list_of_listoption expl) }
   | WHILE e1 = located(expr) LBRACE e2 = located(expr) RBRACE { While (e1, e2) }
-
-(**
- * For
- * expr := { simple_expr }
- *       | vdefinition ; expr
- **)
-seq_expr:
-  | vd = vdefinition(unseq_expr) SEMICOLON e2 = located(expr)
+  | vd = vdefinition(unseq_expr) SEMICOLON e2 = located(unseq_expr)
       {
         match vd with
         | DefineValue(x1, e1) -> Define (x1, e1, e2)
@@ -224,8 +217,24 @@ seq_expr:
           failwith "Error: DefineType and DeclareExtern \
                     should not be in the vdefinition"
       }
-  | e = located(unseq_expr) SEMICOLON
-    el = separated_nonempty_list(SEMICOLON, located(unseq_expr))
+
+
+(* cond_expr: *)
+(*   | IF c1 = located(expr) THEN e1 = located(noncond_expr) *)
+(*     l = list(elif_branch) e = preceded(ELSE, located(simple_expr))? *)
+(*       { If ((c1, e1) :: l, e) } *)
+
+(* elif_branch: *)
+(*   | ELIF c = located(expr) THEN e = located(noncond_expr) { (c, e) } *)
+
+(**
+ * For
+ * expr := { simple_expr }
+ *       | vdefinition ; expr
+ **)
+seq_expr:
+  | e = located(simple_expr) SEMICOLON
+    el = separated_nonempty_list(SEMICOLON, located(simple_expr))
       {
         let f e1 e2 =
           Position.(unknown_pos (Define (unknown_pos (Id "_"), e1, e2))) in
