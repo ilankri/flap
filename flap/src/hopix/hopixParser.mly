@@ -25,9 +25,9 @@ let prefix_id x = Id ("`" ^ x)
 %left LOR
 %left LAND
 %left LT GT LEQ GEQ EQ
+%left INFIX_ID
 %left PLUS MINUS
 %left TIMES DIV
-%left INFIX_ID
 %nonassoc EMARK
 
 %start<HopixAST.t> program
