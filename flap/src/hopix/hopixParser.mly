@@ -58,7 +58,7 @@ tdefinition:
 
 constr_definition:
   | c = located(constr_id) tl = paren_comma_nonempty_list(located(ty))?
-      { (c, list_of_listoption tl)}
+      { (c, list_of_listoption tl) }
 
 (**
  * For
@@ -100,7 +100,7 @@ and_var_id_list(X):
 var_id_list(X):
   | id = located(var_id)
     typ_list = option(bracket_comma_nonempty_list(located(type_variable)))
-    pat_list = paren_comma_nonempty_list(located(simple_pattern))
+    pat_list = paren_comma_nonempty_list(located(pattern))
     e = expr_with_return_type(X)
     { (id, Position.with_poss $startpos $endpos
     ( FunctionDefinition( list_of_listoption(typ_list), pat_list, e))) }
@@ -108,27 +108,27 @@ var_id_list(X):
 (**
  * For
  * pattern ::=
- * | ( pattern )
  * | pattern | pattern
  * | pattern & pattern
  * | constr_id ( pattern { , pattern } )
- **)
+ * | ( pattern )
+**)
 pattern:
-  | LPAREN p = simple_pattern RPAREN { p }
-  | p1 = located(pattern) PIPE p2 = located(pattern) { POr([p1;p2]) }
-  | p1 = located(pattern) AMPERSAND p2 = located(pattern) { PAnd([p1;p2]) }
+  | p1 = located(pattern) PIPE p2 = located(simple_pattern) { POr([p1;p2]) }
+  | p1 = located(pattern) AMPERSAND p2 = located(simple_pattern) { PAnd([p1;p2]) }
   | id = located(constr_id) LPAREN pat_list =
           paren_comma_nonempty_list(located(simple_pattern)) RPAREN
     { PTaggedValue(id, pat_list) }
+  | LPAREN p = simple_pattern RPAREN { p }
 
 (**
- * For
+ * For terminals
  * pattern ::=
- * pattern : type
+ * | pattern : type
  * **)
 simple_pattern:
   | b = base_pattern { b }
-  | p = located(base_pattern) COLON t = located(ty) { PTypeAnnotation(p, t) }
+  | p = located(simple_pattern) COLON t = located(ty) { PTypeAnnotation(p, t) }
 
 (**
  * For
