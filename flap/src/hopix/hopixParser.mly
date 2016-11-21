@@ -206,6 +206,10 @@ expr:
  *       | if expr then expr { elif expr then expr } [ else expr ]
  **)
 unseq_expr:
+  | e = simple_unseq_expr { e }
+  | e = localdef_expr { e }
+
+simple_unseq_expr:
   | e = simple_expr { e }
   | cid = located(constr_id) tyl = bracket_comma_nonempty_list(located(ty))?
     expl = paren_comma_nonempty_list(located(expr))?
@@ -215,11 +219,10 @@ unseq_expr:
                 e = located(unseq_expr)
     { Fun ( FunctionDefinition(list_of_listoption(tyvl), patl, e) ) }
   | WHILE e1 = located(expr) LBRACE e2 = located(expr) RBRACE { While (e1, e2) }
-  | e = localdef_expr { e }
   | e = cond_expr { e }
 
 localdef_expr:
-  | vd = vdefinition(unseq_expr) SEMICOLON e2 = located(noncond_expr)
+  | vd = vdefinition(simple_unseq_expr) SEMICOLON e2 = located(noncond_expr)
       {
         match vd with
         | DefineValue(x1, e1) -> Define (x1, e1, e2)
