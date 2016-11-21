@@ -235,10 +235,10 @@ noncond_expr:
 
 cond_expr:
   | IF c1 = located(expr) THEN e1 = located(noncond_expr)
-    l = list(elif_branch) e = preceded(ELSE, located(noncond_expr))?
+    l = list(elif_expr) e = preceded(ELSE, located(noncond_expr))?
       { If ((c1, e1) :: l, e) }
 
-elif_branch:
+elif_expr:
   | ELIF c = located(expr) THEN e = located(noncond_expr) { (c, e) }
 
 (**
