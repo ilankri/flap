@@ -2,3 +2,4 @@ changes.tex
 version.tex
 *.log
 *.out
+*.aux
