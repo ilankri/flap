@@ -219,7 +219,7 @@ unseq_expr:
   | e = cond_expr { e }
 
 localdef_expr:
-  | vd = vdefinition(simple_expr) SEMICOLON e2 = located(noncond_expr)
+  | vd = vdefinition(unseq_expr) SEMICOLON e2 = located(noncond_expr)
       {
         match vd with
         | DefineValue(x1, e1) -> Define (x1, e1, e2)
