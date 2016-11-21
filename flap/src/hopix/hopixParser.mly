@@ -27,7 +27,6 @@ let list_of_listoption = function
 %left INFIX_ID
 %left PLUS MINUS
 %left TIMES DIV
-%left PIPE
 %nonassoc EMARK
 
 %start<HopixAST.t> program
