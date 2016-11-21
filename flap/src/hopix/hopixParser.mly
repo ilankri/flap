@@ -27,6 +27,7 @@ let list_of_listoption = function
 %left INFIX_ID
 %left PLUS MINUS
 %left TIMES DIV
+%left PIPE
 %nonassoc EMARK
 
 %start<HopixAST.t> program
@@ -245,6 +246,7 @@ elif_expr:
  * For
  * expr := { simple_expr }
  *       | vdefinition ; expr
+ *       | expr ? branches
  **)
 seq_expr:
   | e = located(unseq_expr) SEMICOLON
@@ -258,6 +260,23 @@ seq_expr:
           Position.(unknown_pos (Define (dummy_id, e1, e2))) in
         Position.value (List.fold_left f (List.hd el) (List.tl el))
       }
+  | e = located(unseq_expr) QMARK bl = branches { Case(e, bl)  }
+
+
+(** 
+ * For
+ * branches ::= [ | ] branch { | branch }
+ *          | { [ | ] branch { | branch } }
+ * **)
+branches: 
+  | b = multi_branches { b }
+  | LBRACE b = multi_branches RBRACE { b }
+
+multi_branches:
+  | option(PIPE) blist = separated_nonempty_list(PIPE, located(branch)) { blist }
+
+branch:
+  | p = located(simple_pattern) IMPL e = located(unseq_expr) { Branch(p, e) }
 
 %inline var_id:
   | id = BASIC_ID | id = PREFIX_ID { Id id }
