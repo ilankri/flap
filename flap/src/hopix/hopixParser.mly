@@ -103,7 +103,7 @@ var_id_list(X):
     pat_list = paren_comma_nonempty_list(located(simple_pattern))
     e = expr_with_return_type(X)
     { (id, Position.with_poss $startpos $endpos
-    (FunctionDefinition( list_of_listoption(typ_list), pat_list, e))) }
+    ( FunctionDefinition( list_of_listoption(typ_list), pat_list, e))) }
 
 (**
  * For
@@ -200,13 +200,20 @@ expr:
  * For
  * expr := { simple_expr }
  *       | constr_id / [ [type { ,type }] ] [ (expr { ,expr } ) ]
- *       | expr := expr
+ *       | \ [ [type_variable {, type_variable }] ] (pattern {, pattern })=> expr
+ *       | while expr { expr }
+ *       | vdefinition ; expr
+ *       | if expr then expr { elif expr then expr } [ else expr ]
  **)
 unseq_expr:
   | e = simple_expr { e }
   | cid = located(constr_id) tyl = bracket_comma_nonempty_list(located(ty))?
     expl = paren_comma_nonempty_list(located(expr))?
       { Tagged(cid, list_of_listoption tyl, list_of_listoption expl) }
+  | BACKSLASH tyvl = bracket_comma_nonempty_list(located(type_variable))? 
+              patl = paren_comma_nonempty_list(located(simple_pattern)) IMPL 
+                e = located(expr)
+    { Fun ( FunctionDefinition(list_of_listoption(tyvl), patl, e) ) }
   | WHILE e1 = located(expr) LBRACE e2 = located(expr) RBRACE { While (e1, e2) }
   | e = localdef_expr { e }
   | e = cond_expr { e }
