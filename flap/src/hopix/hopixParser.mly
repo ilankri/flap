@@ -100,7 +100,7 @@ and_var_id_list(X):
 var_id_list(X):
   | id = located(var_id)
     typ_list = option(bracket_comma_nonempty_list(located(type_variable)))
-    pat_list = paren_comma_nonempty_list(located(pattern))
+    pat_list = paren_comma_nonempty_list(located(simple_pattern))
     e = expr_with_return_type(X)
     { (id, Position.with_poss $startpos $endpos
     ( FunctionDefinition( list_of_listoption(typ_list), pat_list, e))) }
@@ -116,8 +116,7 @@ var_id_list(X):
 pattern:
   | p1 = located(pattern) PIPE p2 = located(simple_pattern) { POr([p1;p2]) }
   | p1 = located(pattern) AMPERSAND p2 = located(simple_pattern) { PAnd([p1;p2]) }
-  | id = located(constr_id) LPAREN pat_list =
-          paren_comma_nonempty_list(located(simple_pattern)) RPAREN
+  | id = located(constr_id) pat_list = paren_comma_nonempty_list(located(simple_pattern))
     { PTaggedValue(id, pat_list) }
   | LPAREN p = simple_pattern RPAREN { p }
 
@@ -278,7 +277,7 @@ multi_branches:
   | option(PIPE) blist = separated_nonempty_list(PIPE, located(branch)) { blist }
 
 branch:
-  | p = located(simple_pattern) IMPL e = located(unseq_expr) { Branch(p, e) }
+  | p = located(pattern) IMPL e = located(unseq_expr) { Branch(p, e) }
 
 %inline var_id:
   | id = BASIC_ID | id = PREFIX_ID { Id id }
