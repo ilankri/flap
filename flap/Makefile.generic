@@ -10,8 +10,9 @@ STARGET	 = $(OTARGET)
 #########################
 
 # The flag STRICT asks Menhir to turn warnings into errors.
-ifeq($(STRICT), yes)
+ifeq ($(STRICT), yes)
   MENHIR_STRICT = -yaccflag --strict
+endif
 
 # Menhir can be told to produce a parser that explains what
 # it is doing.
