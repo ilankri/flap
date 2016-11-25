@@ -103,4 +103,4 @@ dist:
 	tar cvfz $(PACKAGE).tar.gz $(PACKAGE)
 
 check: all
-	$(MAKE) -C tests check
+	LOCAL_TEST=yes $(MAKE) -C ../flapivor/tests/tests-m1 check
