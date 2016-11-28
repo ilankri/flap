@@ -157,71 +157,72 @@ ty:
 
 (**
  * For
- * expr := int
+ * expr := inte
  *       | char
  *       | var_id
- *       | ( expr : type )
- *       | ( expr )
- *       | ref expr
- *       | ! expr
  * **)
-very_simple_expr:
+base_simple_expr:
   | li = located(literal) { Literal li }
   | vid = located(var_id) { Variable vid }
-  | LPAREN e = located(expr) COLON t = located(ty) RPAREN
-      { TypeAnnotation (e, t) }
-  | LPAREN e = expr RPAREN { e }
+  (** expr binop expr **)
+  | e1 = located(base_simple_expr) b = located(binop) e2 = located(base_simple_expr)
+      { Apply( (Position.with_poss $startpos $endpos (Variable b)), [], [e1;e2] ) }
 
 simple_expr:
-  | e = very_simple_expr { e }
-  | EMARK e = located(simple_expr) { Read e }
-  | REF e = located(simple_expr) { Ref e }
-  | e1 = located(very_simple_expr) COLONEQ e2 = located(simple_expr)
-      { Write (e1, e2) }
-  | e1 = located(simple_expr) b = located(binop) e2 = located(simple_expr)
-      {
-        Apply( (Position.with_poss $startpos $endpos (Variable b)), [], [e1; e2] )
-      }
-  (* We explicit the two rules for application because without this
-     (i.e.  when we use the nonterminal option for the type list), an
-     unsolvable reduce/reduce conflict appears.  *)
-  | e = located(very_simple_expr) el = paren_comma_nonempty_list(located(expr))
-      { Apply (e, [], el) }
-  | e = located(very_simple_expr) tl = bracket_comma_nonempty_list(located(ty))
-    el = paren_comma_nonempty_list(located(expr))
-      { Apply (e, tl, el) }
+  | b = base_simple_expr { b }
+  (** ! expr  **)
+  | EMARK e = located(simple_expr) { Read e } 
+  (** ref expr  **)
+  | REF e = located(simple_expr) { Ref e } 
+  (** expr ? branches  **)
+  | e = located(simple_expr) QMARK bl = branches { Case(e, bl) }
+  (** (expr)  **)
+  | LPAREN e = simple_expr RPAREN { e }
+  (** expr [[type {,type }]](expr {,expr }) **)
+  | e = located(base_simple_expr) tl = bracket_comma_nonempty_list(located(ty))?
+    el = paren_comma_nonempty_list(located(simple_expr))
+      { Apply (e, list_of_listoption(tl), el) }
+  (** \ [ [type_variable {, type_variable }] ] (pattern {, pattern })=> expr **)
+  | BACKSLASH tyvl = bracket_comma_nonempty_list(located(type_variable))?
+      patl = paren_comma_nonempty_list(located(simple_pattern)) IMPL e = located(simple_expr)
+      { Fun ( FunctionDefinition(list_of_listoption(tyvl), patl, e) ) }
+  (** ( expr : type ) **)  
+  | LPAREN e = located(simple_expr) COLON t = located(ty) RPAREN { TypeAnnotation (e, t) }
+  (** constr_id [ [type { ,type }] ] [ (expr { ,expr } ) ] **)
+  | cid = located(constr_id) tyl = bracket_comma_nonempty_list(located(ty))?
+    expl = paren_comma_nonempty_list(located(simple_expr))?
+      { Tagged(cid, list_of_listoption tyl, list_of_listoption expl) }
 
 expr:
-  | e = unseq_expr { e }
-  | e = seq_expr { e }
-
-(**
- * For
- * expr := { simple_expr }
- *       | constr_id / [ [type { ,type }] ] [ (expr { ,expr } ) ]
- *       | \ [ [type_variable {, type_variable }] ] (pattern {, pattern })=> expr
- *       | while expr { expr }
- *       | vdefinition ; expr
- *       | if expr then expr { elif expr then expr } [ else expr ]
- **)
-unseq_expr:
-  | e = simple_unseq_expr { e }
-  | e = localdef_expr { e }
-
-simple_unseq_expr:
   | e = simple_expr { e }
-  | cid = located(constr_id) tyl = bracket_comma_nonempty_list(located(ty))?
-    expl = paren_comma_nonempty_list(located(expr))?
-      { Tagged(cid, list_of_listoption tyl, list_of_listoption expl) }
-  | BACKSLASH tyvl = bracket_comma_nonempty_list(located(type_variable))?
-              patl = paren_comma_nonempty_list(located(simple_pattern)) IMPL
-                e = located(unseq_expr)
-    { Fun ( FunctionDefinition(list_of_listoption(tyvl), patl, e) ) }
-  | WHILE e1 = located(expr) LBRACE e2 = located(expr) RBRACE { While (e1, e2) }
+  (** expr := expr  **)
+  | e1 = located(expr) COLONEQ e2 = located(simple_expr)
+      { Write (e1, e2) }
+  (** 
+   * if expr then expr { elif expr then expr } [ else expr ]
+   * while expr { expr }
+   * **)
   | e = cond_expr { e }
+  (** 
+   * vdefinition ; expr **)
+  | ve = localdef_expr { ve }
+  (** | expr { ; expr } **)
+  | e = located(expr) SEMICOLON
+   el = separated_nonempty_list(SEMICOLON, located(simple_expr))
+    { 
+      let el = e :: el in
+        let el = List.rev el in
+        (* It is risky to use a valid id like "nothing". *)
+          let dummy_id = Position.unknown_pos (Id "nothing") in
+            let f e2 e1 = Position.(unknown_pos (Define(dummy_id, e1, e2))) in
+              Position.value (List.fold_left f (List.hd el) (List.tl el))
+    }
 
+(** 
+ * vdefinition ; expr
+ * **)
 localdef_expr:
-  | vd = vdefinition(simple_unseq_expr) SEMICOLON e2 = located(noncond_expr)
+  | vd = vdefinition(expr) SEMICOLON e2 = located(simple_expr)
       {
         match vd with
         | DefineValue(x1, e1) -> Define (x1, e1, e2)
@@ -231,37 +232,19 @@ localdef_expr:
                     should not be in the vdefinition"
       }
 
-noncond_expr:
-  | e = simple_expr { e }
-  | e = localdef_expr { e }
-
+(** 
+ * For
+ * expr := if expr then expr { elif expr then expr } [ else expr ]
+ *       | while expr { expr }
+ * **)
 cond_expr:
-  | IF c1 = located(expr) THEN e1 = located(noncond_expr)
-    l = list(elif_expr) e = preceded(ELSE, located(noncond_expr))?
+  | IF c1 = located(base_simple_expr) THEN e1 = located(expr)
+    l = list(elif_expr) e = preceded(ELSE, located(expr))?
       { If ((c1, e1) :: l, e) }
+  | WHILE e1 = located(base_simple_expr) LBRACE e2 = located(expr) RBRACE { While(e1, e2) }
 
 elif_expr:
-  | ELIF c = located(expr) THEN e = located(noncond_expr) { (c, e) }
-
-(**
- * For
- * expr := { simple_expr }
- *       | vdefinition ; expr
- *       | expr ? branches
- **)
-seq_expr:
-  | e = located(unseq_expr) SEMICOLON
-    el = separated_nonempty_list(SEMICOLON, located(unseq_expr))
-      {
-        let el = e :: el in
-        let el = List.rev el in
-        (* It is risky to use a valid id like "nothing". *)
-        let dummy_id = Position.unknown_pos (Id "nothing") in
-        let f e2 e1 =
-          Position.(unknown_pos (Define (dummy_id, e1, e2))) in
-        Position.value (List.fold_left f (List.hd el) (List.tl el))
-      }
-  | e = located(unseq_expr) QMARK bl = branches { Case(e, bl)  }
+  | ELIF c = located(base_simple_expr) THEN e = located(expr) { (c, e) }
 
 
 (**
@@ -277,7 +260,7 @@ multi_branches:
   | option(PIPE) blist = separated_nonempty_list(PIPE, located(branch)) { blist }
 
 branch:
-  | p = located(pattern) IMPL e = located(unseq_expr) { Branch(p, e) }
+  | p = located(pattern) IMPL e = located(simple_expr) { Branch(p, e) }
 
 %inline var_id:
   | id = BASIC_ID | id = PREFIX_ID { Id id }
