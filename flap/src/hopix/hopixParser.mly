@@ -206,8 +206,11 @@ expr:
   (** 
    * vdefinition ; expr **)
   | ve = localdef_expr { ve }
-  (** | expr { ; expr } **)
-  | e = located(expr) SEMICOLON
+  | s = sequence_expr { s }
+
+sequence_expr:
+  (** expr { ; expr } **)
+  | e = located(simple_expr) SEMICOLON
    el = separated_nonempty_list(SEMICOLON, located(simple_expr))
     { 
       let el = e :: el in
@@ -238,17 +241,23 @@ localdef_expr:
  *       | while expr { expr }
  * **)
 cond_expr:
-  | IF c1 = located(base_simple_expr) THEN e1 = located(then_expr)
-    l = list(elif_expr) e = preceded(ELSE, located(then_expr))?
+  | IF c1 = located(expr_in_if) THEN e1 = located(expr_in_else)
+    l = list(elif_expr) e = preceded(ELSE, located(expr_in_else))?
       { If ((c1, e1) :: l, e) }
   | WHILE e1 = located(base_simple_expr) LBRACE e2 = located(simple_expr) RBRACE { While(e1, e2) }
 
 elif_expr:
-  | ELIF c = located(base_simple_expr) THEN e = located(then_expr) { (c, e) }
+  | ELIF c = located(expr_in_if) THEN e = located(expr_in_else) { (c, e) }
 
-then_expr:
+expr_in_else:
   | s = simple_expr { s }
   | c = cond_expr { c }
+
+expr_in_if:
+  | s = simple_expr { s }
+  | c = cond_expr { c }
+  (** In the condition, we also allow sequence expr. Eg if a;b then ... **)
+  | s = sequence_expr { s }
 
 (**
  * For
