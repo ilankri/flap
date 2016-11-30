@@ -211,8 +211,12 @@ simple_expr:
 
 expr:
   | e = simple_expr { e }
+
+  (* There are several conflicts introduced by conditional
+     expressions.  *)
   (* (\** if expr then expr { elif expr then expr } [ else expr ]  **\) *)
   (* | i = if_expr { i } *)
+
   | ve = localdef_expr { ve }
   (** expr { ; expr }  **)
   | e = located(simple_expr) SEMICOLON
