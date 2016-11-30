@@ -213,14 +213,15 @@ nonseq_expr:
       { Write (e1, e2) }
   (** expr ? branches  **)
   | e = located(nonseq_expr) QMARK bl = branches { Case(e, bl) }
+  (** while expr { expr } **)
   | WHILE e1 = located(expr) LBRACE e2 = located(expr) RBRACE { While (e1, e2) }
-  (* | e = cond_expr { e } *)
+  (** if expr then expr { elif expr then expr } [ else expr ]  **)
+  | i = if_expr { i }
 
 expr:
   | e = nonseq_expr { e }
-  (**
-   * vdefinition ; expr **)
   | ve = localdef_expr { ve }
+  (** expr { ; expr }  **)
   | e = located(nonseq_expr) SEMICOLON
     el = separated_nonempty_list(SEMICOLON, located(nonseq_expr))
       {
@@ -251,26 +252,35 @@ localdef_expr:
  * For
  * expr := if expr then expr { elif expr then expr } [ else expr ]
  * **)
-(**
-cond_expr:
-  | IF c1 = located(expr_in_if) THEN e1 = located(expr_in_else)
-    l = list(elif_expr) e = preceded(ELSE, located(expr_in_else))?
-      { If ((c1, e1) :: l, e) }
-  | WHILE e1 = located(base_simple_expr) LBRACE e2 = located(simple_expr) RBRACE { While(e1, e2) }
+if_expr:
+  | IF c1 = located(expr_in_if) THEN e1 = located(expr_in_else_with_localdef)
+      { If ((c1, e1)::[], None) }
+  | IF c1 = located(expr_in_if) THEN e1 = located(expr_in_else) 
+      l = nonempty_list(elif_expr(expr_in_else_with_localdef))
+      { If ((c1, e1) :: l, None) }
+  | IF c1 = located(expr_in_if) THEN e1 = located(expr_in_else) ELSE e = located(expr_in_else_with_localdef)
+      { If ((c1, e1) :: [], (Some e)) }
+  | IF c1 = located(expr_in_if) THEN e1 = located(expr_in_else)    
+      l = nonempty_list(elif_expr(expr_in_else)) ELSE e = located(expr_in_else_with_localdef)
+      { If ((c1, e1) :: l, (Some e)) }
 
-elif_expr:
-  | ELIF c = located(expr_in_if) THEN e = located(expr_in_else) { (c, e) }
+elif_expr(X):
+  | ELIF c = located(expr_in_if) THEN e = located(X) { (c, e) }
 
 expr_in_else:
   | s = simple_expr { s }
-  | c = cond_expr { c }
+  | c = if_expr { c }
+
+expr_in_else_with_localdef:
+  | e = expr_in_else { e }
+  | l = localdef_expr { l }
 
 expr_in_if:
   | s = simple_expr { s }
-  | c = cond_expr { c }
+  | c = if_expr { c }
   (** In the condition, we also allow sequence expr. Eg if a;b then ... **)
-  | s = sequence_expr { s }
-**)
+  | l = localdef_expr { l }
+
 
 (**
  * For
