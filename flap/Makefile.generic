@@ -37,6 +37,8 @@ OCAMLBUILD = ocamlbuild -use-ocamlfind -use-menhir $(OCAMLBUILDFLAGS)
 OCAMLDOC = ocamldoc
 HEADACHE = headache
 
+RLWRAP = rlwrap
+
 # Generic command to run tests locally.
 check_cmd = LOCAL_TEST=yes $(MAKE) -C ../flapivor/tests/tests-m1 check
 
@@ -44,8 +46,8 @@ check_cmd = LOCAL_TEST=yes $(MAKE) -C ../flapivor/tests/tests-m1 check
 # Rules #
 #########
 
-.PHONY: configure all-generic byte opt doc clean dist install uninstall
-	headers clear check check-with-log
+.PHONY: configure all-generic byte opt doc clean dist install uninstall	\
+	headers clear byte-debug all-debug check check-with-log run
 
 all-generic: configure clear $(STARGET) $(TARGET)
 
@@ -77,6 +79,20 @@ install: $(EXECUTABLE)
 uninstall:
 	/bin/rm -f $(PREFIX)/bin/$(TARGET)
 endif
+
+all-debug: byte-debug $(TARGET)
+
+# Run tests locally.
+check: all-debug
+	$(check_cmd)
+
+# Run tests locally and create a log file.
+check-with-log: all-debug
+	VERBOSE=1 $(check_cmd) > ../log/local-tests-m1.log
+
+# Run flap quickly.
+run: all-debug
+	$(RLWRAP) ./$(TARGET) -s hopix -i true -V true
 
 #######################
 # Administrative part #
@@ -110,9 +126,3 @@ dist:
 	  fi;							\
 	done
 	tar cvfz $(PACKAGE).tar.gz $(PACKAGE)
-
-check: all
-	$(check_cmd)
-
-check-with-log: all
-	VERBOSE=1 $(check_cmd) > ../log/local-tests-m1.log
