@@ -229,6 +229,8 @@ expr:
         let f e2 e1 = Position.(unknown_pos (Define(dummy_id, e1, e2))) in
         Position.value (List.fold_left f (List.hd el) (List.tl el))
       }
+  | e1 = located(simple_expr) b = located(binop) e2 = located(localdef_expr)
+      { Apply (Position.unknown_pos (Variable b), [], [e1; e2]) }
 
 (**
  * vdefinition ; expr
