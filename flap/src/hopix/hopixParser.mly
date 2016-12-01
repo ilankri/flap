@@ -252,7 +252,7 @@ if_expr:
   | IF c1 = located(expr_in_if) THEN e1 = located(expr_in_else_with_localdef)
       { If ((c1, e1)::[], None) } 
   | IF c1 = located(expr_in_if) THEN e1 = located(expr_in_else) 
-      l = nonempty_list(elif_expr(expr_in_else_with_localdef)) 
+      l = nonempty_list(elif_expr(expr_in_else)) 
       { If ((c1, e1) :: l, None) } 
   | IF c1 = located(expr_in_if) THEN e1 = located(expr_in_else) ELSE e = located(expr_in_else_with_localdef) 
       { If ((c1, e1) :: [], (Some e)) } 
