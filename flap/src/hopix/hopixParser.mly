@@ -21,6 +21,8 @@ let prefixid_of_binop b = Id ("`" ^ b)
 %token<string>  PREFIX_ID INFIX_ID BASIC_ID CONSTR_ID TYPE_VAR
 
 %nonassoc IMPL
+%right IF ELIF
+%right ELSE THEN
 %left AMPERSAND
 %left PIPE
 %right COLONEQ
@@ -265,7 +267,6 @@ elif_expr(X):
 
 expr_in_else:
   | s = simple_expr { s }
-  | c = if_expr { c } 
 
 expr_in_else_with_localdef:
   | e = expr_in_else { e }
@@ -273,7 +274,6 @@ expr_in_else_with_localdef:
 
 expr_in_if: 
   | s = simple_expr { s } 
-  | c = if_expr { c } 
   (** In the condition, we also allow sequence expr. Eg if a;b then ... **)
   | s = seq_expr { s }
 
