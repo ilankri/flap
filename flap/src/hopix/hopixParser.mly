@@ -208,16 +208,17 @@ simple_expr:
   | e = located(simple_expr) QMARK bl = branches { Case(e, bl) }
   (** while expr { expr } **)
   | WHILE e1 = located(expr) LBRACE e2 = located(expr) RBRACE { While (e1, e2) }
+  (** if expr then expr { elif expr then expr } [ else expr ] **)
+  | i = if_expr { i }
 
 expr:
   | e = simple_expr { e }
-
-  (* There are several conflicts introduced by conditional
-     expressions.  *)
-  (* (\** if expr then expr { elif expr then expr } [ else expr ]  **\) *)
-  (* | i = if_expr { i } *)
-
   | ve = localdef_expr { ve }
+  | s = seq_expr { s }
+  | e1 = located(simple_expr) b = located(binop) e2 = located(localdef_expr)
+        { Apply (Position.unknown_pos (Variable b), [], [e1; e2]) }
+
+seq_expr:
   (** expr { ; expr }  **)
   | e = located(simple_expr) SEMICOLON
     el = separated_nonempty_list(SEMICOLON, located(simple_expr))
@@ -229,8 +230,6 @@ expr:
         let f e2 e1 = Position.(unknown_pos (Define(dummy_id, e1, e2))) in
         Position.value (List.fold_left f (List.hd el) (List.tl el))
       }
-  | e1 = located(simple_expr) b = located(binop) e2 = located(localdef_expr)
-      { Apply (Position.unknown_pos (Variable b), [], [e1; e2]) }
 
 (**
  * vdefinition ; expr
@@ -246,38 +245,37 @@ localdef_expr:
                     should not be in the vdefinition"
       }
 
-(* (\** *)
-(*  * For *)
-(*  * expr := if expr then expr { elif expr then expr } [ else expr ] *)
-(*  * **\) *)
-(* if_expr: *)
-(*   | IF c1 = located(expr_in_if) THEN e1 = located(expr_in_else_with_localdef) *)
-(*       { If ((c1, e1)::[], None) } *)
-(*   | IF c1 = located(expr_in_if) THEN e1 = located(expr_in_else) *)
-(*       l = nonempty_list(elif_expr(expr_in_else_with_localdef)) *)
-(*       { If ((c1, e1) :: l, None) } *)
-(*   | IF c1 = located(expr_in_if) THEN e1 = located(expr_in_else) ELSE e = located(expr_in_else_with_localdef) *)
-(*       { If ((c1, e1) :: [], (Some e)) } *)
-(*   | IF c1 = located(expr_in_if) THEN e1 = located(expr_in_else) *)
-(*       l = nonempty_list(elif_expr(expr_in_else)) ELSE e = located(expr_in_else_with_localdef) *)
-(*       { If ((c1, e1) :: l, (Some e)) } *)
+(**
+* For 
+*  * expr := if expr then expr { elif expr then expr } [ else expr ] *)
+if_expr:
+  | IF c1 = located(expr_in_if) THEN e1 = located(expr_in_else_with_localdef)
+      { If ((c1, e1)::[], None) } 
+  | IF c1 = located(expr_in_if) THEN e1 = located(expr_in_else) 
+      l = nonempty_list(elif_expr(expr_in_else_with_localdef)) 
+      { If ((c1, e1) :: l, None) } 
+  | IF c1 = located(expr_in_if) THEN e1 = located(expr_in_else) ELSE e = located(expr_in_else_with_localdef) 
+      { If ((c1, e1) :: [], (Some e)) } 
+  | IF c1 = located(expr_in_if) THEN e1 = located(expr_in_else) 
+      l = nonempty_list(elif_expr(expr_in_else)) ELSE e = located(expr_in_else_with_localdef) 
+      { If ((c1, e1) :: l, (Some e)) } 
 
-(* elif_expr(X): *)
-(*   | ELIF c = located(expr_in_if) THEN e = located(X) { (c, e) } *)
+elif_expr(X):
+  | ELIF c = located(expr_in_if) THEN e = located(X) { (c, e) }
 
-(* expr_in_else: *)
-(*   | s = simple_expr { s } *)
-(*   | c = if_expr { c } *)
+expr_in_else:
+  | s = simple_expr { s }
+  | c = if_expr { c } 
 
-(* expr_in_else_with_localdef: *)
-(*   | e = expr_in_else { e } *)
-(*   | l = localdef_expr { l } *)
+expr_in_else_with_localdef:
+  | e = expr_in_else { e }
+  | l = localdef_expr { l }
 
-(* expr_in_if: *)
-(*   | s = simple_expr { s } *)
-(*   | c = if_expr { c } *)
-(*   (\** In the condition, we also allow sequence expr. Eg if a;b then ... **\) *)
-(*   | l = localdef_expr { l } *)
+expr_in_if: 
+  | s = simple_expr { s } 
+  | c = if_expr { c } 
+  (** In the condition, we also allow sequence expr. Eg if a;b then ... **)
+  | s = seq_expr { s }
 
 
 (**
