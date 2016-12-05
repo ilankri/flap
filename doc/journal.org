@@ -168,3 +168,20 @@
     (fun x -> x + y)[ y = 10 ]
 
 
+* Cours 7 <2016-12-05>
+** Rappel des épisodes précédents
+   - Notion de syntaxe
+   - Notion de liaison de noms
+   - Les pointeurs de fonction en C ne sont pas des représentations
+     sérieuses des fonctions
+   - La notion de fermeture
+** Différents évaluateurs pour un langage arithmétique avec "let"
+   - Sémantique à petits pas
+   - Sémantique à grands pas avec environnements d'évaluation
+** Jalon 2 du projet
+   - Présentation de la spécification de l'année dernière
+   - Règles du "while"
+** Analyse statique
+   - Bonne liaison des noms
+* Cours 8 <2016-12-??>
+* Cours 9 <2016-12-??>
