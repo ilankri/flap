@@ -167,6 +167,7 @@
    - Les pointeurs de fonction en C ne sont pas des représentations
      sérieuses des fonctions
    - La notion de fermeture
+
 ** Différents évaluateurs pour un langage arithmétique avec "let"
    - Sémantique à petits pas
    - Sémantique à grands pas avec environnements d'évaluation
@@ -175,5 +176,5 @@
    - Règles du "while"
 ** Analyse statique
    - Bonne liaison des noms
-* Cours 8 <2016-12-??>
-* Cours 9 <2016-12-??>
+* Cours 8 <2016-12-12>
+* Cours 9 <2016-12-14> de 9h30 à 11h30
