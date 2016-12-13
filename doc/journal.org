@@ -174,7 +174,10 @@
 ** Jalon 2 du projet
    - Présentation de la spécification de l'année dernière
    - Règles du "while"
+* Cours 8 <2016-12-12>
 ** Analyse statique
    - Bonne liaison des noms
-* Cours 8 <2016-12-12>
-* Cours 9 <2016-12-14> de 9h30 à 11h30
+** Compilation vers une machine
+** Les fonctions de seconde classe
+** Les fonctions de première classe
+* Cours 9 <2016-12-14> de 9h30 à 11h30 en salle 1008
