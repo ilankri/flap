@@ -27,6 +27,7 @@ closure_t* mk_closure (env_t env, int_int_closed_fun_t code) {
   return (closure);
 }
 
+// f (x)
 int int_apply (closure_t* f, int x) {
   return (f->code (f->env, x));
 }
@@ -42,6 +43,7 @@ int add2 (env_t env, int y) {
   return (lookup_env (env, 0) + y);
 }
 
+// let add1 x = fun y -> x + y
 closure_t* add1 (int x) {
   return (mk_closure (mk_env1 (x), add2));
 }

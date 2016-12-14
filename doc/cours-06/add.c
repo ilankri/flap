@@ -11,23 +11,22 @@
 typedef int (*fun_t) (int);
 
 fun_t f (int y) {
-  int z = 2 * y;
   int g (int x) {
-    return (z + x);
+    return (2 / y + x);
   }
   return g;
 }
 
 void o (int x, int y, int z) {
-  x = 42;
-  y = 33;
-  z = 69;
+  x = 0;
+  y = 0;
+  z = 0;
   printf ("%d %d %d\n", x, y, z);
 }
 
 int main (char** argv) {
   fun_t h = f (5);
-  o (33, 22, 22);
+  o (0, 0, 0);
   int u = h (2);
   printf ("u = %d\n", u);
   int v = h (3);

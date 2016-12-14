@@ -1,0 +1,495 @@
+%; whizzy paragraph
+\documentclass[a4paper,8pt]{article}
+\usepackage[francais]{babel}
+\usepackage{fancybox}
+%% Encodage et police
+\usepackage{hyperref}
+\usepackage{mathpartir}
+\usepackage{ucs}
+\usepackage[utf8x]{inputenc}
+\usepackage{lmodern}
+\usepackage[T1]{fontenc}
+\usepackage{geometry}
+\usepackage{xcolor}
+\geometry{hmargin=0.7cm, vmargin=2.5cm}
+%% BNF
+\usepackage{tabularx}
+\usepackage{array}
+\def\colsep@widearray{\,}
+\newcolumntype{C}{@{\colsep@widearray}>{\({}}c<{{}\)}@{\colsep@widearray}}
+\newcolumntype{S}{@{\colsep@widearray}>{{}}r<{{}}@{\colsep@widearray}}
+\newcolumntype{L}{@{\colsep@widearray}>{{}}l<{{}}@{\colsep@widearray}}
+\newcolumntype{R}{@{\colsep@widearray}>{\sl{}}r<{{}}@{\colsep@widearray}}
+\newcolumntype{Z}{@{\colsep@widearray}>{{}}X<{{}}@{\colsep@widearray}}
+\newcommand{\comment}[1]{\hspace{3cm}\hfill \mbox{\textit{#1}}}
+\newenvironment{BNF}[1][\linewidth]%
+{\begin{math}\begin{array}{rclr}}%
+{\end{array}\end{math}}%
+\newcommand{\kwd}[1]{\texttt{#1}}
+\newcommand{\lex}[1]{\textsf{#1}}
+\newcommand{\rul}[1]{#1}
+\newcommand{\car}[1]{\texttt{#1}}
+\newcommand{\plus}{$^+$ }
+\newcommand{\mult}{$^*$ }
+\newcommand{\opt}{$^*$ }
+\newcommand{\repeatseq}[1]{\textsl{\meta{\{}} #1 \textsl{\meta{\}}}}
+\newcommand{\repeatseqplus}[1]{\textsl{\meta{\{}} #1 \textsl{\meta{\}}}⁺}
+\newcommand{\optw}[1]{\textsl{\meta{[}} #1 \textsl{\meta{]}}}
+\newcommand{\optseq}[1]{\optw{#1}}
+
+\newcommand\mvalue{v}
+\newcommand\env{E}
+\newcommand\store{M}
+\newcommand\type{\tau}
+\newcommand\otype{\tau^?}
+\newcommand\meta[1]{\textrm{#1}}
+\newcommand\expr{\meta{e}}
+\newcommand\definition{\meta{d}}
+\newcommand\vdefinition{\meta{d}_v}
+\newcommand\tdefinition{\meta{d}_t}
+\newcommand\program{\meta{p}}
+\newcommand\typecon{\meta{T}}
+\newcommand\tvar{\alpha}
+\newcommand\rlabel{\ell}
+\newcommand\id{x}
+\newcommand\cid{K}
+\newcommand\lint{n}
+\newcommand\lchar{c}
+\newcommand\lbool{b}
+\newcommand\lstring{s}
+\newcommand\pattern{\meta{m}}
+\newcommand\branch{\meta{b}}
+\newcommand\addr{a}
+\newcommand\eval[5]{#1, #2 \vdash #3 \Downarrow #4, #5}
+\newcommand\evalvdef[5]{#1, #2 \vdash #3 \Rightarrow #4, #5}
+\newcommand\evalmatch[5]{#1, #2 \vdash #3 \sim #4 \Uparrow #5}
+\newcommand\evalnotmatch[4]{#1, #2 \vdash #3 \not\sim #4}
+\newcommand\caseanalysis[6]{#1, #2 \vdash #3 \sim #4 \Downarrow #5, #6}
+\newcommand\unit{()}
+
+\newlength\codewidth
+\setlength\codewidth{15cm}
+\newenvironment{code}[1][\codewidth]{
+\begin{center}
+\Sbox
+\hspace{0.3cm}\minipage{#1}\small
+}{
+\endminipage
+\endSbox\fbox{\TheSbox}
+\end{center}
+}
+
+\newcommand\many[1]{\overline{#1}}
+
+%%
+\title{
+\vspace{-1.5cm}
+Projet du cours «~Compilation~» \\
+Jalon 2~: Interprétation de \textsc{Hopix}
+}
+\date{\scriptsize version numéro \input{version}}
+
+\begin{document}
+
+\maketitle
+
+\section{Syntaxe abstraite}
+
+Dans les sections suivantes, lorsque l'on utilisera de la syntaxe
+concrète dans les spécifications, on fera référence implicitement
+aux arbres de syntaxe abstraites sous-jacents définis par la grammaire
+suivante:
+
+\begin{code}[17cm]
+\begin{BNF}
+\program  & $::=$  & \many{\definition} \comment{Programme} 
+\\
+\definition
+& $::=$
+& {\kwd{type}}\;
+ \typecon \,\many\tvar := \tdefinition
+ \comment{Définition de type}
+\\
+& | &
+\kwd{extern}\; \id \,\car{:}\, \type
+\comment{Déclaration d'une valeur externe}
+\\
+& | &  \vdefinition
+\comment{Définition de valeur(s)}
+\\
+\tdefinition & $::=$ &
+\Sigma
+\many{\cid \car{:} \many\type}
+\comment{Type somme}
+\\
+& | &
+\bullet
+\comment{Type abstrait}
+\\
+\vdefinition & $::=$ &
+\kwd{val} \; \id \;\many{\pattern}\, \car{:} \otype  \;\car{=}\; \rul{\expr}
+\comment{Valeur simple}
+\\
+& | &
+\kwd{rec}\;
+\many{\id\; \many{\pattern}\, \car{:} \otype  \car{=} \; \rul{\expr}}
+\comment{Valeurs mutuellement récursives}
+\\
+\type
+& $::=$ & \typecon \car{[} \many\type\car{]}
+\comment{Type construit}\\
+& | & \tvar
+\comment{Variable de type}
+\\
+\expr      & $::=$ & \lint \comment{Entier} \\
+          &   | & \lbool \comment{Booléen} \\
+          &   | & \lchar \comment{Caractère} \\
+          &   | & \lstring \comment{Chaîne de caractères} \\
+          &   | & \id                            \comment{Variable} \\
+          &   | & \cid \car{[} \many\type \car{]} \car{(} \many{\expr} \car{)}
+                  \comment{Construction d'une donnée étiquetée} \\
+          &   | & \car{(} \rul{\expr} \;\car{:}\; \type \car{)} \comment{Annotation de type} \\
+          &   | & \rul{\vdefinition} \,\car{;}\; \rul{\expr}
+                  \comment{Définition locale} \\
+          &   | & \rul{\expr} \, \car{[} \many\type \car{]} \car{(} \many{\rul{\expr}} \car{)} \comment{Application} \\
+          &   | & \car{$\backslash$} \car{[} \many\tvar \car{]} \car{(} \many{\rul{\pattern}} \car{)} \,\car{=>}\, \rul{\expr}
+                  \comment{Fonction anonyme} \\
+          &   | & \rul{\expr} \; \car{?} \; \many{\branch}  \comment{Analyse de motifs} \\
+          &   | & \kwd{if} \; \rul{\expr} \; \kwd{then} \; \rul{\expr} \; \kwd{else} \; \rul{\expr} \comment{Conditionnelle} \\
+          &   | & \kwd{ref} \; \rul{\expr} \comment{Création d'une référence} \\
+          &   | & \rul{\expr} \; \car{:=} \; \rul{\expr} \comment{Modification d'une référence} \\
+          &   | & ! \rul{\expr} \comment{Lecture d'une référence} \\
+          &   | & \kwd{while}\, \car{(} \rul{\expr} \car{)} \; \rul{\expr} \comment{Boucle} \\
+\\
+\branch    & $::=$ & \rul{\pattern} \;\car{=>}\; \rul{\expr} \comment{Cas d'analyse} \\
+\\
+\pattern & $::=$ & \id \comment{Motif universel liant}\\
+          &   | & \car{\_} \comment{Motif universel non liant}\\
+          &   | & \car{(} \rul{\pattern} \;\car{:}\; \type \car{)} \comment{Annotation de type} \\
+          &   | & \lint \comment{Entier} \\
+          &   | & \lbool \comment{Booléen} \\
+          &   | & \lchar \comment{Caractère} \\
+          &   | & \lstring \comment{Chaîne de caractères} \\
+          &   | & \cid \car{(} \many{\rul{\pattern}} \car{)}
+                  \comment{Valeurs étiquetées}\\
+          &   | & \rul{\pattern} \;\car{|}\; \rul{\pattern} \comment{Disjonction} \\
+          &   | & \rul{\pattern} \;\car{\&}\; \rul{\pattern} \comment{Conjonction} \\
+\end{BNF}\smallskip
+\end{code}
+
+Dans cette grammaire, on a utilisé les \textit{métavariables} suivantes:
+\begin{itemize}
+
+\item $\typecon$ pour représenter un constructeur de type.
+
+\item $\id$ pour représenter un identificateur de valeur.
+
+\item $\cid$ pour représenter le nom d'un constructeur de données.
+
+\item $\type$ pour représenter un type.
+
+\item $\expr$ pour représenter une expression.
+
+\item $\pattern$ pour représenter un motif.
+
+\item $\lint$ pour représenter un litéral de type entier.
+
+\item $\lbool$ pour représenter un litéral de type booléen.
+  
+\item $\lchar$ pour représenter un litéral de type caractère.
+
+\item $\lstring$ pour représenter un litéral de type chaîne de caractères.
+
+\item $\tvar$ pour représenter une variable de type.
+
+\item $\branch$ pour représenter une branche d'analyse de motifs.
+  
+\end{itemize}
+
+Par ailleurs, on a aussi écrit $\many{X}$ pour représenter une liste potentiellement vide de $X$.
+
+\section{Interprétation}
+
+\subsection{Valeurs}
+
+Les valeurs du langage sont définies par la grammaire suivante:
+
+\begin{code}[17cm]
+\begin{BNF}
+  \mvalue & ::= &
+\lint
+\comment{Entier}
+\\
+& | &
+\lbool
+\comment{Booléen}
+\\
+& | &
+\lchar
+\comment{Caractère}
+\\
+& | &
+\lstring
+\comment{Chaîne de caractères}
+\\
+& | &
+\unit
+\comment{Unité}
+\\
+& | &
+\cid (\many\mvalue)
+\comment{Valeur étiquetée}
+\\
+& | &
+\addr
+\comment{Adresse d'une référence}
+\\
+& | &
+(\many\pattern \;\car{=>}\; \expr) [\env]
+\comment{Fermeture}
+\\
+& | &
+\textrm{prim}
+\comment{Primitive}
+\end{BNF}
+\end{code}
+
+\paragraph{Environnement d'évaluation}
+Les identificateurs de programme sont associés à des valeurs à l'aide
+d'un environnement d'évaluation $\env$. On écrit «~$\env[\id]$~» pour
+parler de la valeur de $\id$ dans l'environnement $\env$.  On écrit
+«~$\env + \id \mapsto \mvalue$~» pour parler de l'environnement $\env$
+étendu par l'association entre l'identificateur $\id$ et la valeur
+$\mvalue$.
+
+\paragraph{Références}
+Les adresses des références sont allouées dynamiquement dans une
+mémoire~$\store$.  On écrit «~$\store + \addr \mapsto \mvalue$~» pour
+représenter la mémoire qui étend la mémoire $\store$ avec une nouvelle
+adresse $\addr$ où se trouve stockée la valeur~$\mvalue$. On écrit
+«~$\store[\addr \leftarrow \mvalue]$~» pour représenter la mémoire
+$\store$ modifiée seulement à l'adresse $\addr$ en y stockant la
+valeur $\mvalue$. Enfin, on écrit
+«~$(\addr \mapsto \mvalue) \in \store$~» pour indiquer que la valeur
+$\mvalue$ est stockée à l'adresse $\addr$ de la mémoire $\store$.
+
+\paragraph{Primitive}
+Les primitives du langage sont définies dans le module
+\verb!HopixInterpreter!. Ce sont des fonctions \textsc{OCaml}
+que l'on a rendues accessibles depuis \textsc{Hopix} ou bien
+des valeurs primitives comme \textbf{true} ou \textbf{false}.
+
+\subsection{Évaluation des programmes}
+
+Un programme $\program$ s'évalue à partir d'une mémoire vide et d'un
+environnement contenant les primitives du langage en évaluant
+successivement les définitions de valeurs dans leur ordre d'apparition
+dans le programme.
+
+Pour spécifier précisément ce processus, il faut donc décrire la façon
+dont les définitions de valeurs s'évaluent: c'est le rôle de la
+section~\ref{sec:evaldef}. Les expressions sont les termes qui
+s'évaluent en des valeurs. Leur évaluation est spécifiée dans la
+section~\ref{sec:exp}.  Elle s'appuie sur l'évaluation de l'analyse
+par cas (section~\ref{sec:case}) et l'analyse de motifs
+(section~\ref{sec:pattern}).
+
+\subsection{Évaluation des définitions}
+\label{sec:evaldef}
+
+L'évaluation des définitions s'appuie sur le jugement:
+\[
+  \evalvdef\env\store\vdefinition{\env'}{\store'} \\
+\]
+qui se lit «~Dans l'environnement $\env$ et la mémoire $\store$, la
+définition $\vdefinition$ étend $\env$ et $\env'$ et modifie $\store$
+en $\store'$.
+
+\textbf{Cette partie de la spécification est omise volontairement.}
+Vous devez réfléchir à une spécification raisonnable. 
+
+
+\subsection{Évaluation des expressions}
+\label{sec:exp}
+
+Le jugement d'évaluation des expressions s'écrit:
+\[
+\eval\env\store\expr\mvalue{\store'}
+\]
+et se lit
+«~Dans l'environnement d'évaluation $\env$,
+  l'expression $\expr$ s'évalue en $\mvalue$ et change la mémoire $\store$ en $\store'$.~»
+
+  Dans la suite, les termes sont allégés de leurs types car ces derniers n'influent pas sur
+  l'évaluation. Le jugement d'évaluation est défini par les règles suivantes:
+\begin{mathpar}
+  \infer{
+  }{
+    \eval\env\store\lint\lint\store
+  }
+
+  \infer{
+  }{
+    \eval\env\store\lchar\lchar\store
+  }
+
+  \infer{
+  }{
+    \eval\env\store\lbool\lbool\store
+  }
+
+  \infer{
+  }{
+    \eval\env\store\lstring\lstring\store
+  }
+
+  \infer{
+    \env(\id) = \mvalue
+  }{
+    \eval\env\store\id\mvalue\store
+  }
+
+  \infer{
+    \store_0 = \store
+    \\
+    \forall i \in [1 \ldots n], \eval\env{\store_{i-1}}{\expr_i}{\mvalue_i}{\store_{i}}
+  }{
+    \eval\env\store{\cid (\expr_1, \ldots, \expr_n)}{\cid (\mvalue_1, \ldots, \mvalue_n)}{\store_{n}}
+  }
+
+  \infer{
+    \evalvdef\env\store\vdefinition{\env'}{\store'} \\
+    \eval{\env'}{\store'}\expr\mvalue{\store''}
+  }{
+    \eval\env\store{\vdefinition; \expr}\mvalue{\store''}
+  }
+
+  \infer{
+    \eval\env\store{\expr_f}{(\pattern_1 \cdots \pattern_n \car{ => } \expr)[\env']}{\store'}
+    \\
+    \store_0 = \store'
+    \\
+    \forall i \in [1 \ldots n], \eval\env{\store_{i-1}}{\expr_i}{\mvalue_i}{\store_i}
+    \\
+    \env_0 = \env'
+    \\
+    \forall i \in [1 \ldots n], \evalmatch{\env_{i-1}}{\store_n}{\pattern_i}{\mvalue_i}{\env_i}
+    \\
+    \eval{\env_n}{\store_n}{\expr}\mvalue{\store'}
+  }{
+    \eval\env{\store}{\expr_f\, (\expr_1, \cdots, \expr_n)}\mvalue{\store'}
+  }
+
+  \infer{
+    \eval\env\store\expr\addr{\store'}
+    \\
+    (\addr \mapsto \mvalue) \in \store'
+  }{
+    \eval\env\store{!\expr}\mvalue{\store'}
+  }
+
+  \infer{
+    \eval\env\store\expr\addr{\store'}
+    \\
+    \eval\env{\store'}{\expr'}{\mvalue}{\store''}
+  }{
+    \eval\env\store{\expr \car{ := } \expr'}\unit{\store''[\addr \mapsto \mvalue]]}
+  }
+
+  \infer{
+    \eval\env\store{\expr}{\mvalue_s}{\store'}
+    \\
+    \caseanalysis\env{\store'}{\mvalue_s}{\many{\branch}}{\mvalue}{\store''}
+  }{
+    \eval\env\store{\expr \car{ ? } \many{\branch}}{\mvalue}{\store''}
+  }
+
+  \infer{
+    \eval\env\store{\expr_b}{\textbf{true}}{\store'} \\
+    \eval\env{\store'}{\expr}{\unit}{\store''} \\
+    \eval\env{\store''}{\kwd{while }(\expr_b)\; \expr}\unit{\store'''}
+  }{
+    \eval\env\store{\kwd{while }(\expr_b)\; \expr}\unit{\store'''}
+  }
+
+  \infer{
+    \eval\env\store{\expr_b}{\textbf{false}}{\store'}
+  }{
+    \eval\env\store{\kwd{while }(\expr_b)\; \expr}\unit{\store'}
+  }
+
+\end{mathpar}
+
+\subsection{Analyse par cas}
+\label{sec:case}
+
+L'analyse par cas d'une valeur $\mvalue$ consiste à traiter une liste
+de cas représentés par des branches $\many\branch$ de la forme
+«~$\pattern \car{ => } \expr$~» en évaluant la première de ces branches
+dont le motif capture la valeur $\mvalue$. Ce dernier mécanisme
+est représenté dans la section suivante.
+
+\begin{mathpar}
+  \infer{
+    \evalmatch\env\store\mvalue\pattern{\env'}
+    \\
+    \eval{\env'}\store\expr{\mvalue'}{\store'}
+  }{
+    \caseanalysis\env\store\mvalue{(\pattern\car { => } \expr) \many\branch}{\mvalue'}{\store'}
+  }
+
+  \infer{
+    \evalnotmatch\env\store\mvalue\pattern
+    \\
+    \caseanalysis\env\store\mvalue{\many\branch}{\mvalue'}{\store'}
+  }{
+    \caseanalysis\env\store\mvalue{(\pattern\car { => } \expr) \many\branch}{\mvalue'}{\store'}
+  }
+\end{mathpar}
+
+\subsection{Analyse de motifs}
+\label{sec:pattern}
+
+L'évaluation des motifs s'appuie sur le jugement:
+\[
+   \evalmatch\env\store\mvalue\pattern{\env'}
+\]
+qui se lit «~Dans l'environnement $\env$
+et dans la mémoire $\store$, la valeur $\mvalue$ est capturée
+par le motif~$\pattern$ en étendant l'environnement $\env$ en
+$\env'$.~»
+
+\textbf{Cette partie de la spécification est omise volontairement.}
+Vous devez réfléchir à une spécification raisonnable. 
+
+\section{Travail à effectuer}
+
+La seconde partie du projet est l'écriture de l'interprète de
+la sémantique opérationnelle décrite plus haut.
+
+La compilation s'effectue par la commande«~\verb!make!~».
+
+Le projet est à rendre \textbf{avant le}~:
+
+\begin{code}
+\begin{center}
+\large\textbf{21 janvier 2016 à 23h59}
+\end{center}
+\end{code}
+
+Pour finir, vous devez vous assurer des points suivants~:
+\begin{code}
+\begin{itemize}
+\item Le projet contenu dans cette archive \textbf{doit compiler}.
+\item Vous devez \textbf{être les auteurs} de ce projet.
+\item Il doit être rendu \textbf{à temps}.
+\end{itemize}
+\end{code}
+
+Si l'un de ces points n'est pas respecté, la note de $0$ vous sera affectée.
+
+\section{Log}
+
+\input{changes}
+
+\end{document}
