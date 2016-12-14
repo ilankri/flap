@@ -13,9 +13,9 @@ type 'e gvalue =
   | VChar         of char
   | VString       of string
   | VUnit
-  | VArray        of Memory.location
+  | VAddress      of Memory.location
   | VTaggedValues of constructor * 'e gvalue list
-  | VPrimitive    of string * ('e gvalue list -> 'e gvalue)
+  | VPrimitive    of string * ('e gvalue Memory.t -> 'e gvalue list -> 'e gvalue)
   | VFun          of pattern located list * expression located * 'e
 
 type ('a, 'e) coercion = 'e gvalue -> 'a option
@@ -41,6 +41,24 @@ let print_value m v =
       match v with
         | VInt x ->
           Int32.to_string x
+        | VBool true ->
+          "true"
+        | VBool false ->
+          "false"
+	| VChar c ->
+	  "'" ^ Char.escaped c ^ "'"
+	| VString s ->
+	  "\"" ^ String.escaped s ^ "\""
+	| VUnit ->
+	  "()"
+	| VAddress a ->
+	  print_array_value d (Memory.dereference m a)
+	| VTaggedValues (KId k, []) ->
+	  k
+	| VTaggedValues (KId k, vs) ->
+	  k ^ "(" ^ String.concat ", " (List.map (print_value (d + 1)) vs) ^ ")"
+	| VFun _ ->
+	  "<fun>"
         | VPrimitive (s, _) ->
           Printf.sprintf "<primitive: %s>" s
   and print_array_value d block =
@@ -53,13 +71,31 @@ let print_value m v =
   print_value 0 v
 
 module Environment : sig
+  (** Evaluation environments map identifiers to values. *)
   type t
+
+  (** The empty environment. *)
   val empty : t
+
+  (** [bind env x v] extends [env] with a binding from [x] to [v]. *)
   val bind    : t -> identifier -> t gvalue -> t
+
+  (** [update pos x env v] modifies the binding of [x] in [env] so
+      that [x ↦ v] ∈ [env]. *)
   val update  : Position.t -> identifier -> t -> t gvalue -> unit
-  exception UnboundIdentifier of identifier * Position.t
+
+  (** [lookup pos x env] returns [v] such that [x ↦ v] ∈ env. *)
   val lookup  : Position.t -> identifier -> t -> t gvalue
+
+  (** [UnboundIdentifier (x, pos)] is raised when [update] or
+      [lookup] assume that there is a binding for [x] in [env],
+      where there is no such binding. *)
+  exception UnboundIdentifier of identifier * Position.t
+
+  (** [last env] returns the latest binding in [env] if it exists. *)
   val last    : t -> (identifier * t gvalue * t) option
+
+  (** [print env] returns a human readable representation of [env]. *)
   val print   : t gvalue Memory.t -> t -> string
 end = struct
 
@@ -124,8 +160,10 @@ type observable = {
     of all primitives (+, <, ...). *)
 let primitives =
   let intbin name out op =
-    VPrimitive (name, function [VInt x; VInt y] -> out (op x y)
-      | _ -> assert false (* By typing. *))
+    VPrimitive (name, fun _ -> function
+      | [VInt x; VInt y] -> out (op x y)
+      | _ -> assert false (* By typing. *)
+    )
   in
   let bind_all what l x =
     List.fold_left (fun env (x, v) -> Environment.bind env (Id x) (what x v)) x l
@@ -136,8 +174,35 @@ let primitives =
   let binarithops = Int32.(
     [ ("`+", add); ("`-", sub); ("`*", mul); ("`/", div) ]
   ) in
+  (* Define arithmetic comparison operators. *)
+  let cmparith name = intbin name (fun x -> VBool x) in
+  let cmparithops =
+    [ ("`=", ( = )); ("`<", ( < )); ("`>", ( > )); ("`>=", ( >= )); ("`<=", ( <= )) ]
+  in
+  let boolbin name out op =
+    VPrimitive (name, fun m -> function
+      | [VBool x; VBool y] -> out (op x y)
+      | _ -> assert false (* By typing. *)
+    )
+  in
+  let boolarith name = boolbin name (fun x -> VBool x) in
+  let boolarithops =
+    [ ("`||", ( || )); ("`&&", ( && )) ]
+  in
+  let generic_printer =
+    VPrimitive ("print", fun m vs ->
+      let repr = String.concat ", " (List.map (print_value m) vs) in
+      output_string stdout repr;
+      VUnit
+    )
+  in
   Environment.empty
   |> bind_all binarith binarithops
+  |> bind_all cmparith cmparithops
+  |> bind_all boolarith boolarithops
+  |> fun env -> Environment.bind env (Id "print") generic_printer
+  |> fun env -> Environment.bind env (Id "true")  (VBool true)
+  |> fun env -> Environment.bind env (Id "false") (VBool false)
 
 let initial_runtime () = {
   memory      = Memory.create (640 * 1024 (* should be enough. -- B.Gates *));
@@ -161,10 +226,9 @@ let rec evaluate runtime ast =
 and definition runtime d =
   match Position.value d with
   | DefineValue (x, e) ->
-    let v, memory = expression' runtime.environment runtime.memory e in
-    {
-      environment = bind_identifier runtime.environment x v;
-      memory
+    let v = expression' runtime.environment runtime.memory e in
+    { runtime with
+      environment = bind_identifier runtime.environment x v
     }
 
 and expression' environment memory e =
@@ -181,9 +245,9 @@ and expression position environment memory =
 and expressions environment memory es =
   let rec aux vs memory = function
     | [] ->
-      List.rev vs, memory
+      List.rev vs
     | e :: es ->
-      let v, memory = expression' environment memory e in
+      let v = expression' environment memory e in
       aux (v :: vs) memory es
   in
   aux [] memory es
