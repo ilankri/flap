@@ -45,20 +45,20 @@ let print_value m v =
           "true"
         | VBool false ->
           "false"
-	| VChar c ->
-	  "'" ^ Char.escaped c ^ "'"
-	| VString s ->
-	  "\"" ^ String.escaped s ^ "\""
-	| VUnit ->
-	  "()"
-	| VAddress a ->
-	  print_array_value d (Memory.dereference m a)
-	| VTaggedValues (KId k, []) ->
-	  k
-	| VTaggedValues (KId k, vs) ->
-	  k ^ "(" ^ String.concat ", " (List.map (print_value (d + 1)) vs) ^ ")"
-	| VFun _ ->
-	  "<fun>"
+        | VChar c ->
+          "'" ^ Char.escaped c ^ "'"
+        | VString s ->
+          "\"" ^ String.escaped s ^ "\""
+        | VUnit ->
+          "()"
+        | VAddress a ->
+          print_array_value d (Memory.dereference m a)
+        | VTaggedValues (KId k, []) ->
+          k
+        | VTaggedValues (KId k, vs) ->
+          k ^ "(" ^ String.concat ", " (List.map (print_value (d + 1)) vs) ^ ")"
+        | VFun _ ->
+          "<fun>"
         | VPrimitive (s, _) ->
           Printf.sprintf "<primitive: %s>" s
   and print_array_value d block =
@@ -220,16 +220,19 @@ let rec evaluate runtime ast =
    into a new runtime [runtime']. In the specification, this
    is the judgment:
 
-			E, M ⊢ dᵥ ⇒ E', M'
+                        E, M ⊢ dᵥ ⇒ E', M'
 
 *)
 and definition runtime d =
   match Position.value d with
   | DefineValue (x, e) ->
-    let v = expression' runtime.environment runtime.memory e in
-    { runtime with
-      environment = bind_identifier runtime.environment x v
+    let v, memory = expression' runtime.environment runtime.memory e in
+    {
+      environment = bind_identifier runtime.environment x v;
+      memory = memory
     }
+  | DefineType _ | DeclareExtern _ -> runtime
+  | DefineRecFuns _ -> failwith "TODO"
 
 and expression' environment memory e =
   expression (position e) environment memory (value e)
@@ -240,8 +243,36 @@ and expression' environment memory e =
 
    and E = [runtime.environment], M = [runtime.memory].
 *)
-and expression position environment memory =
-  failwith "Student! This is your job!"
+and expression position environment memory = function
+  | Literal l -> (located literal l, memory)
+
+  | Variable id ->
+    (Environment.lookup (Position.position id) (value id) environment, memory)
+
+  | Define (id, e1, e2) -> failwith "TODO"
+
+  | DefineRec (defs, e) -> failwith "TODO"
+
+  | Apply (e, _, es) -> failwith "TODO"
+
+  | If (ifs, e) -> failwith "TODO"
+
+  | Fun fd -> failwith "TODO"
+
+  | Tagged (c, _, es) -> failwith "TODO"
+
+  | Case (e, branches) -> failwith "TODO"
+
+  | TypeAnnotation (e, _) -> expression' environment memory e
+
+  | Ref e -> failwith "TODO"
+
+  | Read e -> failwith "TODO"
+
+  | Write (e1, e2) -> failwith "TODO"
+
+  | While (e1, e2) -> failwith "TODO"
+
 and expressions environment memory es =
   let rec aux vs memory = function
     | [] ->
@@ -252,22 +283,46 @@ and expressions environment memory es =
   in
   aux [] memory es
 
+and pattern' environment v p =
+  pattern (position p) environment v (value p)
+
+(* [pattern pos env v p] extends [env] such that the value [v] is
+   captured by the pattern [p].  *)
+and pattern position environment v = function
+  | PTypeAnnotation (p, _) -> pattern' environment v p
+
+  | PVariable id -> Some (Environment.bind environment (value id) v)
+
+  | PTaggedValue (c, ps) -> failwith "TODO"
+
+  | PWildcard -> Some environment
+
+  | PLiteral l when located literal l = v -> Some environment
+
+  | PLiteral _ -> None
+
+  | POr ps -> failwith "TODO"
+
+  | PAnd ps -> failwith "TODO"
 
 and bind_identifier environment x v =
   Environment.bind environment (Position.value x) v
 
 and literal = function
   | LInt x -> VInt x
+  | LString s -> VString s
+  | LChar c -> VChar c
+  | LBool b -> VBool b
 
 and extract_observable runtime runtime' =
   let rec substract new_environment env env' =
     if env == env' then new_environment
     else
       match Environment.last env' with
-        | None -> assert false (* Absurd. *)
-        | Some (x, v, env') ->
-          let new_environment = Environment.bind new_environment x v in
-          substract new_environment env env'
+      | None -> assert false (* Absurd. *)
+      | Some (x, v, env') ->
+        let new_environment = Environment.bind new_environment x v in
+        substract new_environment env env'
   in
   {
     new_environment =
