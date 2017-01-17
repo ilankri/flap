@@ -167,7 +167,6 @@
 
     (fun x -> x + y)[ y = 10 ]
 
-
 * Cours 7 <2016-12-05>
 ** Rappel des épisodes précédents
    - Notion de syntaxe
@@ -186,6 +185,20 @@
 ** Analyse statique
    - Bonne liaison des noms
 ** Compilation vers une machine
+* Cours 9 <2016-12-14> de 9h30 à 11h30 en salle 1008
+** Jalon 2
+** Examen
 ** Les fonctions de seconde classe
 ** Les fonctions de première classe
-* Cours 9 <2016-12-14> de 9h30 à 11h30 en salle 1008
+* Cours 10 <2017-01-17>
+** Exceptionnellement, séance de 1h15
+** Pas de TD cette semaine
+** Où est parti le forum?
+** Retour sur le jalon 2
+** Présentation de la chaîne de compilation
+*** Hopix    -> Hobix
+*** Hobix    -> Fopix
+*** Fopix    -> Retrolix
+*** Retrolix -> Retrolix
+*** Retrolix -> MIPS
+** TODO Lire la spécification de MIPS
