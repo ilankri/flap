@@ -209,6 +209,9 @@ let initial_runtime () = {
   environment = primitives;
 }
 
+(* Exception raised when a pattern matching fails.  *)
+exception Pattern_matching_failure of Position.t
+
 let rec evaluate runtime ast =
   try
     let runtime' = List.fold_left definition runtime ast in
@@ -253,11 +256,22 @@ and expression position environment memory = function
 
   | DefineRec (defs, e) -> failwith "TODO"
 
-  | Apply (e, _, es) -> failwith "TODO"
+  | Apply (e, _, es) ->
+    let fv, memory = expression' environment memory e in
+    let vs, memory = expressions environment memory es in
+    begin match fv with
+      | VPrimitive (_, primitive) -> (primitive memory vs, memory)
+      | VFun (ps, e, environment) ->
+        let environment = patterns environment memory vs ps in
+        expression' environment memory e
+      | VBool _ | VInt _ | VChar _ | VString _ | VUnit | VAddress _ |
+        VTaggedValues _ ->
+        assert false            (* By typing.  *)
+    end
 
   | If (ifs, e) -> failwith "TODO"
 
-  | Fun fd -> failwith "TODO"
+  | Fun (FunctionDefinition (_, ps, e)) -> (VFun (ps, e, environment), memory)
 
   | Tagged (c, _, es) -> failwith "TODO"
 
@@ -275,21 +289,20 @@ and expression position environment memory = function
 
 and expressions environment memory es =
   let rec aux vs memory = function
-    | [] ->
-      List.rev vs
+    | [] -> (List.rev vs, memory)
     | e :: es ->
-      let v = expression' environment memory e in
+      let v, memory = expression' environment memory e in
       aux (v :: vs) memory es
   in
   aux [] memory es
 
-and pattern' environment v p =
-  pattern (position p) environment v (value p)
+and pattern' environment memory v p =
+  pattern (position p) environment memory v (value p)
 
 (* [pattern pos env v p] extends [env] such that the value [v] is
    captured by the pattern [p].  *)
-and pattern position environment v = function
-  | PTypeAnnotation (p, _) -> pattern' environment v p
+and pattern position environment memory v = function
+  | PTypeAnnotation (p, _) -> pattern' environment memory v p
 
   | PVariable id -> Some (Environment.bind environment (value id) v)
 
@@ -304,6 +317,16 @@ and pattern position environment v = function
   | POr ps -> failwith "TODO"
 
   | PAnd ps -> failwith "TODO"
+
+and patterns environment memory vs ps =
+  let pattern env v p =
+    match env with
+    | None -> raise (Pattern_matching_failure (position p))
+    | Some env -> pattern' env memory v p
+  in
+  match List.fold_left2 pattern (Some environment) vs ps with
+  | None -> assert false
+  | Some env -> env
 
 and bind_identifier environment x v =
   Environment.bind environment (Position.value x) v
