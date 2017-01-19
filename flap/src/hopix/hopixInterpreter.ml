@@ -4,6 +4,9 @@ open HopixAST
 let error positions msg =
   Error.errorN "execution" positions msg
 
+(** Report pattern matching failure.  *)
+let pattern_matching_error pos = error [pos] "Pattern matching failed."
+
 (** Every expression of hopix evaluates into a [value]. *)
 type 'e gvalue =
   | VBool         of bool
@@ -208,9 +211,6 @@ let initial_runtime () = {
   environment = primitives;
 }
 
-(** Exception raised when a pattern matching fails.  *)
-exception Pattern_matching_failure of Position.t
-
 (** Exception raised when a value cannot be captured by a certain
     pattern.  *)
 exception Pattern_mismatch of Position.t
@@ -255,7 +255,9 @@ and expression position environment memory = function
   | Variable id ->
     Position.(Environment.lookup (position id) (value id) environment, memory)
 
-  | Define (id, e1, e2) -> failwith "TODO"
+  | Define (id, e1, e2) ->
+    let v, memory = expression' environment memory e1 in
+    expression' (bind_identifier environment id v) memory e2
 
   | DefineRec (defs, e) -> failwith "TODO"
 
@@ -267,7 +269,7 @@ and expression position environment memory = function
       | VFun (ps, e, environment) ->
         let environment =
           try patterns environment vs ps with
-          | Pattern_mismatch pos -> error [pos] "Pattern matching failed."
+          | Pattern_mismatch pos -> pattern_matching_error pos
         in
         expression' environment memory e
       | VBool _ | VInt _ | VChar _ | VString _ | VUnit | VAddress _ |
@@ -283,7 +285,16 @@ and expression position environment memory = function
     let vs, memory = expressions environment memory es in
     (VTaggedValues (Position.value c, vs), memory)
 
-  | Case (e, branches) -> failwith "TODO"
+  | Case (e, branches) ->
+    let v, memory = expression' environment memory e in
+    let rec aux = function
+      | [] -> pattern_matching_error position
+      | branch :: branches ->
+        let Branch (p, e) = Position.value branch in
+        try expression' (pattern' environment v p) memory e with
+        | Pattern_mismatch _ -> aux branches
+    in
+    aux branches
 
   | TypeAnnotation (e, _) -> expression' environment memory e
 
