@@ -1,10 +1,8 @@
-open Position
-open Error
 open HopixAST
 
 (** [error pos msg] reports runtime error messages. *)
 let error positions msg =
-  errorN "execution" positions msg
+  Error.errorN "execution" positions msg
 
 (** Every expression of hopix evaluates into a [value]. *)
 type 'e gvalue =
@@ -16,7 +14,8 @@ type 'e gvalue =
   | VAddress      of Memory.location
   | VTaggedValues of constructor * 'e gvalue list
   | VPrimitive    of string * ('e gvalue Memory.t -> 'e gvalue list -> 'e gvalue)
-  | VFun          of pattern located list * expression located * 'e
+  | VFun          of pattern Position.located list *
+                     expression Position.located * 'e
 
 type ('a, 'e) coercion = 'e gvalue -> 'a option
 let value_as_int      = function VInt x -> Some x | _ -> None
@@ -209,8 +208,12 @@ let initial_runtime () = {
   environment = primitives;
 }
 
-(* Exception raised when a pattern matching fails.  *)
+(** Exception raised when a pattern matching fails.  *)
 exception Pattern_matching_failure of Position.t
+
+(** Exception raised when a value cannot be captured by a certain
+    pattern.  *)
+exception Pattern_mismatch of Position.t
 
 let rec evaluate runtime ast =
   try
@@ -238,7 +241,7 @@ and definition runtime d =
   | DefineRecFuns _ -> failwith "TODO"
 
 and expression' environment memory e =
-  expression (position e) environment memory (value e)
+  Position.(expression (position e) environment memory (value e))
 
 (* [expression pos runtime e] evaluates into a value [v] if
 
@@ -247,10 +250,10 @@ and expression' environment memory e =
    and E = [runtime.environment], M = [runtime.memory].
 *)
 and expression position environment memory = function
-  | Literal l -> (located literal l, memory)
+  | Literal l -> (Position.located literal l, memory)
 
   | Variable id ->
-    (Environment.lookup (Position.position id) (value id) environment, memory)
+    Position.(Environment.lookup (position id) (value id) environment, memory)
 
   | Define (id, e1, e2) -> failwith "TODO"
 
@@ -262,7 +265,10 @@ and expression position environment memory = function
     begin match fv with
       | VPrimitive (_, primitive) -> (primitive memory vs, memory)
       | VFun (ps, e, environment) ->
-        let environment = patterns environment memory vs ps in
+        let environment =
+          try patterns environment vs ps with
+          | Pattern_mismatch pos -> error [pos] "Pattern matching failed."
+        in
         expression' environment memory e
       | VBool _ | VInt _ | VChar _ | VString _ | VUnit | VAddress _ |
         VTaggedValues _ ->
@@ -273,7 +279,9 @@ and expression position environment memory = function
 
   | Fun (FunctionDefinition (_, ps, e)) -> (VFun (ps, e, environment), memory)
 
-  | Tagged (c, _, es) -> failwith "TODO"
+  | Tagged (c, _, es) ->
+    let vs, memory = expressions environment memory es in
+    (VTaggedValues (Position.value c, vs), memory)
 
   | Case (e, branches) -> failwith "TODO"
 
@@ -296,37 +304,38 @@ and expressions environment memory es =
   in
   aux [] memory es
 
-and pattern' environment memory v p =
-  pattern (position p) environment memory v (value p)
+and pattern' environment v p =
+  Position.(pattern (position p) environment v (value p))
 
-(* [pattern pos env v p] extends [env] such that the value [v] is
-   captured by the pattern [p].  *)
-and pattern position environment memory v = function
-  | PTypeAnnotation (p, _) -> pattern' environment memory v p
+(** [pattern pos env v p] extends [env] such that the value [v] is
+    captured by the pattern [p].  Raise {!Pattern_mismatch} if [v]
+    cannot be captured by [p].  *)
+and pattern position environment v = function
+  | PTypeAnnotation (p, _) -> pattern' environment v p
 
-  | PVariable id -> Some (Environment.bind environment (value id) v)
+  | PVariable id -> Environment.bind environment (Position.value id) v
 
-  | PTaggedValue (c, ps) -> failwith "TODO"
+  | PTaggedValue (c, ps) ->
+    begin match v with
+      | VTaggedValues (c', vs) ->
+        if Position.value c = c' then patterns environment vs ps else
+          raise (Pattern_mismatch position)
+      | VBool _ | VInt _ | VChar _ | VString _ | VUnit | VAddress _ |
+        VPrimitive _ | VFun _ ->
+        assert false            (* By typing.  *)
+    end
 
-  | PWildcard -> Some environment
+  | PWildcard -> environment
 
-  | PLiteral l when located literal l = v -> Some environment
-
-  | PLiteral _ -> None
+  | PLiteral l ->
+    if Position.located literal l = v then environment else
+      raise (Pattern_mismatch position)
 
   | POr ps -> failwith "TODO"
 
   | PAnd ps -> failwith "TODO"
 
-and patterns environment memory vs ps =
-  let pattern env v p =
-    match env with
-    | None -> raise (Pattern_matching_failure (position p))
-    | Some env -> pattern' env memory v p
-  in
-  match List.fold_left2 pattern (Some environment) vs ps with
-  | None -> assert false
-  | Some env -> env
+and patterns environment vs ps = List.fold_left2 pattern' environment vs ps
 
 and bind_identifier environment x v =
   Environment.bind environment (Position.value x) v
