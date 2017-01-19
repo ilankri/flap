@@ -331,9 +331,16 @@ and pattern position environment v = function
     if Position.located literal l = v then environment else
       raise (Pattern_mismatch position)
 
-  | POr ps -> failwith "TODO"
+  | POr ps ->
+    let rec aux = function
+      | [] -> raise (Pattern_mismatch position)
+      | p :: ps ->
+        try pattern' environment v p with
+        | Pattern_mismatch _ -> aux ps
+    in
+    aux ps
 
-  | PAnd ps -> failwith "TODO"
+  | PAnd ps -> List.fold_left (fun env -> pattern' env v) environment ps
 
 and patterns environment vs ps = List.fold_left2 pattern' environment vs ps
 
