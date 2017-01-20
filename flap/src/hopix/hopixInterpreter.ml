@@ -238,7 +238,40 @@ and definition runtime d =
       memory = memory
     }
   | DefineType _ | DeclareExtern _ -> runtime
-  | DefineRecFuns _ -> failwith "TODO"
+
+  | DefineRecFuns fs ->
+    { runtime with environment = define_rec runtime.environment fs }
+
+(** Build the closure for the given function definition and its
+    environment.  *)
+and function_definition environment (FunctionDefinition (_, ps, e)) =
+  VFun (ps, e, environment)
+
+(* Pb: If two functions have the same id?  *)
+and define_rec environment fs =
+  (* [eval_and_rebind environment (id, fd)] evaluates the function
+     definition [fd] into a value [v] in [environment] and then rebinds
+     the function identifier [id] to [v] in [environment].  *)
+  let eval_and_rebind environment (id, fd) =
+    let id, pos = Position.destruct id in
+    let v = Position.located (function_definition environment) fd in
+    Environment.update pos id environment v
+  in
+
+  (* Firstly, we bind all the function identifiers to a phony value
+     (here VUnit).  *)
+  let environment =
+    List.fold_left
+      (fun env (id, _) -> bind_identifier env id VUnit) environment fs
+  in
+
+  (* Then we update the environment with the correct values for function
+     identifiers.  *)
+  List.iter (eval_and_rebind environment) fs;
+
+  (* Finally, we return the new environment.  *)
+  environment
+
 
 and expression' environment memory e =
   Position.(expression (position e) environment memory (value e))
@@ -259,7 +292,7 @@ and expression position environment memory = function
     let v, memory = expression' environment memory e1 in
     expression' (bind_identifier environment id v) memory e2
 
-  | DefineRec (defs, e) -> failwith "TODO"
+  | DefineRec (fs, e) -> expression' (define_rec environment fs) memory e
 
   | Apply (e, _, es) ->
     let fv, memory = expression' environment memory e in
@@ -294,7 +327,7 @@ and expression position environment memory = function
     in
     aux memory ifs
 
-  | Fun (FunctionDefinition (_, ps, e)) -> (VFun (ps, e, environment), memory)
+  | Fun fd -> (function_definition environment fd, memory)
 
   | Tagged (c, _, es) ->
     let vs, memory = expressions environment memory es in
