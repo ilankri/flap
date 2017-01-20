@@ -25,6 +25,12 @@ let value_as_int      = function VInt x -> Some x | _ -> None
 let value_as_bool     = function VBool x -> Some x | _ -> None
 let value_as_char     = function VChar c -> Some c | _ -> None
 
+let value_as_address = function
+  | VAddress a -> Some a
+  | VBool _ | VInt _ | VChar _ | VString _ | VUnit |
+    VTaggedValues _ | VPrimitive _ | VFun _ ->
+    None
+
 type ('a, 'e) wrapper = 'a -> 'e gvalue
 let int_as_value x  = VInt x
 
@@ -354,9 +360,22 @@ and expression position environment memory = function
       | Memory.OutOfMemory -> error [position] "Out of memory." in
     (VAddress location, memory)
 
-  | Read e -> failwith "TODO"
+  | Read e ->
+    let v, memory = expression' environment memory e in
+    begin match value_as_address v with
+      | Some addr -> (Memory.(read (dereference memory addr) 0), memory)
+      | None -> assert false    (* By typing.  *)
+    end
 
-  | Write (e1, e2) -> failwith "TODO"
+  | Write (e1, e2) ->
+    let v1, memory = expression' environment memory e1 in
+    begin match value_as_address v1 with
+      | Some addr ->
+        let v2, memory = expression' environment memory e2 in
+        Memory.(write (dereference memory addr) 0 v2);
+        (VUnit, memory)
+      | None -> assert false    (* By typing.  *)
+    end
 
   | While (cond, body) as loop ->
     let v, memory = expression' environment memory cond in
