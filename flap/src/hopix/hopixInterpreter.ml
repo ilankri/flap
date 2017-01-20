@@ -277,7 +277,22 @@ and expression position environment memory = function
         assert false            (* By typing.  *)
     end
 
-  | If (ifs, e) -> failwith "TODO"
+  | If (ifs, e) ->
+    let rec aux memory = function
+      | [] ->
+        begin match e with
+          | Some e -> expression' environment memory e
+          | None -> (VUnit, memory)
+        end
+      | (cond, e) :: ifs ->
+        let v, memory = expression' environment memory cond in
+        begin match value_as_bool v with
+          | Some b ->
+            if b then expression' environment memory e else aux memory ifs
+          | None -> assert false (* By typing.  *)
+        end
+    in
+    aux memory ifs
 
   | Fun (FunctionDefinition (_, ps, e)) -> (VFun (ps, e, environment), memory)
 
@@ -304,7 +319,16 @@ and expression position environment memory = function
 
   | Write (e1, e2) -> failwith "TODO"
 
-  | While (e1, e2) -> failwith "TODO"
+  | While (cond, body) as loop ->
+    let v, memory = expression' environment memory cond in
+    begin match value_as_bool v with
+      | Some b ->
+        if b then
+          let _, memory = expression' environment memory body in
+          expression position environment memory loop
+        else (VUnit, memory)
+      | None -> assert false    (* By typing.  *)
+    end
 
 and expressions environment memory es =
   let rec aux vs memory = function
