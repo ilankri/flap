@@ -67,7 +67,8 @@ let print_value m v =
     let r = Memory.read block in
     let n = Memory.size block in
     "[ " ^ String.concat ", " (
-      List.(map (fun i -> print_value (d + 1) (r i)) (ExtStd.List.range 0 n)
+      List.(map (fun i -> print_value (d + 1) (r i))
+              (ExtStd.List.range 0 (n - 1))
       )) ^ " ]"
   in
   print_value 0 v
@@ -346,7 +347,12 @@ and expression position environment memory = function
 
   | TypeAnnotation (e, _) -> expression' environment memory e
 
-  | Ref e -> failwith "TODO"
+  | Ref e ->
+    let v, memory = expression' environment memory e in
+    let location =
+      try Memory.allocate memory 1 v with
+      | Memory.OutOfMemory -> error [position] "Out of memory." in
+    (VAddress location, memory)
 
   | Read e -> failwith "TODO"
 
