@@ -1,0 +1,5 @@
+fun f (x) = 2 * x
+
+val main =
+  print_int (f (21));
+  print_string ("!\n")

@@ -1,0 +1,13 @@
+val nil = Nil
+val l1 = Cons (1, Cons (2, nil))
+val l2 = Cons (0, l1)
+val main =
+  l2 ? {
+  | Nil => print_string ("Wrong!\n")
+  | Cons (x, xs) =>
+    xs ? {
+    | Nil => print_string ("Wrong!\n")
+    | Cons (y, _) => print_int (y)
+    }
+  };
+  print_string ("!\n")

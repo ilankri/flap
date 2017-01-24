@@ -1,0 +1,5 @@
+fun apply (f, x) = f (x)
+
+val main =
+  print_int (apply ((\(x) => 2 * x), 21));
+  print_string ("!\n")

@@ -1,0 +1,5 @@
+val main =
+  if 0 = 0 then
+    if 1 = 0 then print_string ("Foo\n") else print_string ("Baz\n")
+  else
+    print_string ("Bar\n")

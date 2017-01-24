@@ -1,0 +1,6 @@
+val main =
+  val x = ref (ref 0);
+  val y = ref (! x);
+  (! y) := 1;
+  print_int (! (! x));
+  print_string ("\n")

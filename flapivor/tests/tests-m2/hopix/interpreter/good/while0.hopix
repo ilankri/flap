@@ -1,0 +1,5 @@
+val main =
+  while (false) {
+     print_string ("Not me!\n")
+  };
+  print_string ("But me!\n")

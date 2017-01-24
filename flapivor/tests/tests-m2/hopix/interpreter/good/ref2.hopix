@@ -1,0 +1,12 @@
+val main =
+  val x = ref 1;
+  val y = ref 2;
+  val tmp = ref 0;
+  tmp := !x;
+  x := !y;
+  y := !tmp;
+  print_string ("x = ");
+  print_int (!x);
+  print_string (" y = ");
+  print_int (!y);
+  print_string ("\n")

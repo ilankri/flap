@@ -1,0 +1,10 @@
+val nil = Nil
+val l1 = Cons (1, Cons (2, nil))
+val l2 = Cons (0, l1)
+fun len (l) = l ? { Nil => 0 | Cons (_, xs) => 1 + len (xs) }
+fun fold (l, f, accu) = l ? { Nil => accu | Cons (x, xs) => f (x, fold (xs, f, accu)) }
+fun add (x, y) = x + y
+
+val main =
+  print_int (fold (l2, add, 0));
+  print_string ("!\n")
