@@ -53,7 +53,8 @@ let eval runtime eval print =
   let elapsed_time = Unix.gettimeofday () -. now in
   if Options.get_benchmark () then
     print_endline ("(" ^ string_of_float elapsed_time ^ "s)");
-  print_endline (print runtime observation);
+  if Options.get_verbose_eval () then
+    print_endline (print runtime observation);
   runtime
 
 (* -------------------- **)
@@ -167,7 +168,9 @@ let batch_compilation () =
   if not (Options.get_unsafe ()) then
     Compiler.Source.(
       let tenv = typecheck (initial_typing_environment ()) ast in
-      print_endline (print_typing_environment tenv)
+      if Options.get_show_types () then (
+	print_endline (print_typing_environment tenv)
+      )
     );
   let cast, _ = Compiler.(translate ast (initial_environment ())) in
   let output_filename = module_name ^ Target.extension in

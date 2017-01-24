@@ -65,7 +65,7 @@ let print_value m v =
     let r = Memory.read block in
     let n = Memory.size block in
     "[ " ^ String.concat ", " (
-      List.(map (fun i -> print_value (d + 1) (r i)) (ExtStd.List.range 0 n)
+      List.(map (fun i -> print_value (d + 1) (r i)) (ExtStd.List.range 0 (n - 1))
       )) ^ " ]"
   in
   print_value 0 v
@@ -193,16 +193,37 @@ let primitives =
     VPrimitive ("print", fun m vs ->
       let repr = String.concat ", " (List.map (print_value m) vs) in
       output_string stdout repr;
+      flush stdout;
       VUnit
     )
   in
+  let print s =
+    output_string stdout s;
+    flush stdout;
+    VUnit
+  in
+  let print_int =
+    VPrimitive  ("print_int", fun m -> function
+      | [ VInt x ] -> print (Int32.to_string x)
+      | _ -> assert false (* By typing. *)
+    )
+  in
+  let print_string =
+    VPrimitive  ("print_string", fun m -> function
+      | [ VString x ] -> print x
+      | _ -> assert false (* By typing. *)
+    )
+  in
+  let bind' x w env = Environment.bind env (Id x) w in
   Environment.empty
   |> bind_all binarith binarithops
   |> bind_all cmparith cmparithops
   |> bind_all boolarith boolarithops
-  |> fun env -> Environment.bind env (Id "print") generic_printer
-  |> fun env -> Environment.bind env (Id "true")  (VBool true)
-  |> fun env -> Environment.bind env (Id "false") (VBool false)
+  |> bind' "print"        generic_printer
+  |> bind' "print_int"    print_int
+  |> bind' "print_string" print_string
+  |> bind' "true"         (VBool true)
+  |> bind' "false"        (VBool false)
 
 let initial_runtime () = {
   memory      = Memory.create (640 * 1024 (* should be enough. -- B.Gates *));
