@@ -1,0 +1,5 @@
+fun compose (f, g) = \(x) => f (g (x))
+
+val main =
+  print_int ((compose (\(x) => 2 * x, \(x) => x + 1)) (21));
+  print_string ("!\n")

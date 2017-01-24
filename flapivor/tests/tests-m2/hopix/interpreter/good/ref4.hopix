@@ -1,0 +1,7 @@
+val z = ref 0
+val x = ref (ref 0)
+val main =
+   x := z;
+   z := 1;
+   print_int (! (! x));
+   print_string ("!\n")

@@ -1,0 +1,8 @@
+fun choice (x, y) = x
+fun compose2 (f, g, h) = \(x, y) => f (g (x), h (y))
+fun succ (x) = x + 1
+fun double (x) = 2 * x
+
+val main =
+  print_int ((compose2 (choice, succ, double)) (21, 10));
+  print_string ("!\n")

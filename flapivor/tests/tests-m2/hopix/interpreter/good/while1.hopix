@@ -1,0 +1,6 @@
+val main =
+  val x = ref true;
+  while (!x) {
+    x := false
+  };
+  print_string ("Loop exited!\n")

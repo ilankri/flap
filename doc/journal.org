@@ -202,3 +202,7 @@
 *** Retrolix -> Retrolix
 *** Retrolix -> MIPS
 ** TODO Lire la spécification de MIPS
+* Cours 11 <2017-01-24>
+** TODO MIPS
+** TODO Le typage
+

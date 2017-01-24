@@ -1,0 +1,9 @@
+val main =
+  val x = ref 0;
+  while (!x < 10) {
+     while (!x < 5) {
+       x := !x + 2
+     };
+     x := !x + 1
+  };
+  print_string ("Exit!\n")
