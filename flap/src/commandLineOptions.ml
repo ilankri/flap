@@ -52,6 +52,11 @@ let generic_options = Arg.(align (List.flatten [
     ("(true|false) Ask the compiler to be verbose");
 
   options
+    ["--verbose-eval"; "-VV"]
+    (Bool Options.set_verbose_eval)
+    ("(true|false) Ask the compiler to be show the result of evaluation");
+
+  options
     ["--dry"; "-d"]
     (Bool Options.set_dry_mode)
     ("(true|false) Ask the compiler not to produce compiled file");

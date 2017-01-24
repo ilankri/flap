@@ -50,6 +50,7 @@ let set_gcc, get_gcc		       = Ref.as_functions false
 let set_show_types, get_show_types     = Ref.as_functions false
 let set_infer_types, get_infer_types   = Ref.as_functions false
 let set_check_types, get_check_types   = Ref.as_functions true
-let set_verbose_eval, get_verbose_eval = Ref.as_functions true
+let set_verbose_eval, get_verbose_eval = Ref.as_functions false
+
 
 
