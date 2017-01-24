@@ -8,10 +8,10 @@ checkout = git clone 'git@moule.informatique.univ-paris-diderot.fr:g1/compilatio
 checkout = git clone 'git@moule.informatique.univ-paris-diderot.fr:bunel/compilation-m1-2016.git' bunel-diallo
 
 [students/krimo-hamadi]
-checkout = git clone 'git@moule.informatique.univ-paris-diderot.fr:krimo/compilation2016.git' krimo-hamadi
+checkout = git clone 'git@moule.informatique.univ-paris-diderot.fr:hamadi/compilation-m1-2016.git' krimo-hamadi
 
 [students/masselot-hucher]
-checkout = git clone 'git@moule.informatique.univ-paris-diderot.fr:masselot/compilation-m1.git' masselot-hucher
+checkout = git clone git@moule.informatique.univ-paris-diderot.fr:hucher/compilation-m1-2016.git masselot-hucher
 
 [students/acker-dionisio]
 checkout = git clone 'git@moule.informatique.univ-paris-diderot.fr:acker/compilation-m1-2016.git' acker-dionisio
@@ -36,3 +36,6 @@ checkout = git clone 'git@moule.informatique.univ-paris-diderot.fr:Nicolas/compi
 
 [students/abderrazak-zidane]
 checkout = git clone 'git@moule.informatique.univ-paris-diderot.fr:abderrazak/compilation-m1-2016.git' abderrazak-zidane
+
+[students/diaby-ebourefe]
+checkout = git clone 'git@moule.informatique.univ-paris-diderot.fr:diaby/compilation-m1-2016.git' diaby-ebourefe
