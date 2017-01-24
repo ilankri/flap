@@ -1,0 +1,1202 @@
+make: Entering directory '/home/opam/source/flap/tests-m2'
+make -C ..
+make[1]: Entering directory '/home/opam/source/flap'
+Source configuration ...
+ * Ledit is not present: use default UserInput.
+rm -f flap.native
+make[1]: Leaving directory '/home/opam/source/flap'
+make[1]: Entering directory '/home/opam/source/flap/tests-m2/hopix/interpreter/bad'
+========================================================
+In interpreter/bad
+GOOD: 0 / 0
+
+BAD:  0 / 0
+make[1]: Leaving directory '/home/opam/source/flap/tests-m2/hopix/interpreter/bad'
+make[1]: Entering directory '/home/opam/source/flap/tests-m2/hopix/interpreter/good'
+========================================================
+In interpreter/good
+[ KO ]   -->  adt.hopix
+
+INPUT:
+val nil = Nil
+val l1 = Cons (1, Cons (2, nil))
+val l2 = Cons (0, l1)
+val main =
+  l2 ? {
+  | Nil => print_string ("Wrong!\n")
+  | Cons (x, _) => print_int (x)
+  };
+  print_string ("!\n")
+OUTPUT: 
+../../../../flap: unknown option '-VV'.
+flap [options] input_filename
+  --version                   Show the version number and exits.
+  -v Show                     
+  --source                    Set the source programming language
+  -s Set                      
+  --target                    Set the target programming language
+  -t Set                      
+  --interactive (true|false)  Set the compiler mode
+  -i (true|false)             
+  --run (true|false)          Ask the compiler to run the compiled code
+  -r (true|false)             
+  --verbose (true|false)      Ask the compiler to be verbose
+  -V (true|false)             
+  --dry (true|false)          Ask the compiler not to produce compiled file
+  -d (true|false)             
+  --unsafe (true|false)       Ask the compiler not to typecheck
+  -u (true|false)             
+  --bench (true|false)        Ask the compiler to show evaluation time.
+  -B (true|false)             
+  --using                     Force the compilation to use this intermediate language
+  -! Force                    
+  --gcc (true|false)          Ask to compiler to produce assembly code in GCC format
+  -G (true|false)             
+  --types (true|false)        Ask the compiler to show types for toplevel values.
+  -T (true|false)             
+  --infer (true|false)        Ask the compiler to infer types for toplevel values.
+  -I (true|false)             
+  --typechecking (true|false) Ask the compiler to check types for toplevel values.
+  -C (true|false)             
+  -help                       Display this list of options
+  --help                      Display this list of options
+EXPECTED: 
+0!
+--------------------------------------------------------
+[ KO ]   -->  adt1.hopix
+
+INPUT:
+val nil = Nil
+val l1 = Cons (1, Cons (2, nil))
+val l2 = Cons (0, l1)
+val main =
+  l2 ? {
+  | Nil => print_string ("Wrong!\n")
+  | Cons (x, xs) =>
+    xs ? {
+    | Nil => print_string ("Wrong!\n")
+    | Cons (y, _) => print_int (y)
+    }
+  };
+  print_string ("!\n")
+OUTPUT: 
+../../../../flap: unknown option '-VV'.
+flap [options] input_filename
+  --version                   Show the version number and exits.
+  -v Show                     
+  --source                    Set the source programming language
+  -s Set                      
+  --target                    Set the target programming language
+  -t Set                      
+  --interactive (true|false)  Set the compiler mode
+  -i (true|false)             
+  --run (true|false)          Ask the compiler to run the compiled code
+  -r (true|false)             
+  --verbose (true|false)      Ask the compiler to be verbose
+  -V (true|false)             
+  --dry (true|false)          Ask the compiler not to produce compiled file
+  -d (true|false)             
+  --unsafe (true|false)       Ask the compiler not to typecheck
+  -u (true|false)             
+  --bench (true|false)        Ask the compiler to show evaluation time.
+  -B (true|false)             
+  --using                     Force the compilation to use this intermediate language
+  -! Force                    
+  --gcc (true|false)          Ask to compiler to produce assembly code in GCC format
+  -G (true|false)             
+  --types (true|false)        Ask the compiler to show types for toplevel values.
+  -T (true|false)             
+  --infer (true|false)        Ask the compiler to infer types for toplevel values.
+  -I (true|false)             
+  --typechecking (true|false) Ask the compiler to check types for toplevel values.
+  -C (true|false)             
+  -help                       Display this list of options
+  --help                      Display this list of options
+EXPECTED: 
+1!
+--------------------------------------------------------
+[ KO ]   -->  adt2.hopix
+
+INPUT:
+val nil = Nil
+val l1 = Cons (1, Cons (2, nil))
+val l2 = Cons (0, l1)
+fun len (l) = l ? { Nil => 0 | Cons (_, xs) => 1 + len (xs) }
+
+val main =
+  print_int (len (l1));
+  print_string ("!\n")
+OUTPUT: 
+../../../../flap: unknown option '-VV'.
+flap [options] input_filename
+  --version                   Show the version number and exits.
+  -v Show                     
+  --source                    Set the source programming language
+  -s Set                      
+  --target                    Set the target programming language
+  -t Set                      
+  --interactive (true|false)  Set the compiler mode
+  -i (true|false)             
+  --run (true|false)          Ask the compiler to run the compiled code
+  -r (true|false)             
+  --verbose (true|false)      Ask the compiler to be verbose
+  -V (true|false)             
+  --dry (true|false)          Ask the compiler not to produce compiled file
+  -d (true|false)             
+  --unsafe (true|false)       Ask the compiler not to typecheck
+  -u (true|false)             
+  --bench (true|false)        Ask the compiler to show evaluation time.
+  -B (true|false)             
+  --using                     Force the compilation to use this intermediate language
+  -! Force                    
+  --gcc (true|false)          Ask to compiler to produce assembly code in GCC format
+  -G (true|false)             
+  --types (true|false)        Ask the compiler to show types for toplevel values.
+  -T (true|false)             
+  --infer (true|false)        Ask the compiler to infer types for toplevel values.
+  -I (true|false)             
+  --typechecking (true|false) Ask the compiler to check types for toplevel values.
+  -C (true|false)             
+  -help                       Display this list of options
+  --help                      Display this list of options
+EXPECTED: 
+2!
+--------------------------------------------------------
+[ KO ]   -->  adt3.hopix
+
+INPUT:
+val nil = Nil
+val l1 = Cons (1, Cons (2, nil))
+val l2 = Cons (0, l1)
+fun len (l) = l ? { Nil => 0 | Cons (_, xs) => 1 + len (xs) }
+fun fold (l, f, accu) = l ? { Nil => accu | Cons (x, xs) => f (x, fold (xs, f, accu)) }
+fun add (x, y) = x + y
+
+val main =
+  print_int (fold (l2, add, 0));
+  print_string ("!\n")
+OUTPUT: 
+../../../../flap: unknown option '-VV'.
+flap [options] input_filename
+  --version                   Show the version number and exits.
+  -v Show                     
+  --source                    Set the source programming language
+  -s Set                      
+  --target                    Set the target programming language
+  -t Set                      
+  --interactive (true|false)  Set the compiler mode
+  -i (true|false)             
+  --run (true|false)          Ask the compiler to run the compiled code
+  -r (true|false)             
+  --verbose (true|false)      Ask the compiler to be verbose
+  -V (true|false)             
+  --dry (true|false)          Ask the compiler not to produce compiled file
+  -d (true|false)             
+  --unsafe (true|false)       Ask the compiler not to typecheck
+  -u (true|false)             
+  --bench (true|false)        Ask the compiler to show evaluation time.
+  -B (true|false)             
+  --using                     Force the compilation to use this intermediate language
+  -! Force                    
+  --gcc (true|false)          Ask to compiler to produce assembly code in GCC format
+  -G (true|false)             
+  --types (true|false)        Ask the compiler to show types for toplevel values.
+  -T (true|false)             
+  --infer (true|false)        Ask the compiler to infer types for toplevel values.
+  -I (true|false)             
+  --typechecking (true|false) Ask the compiler to check types for toplevel values.
+  -C (true|false)             
+  -help                       Display this list of options
+  --help                      Display this list of options
+EXPECTED: 
+3!
+--------------------------------------------------------
+[ KO ]   -->  helloworld.hopix
+
+INPUT:
+val main = print_string ("Hello world!\n")
+OUTPUT: 
+../../../../flap: unknown option '-VV'.
+flap [options] input_filename
+  --version                   Show the version number and exits.
+  -v Show                     
+  --source                    Set the source programming language
+  -s Set                      
+  --target                    Set the target programming language
+  -t Set                      
+  --interactive (true|false)  Set the compiler mode
+  -i (true|false)             
+  --run (true|false)          Ask the compiler to run the compiled code
+  -r (true|false)             
+  --verbose (true|false)      Ask the compiler to be verbose
+  -V (true|false)             
+  --dry (true|false)          Ask the compiler not to produce compiled file
+  -d (true|false)             
+  --unsafe (true|false)       Ask the compiler not to typecheck
+  -u (true|false)             
+  --bench (true|false)        Ask the compiler to show evaluation time.
+  -B (true|false)             
+  --using                     Force the compilation to use this intermediate language
+  -! Force                    
+  --gcc (true|false)          Ask to compiler to produce assembly code in GCC format
+  -G (true|false)             
+  --types (true|false)        Ask the compiler to show types for toplevel values.
+  -T (true|false)             
+  --infer (true|false)        Ask the compiler to infer types for toplevel values.
+  -I (true|false)             
+  --typechecking (true|false) Ask the compiler to check types for toplevel values.
+  -C (true|false)             
+  -help                       Display this list of options
+  --help                      Display this list of options
+EXPECTED: 
+Hello world!
+--------------------------------------------------------
+[ KO ]   -->  if0.hopix
+
+INPUT:
+val main =
+  if 0 = 0 then print_string ("Foo\n") else print_string ("Bar\n")
+OUTPUT: 
+../../../../flap: unknown option '-VV'.
+flap [options] input_filename
+  --version                   Show the version number and exits.
+  -v Show                     
+  --source                    Set the source programming language
+  -s Set                      
+  --target                    Set the target programming language
+  -t Set                      
+  --interactive (true|false)  Set the compiler mode
+  -i (true|false)             
+  --run (true|false)          Ask the compiler to run the compiled code
+  -r (true|false)             
+  --verbose (true|false)      Ask the compiler to be verbose
+  -V (true|false)             
+  --dry (true|false)          Ask the compiler not to produce compiled file
+  -d (true|false)             
+  --unsafe (true|false)       Ask the compiler not to typecheck
+  -u (true|false)             
+  --bench (true|false)        Ask the compiler to show evaluation time.
+  -B (true|false)             
+  --using                     Force the compilation to use this intermediate language
+  -! Force                    
+  --gcc (true|false)          Ask to compiler to produce assembly code in GCC format
+  -G (true|false)             
+  --types (true|false)        Ask the compiler to show types for toplevel values.
+  -T (true|false)             
+  --infer (true|false)        Ask the compiler to infer types for toplevel values.
+  -I (true|false)             
+  --typechecking (true|false) Ask the compiler to check types for toplevel values.
+  -C (true|false)             
+  -help                       Display this list of options
+  --help                      Display this list of options
+EXPECTED: 
+Foo
+--------------------------------------------------------
+[ KO ]   -->  if1.hopix
+
+INPUT:
+val main =
+  if 1 = 0 then print_string ("Foo\n") else print_string ("Bar\n")
+OUTPUT: 
+../../../../flap: unknown option '-VV'.
+flap [options] input_filename
+  --version                   Show the version number and exits.
+  -v Show                     
+  --source                    Set the source programming language
+  -s Set                      
+  --target                    Set the target programming language
+  -t Set                      
+  --interactive (true|false)  Set the compiler mode
+  -i (true|false)             
+  --run (true|false)          Ask the compiler to run the compiled code
+  -r (true|false)             
+  --verbose (true|false)      Ask the compiler to be verbose
+  -V (true|false)             
+  --dry (true|false)          Ask the compiler not to produce compiled file
+  -d (true|false)             
+  --unsafe (true|false)       Ask the compiler not to typecheck
+  -u (true|false)             
+  --bench (true|false)        Ask the compiler to show evaluation time.
+  -B (true|false)             
+  --using                     Force the compilation to use this intermediate language
+  -! Force                    
+  --gcc (true|false)          Ask to compiler to produce assembly code in GCC format
+  -G (true|false)             
+  --types (true|false)        Ask the compiler to show types for toplevel values.
+  -T (true|false)             
+  --infer (true|false)        Ask the compiler to infer types for toplevel values.
+  -I (true|false)             
+  --typechecking (true|false) Ask the compiler to check types for toplevel values.
+  -C (true|false)             
+  -help                       Display this list of options
+  --help                      Display this list of options
+EXPECTED: 
+Bar
+--------------------------------------------------------
+[ KO ]   -->  if3.hopix
+
+INPUT:
+val main =
+  if 1 = 0 then print_string ("Foo\n");
+  print_string ("Bar\n")
+OUTPUT: 
+../../../../flap: unknown option '-VV'.
+flap [options] input_filename
+  --version                   Show the version number and exits.
+  -v Show                     
+  --source                    Set the source programming language
+  -s Set                      
+  --target                    Set the target programming language
+  -t Set                      
+  --interactive (true|false)  Set the compiler mode
+  -i (true|false)             
+  --run (true|false)          Ask the compiler to run the compiled code
+  -r (true|false)             
+  --verbose (true|false)      Ask the compiler to be verbose
+  -V (true|false)             
+  --dry (true|false)          Ask the compiler not to produce compiled file
+  -d (true|false)             
+  --unsafe (true|false)       Ask the compiler not to typecheck
+  -u (true|false)             
+  --bench (true|false)        Ask the compiler to show evaluation time.
+  -B (true|false)             
+  --using                     Force the compilation to use this intermediate language
+  -! Force                    
+  --gcc (true|false)          Ask to compiler to produce assembly code in GCC format
+  -G (true|false)             
+  --types (true|false)        Ask the compiler to show types for toplevel values.
+  -T (true|false)             
+  --infer (true|false)        Ask the compiler to infer types for toplevel values.
+  -I (true|false)             
+  --typechecking (true|false) Ask the compiler to check types for toplevel values.
+  -C (true|false)             
+  -help                       Display this list of options
+  --help                      Display this list of options
+EXPECTED: 
+Bar
+--------------------------------------------------------
+[ KO ]   -->  if4.hopix
+
+INPUT:
+val main =
+  if 0 = 0 then print_string ("Foo\n");
+  print_string ("Bar\n")
+OUTPUT: 
+../../../../flap: unknown option '-VV'.
+flap [options] input_filename
+  --version                   Show the version number and exits.
+  -v Show                     
+  --source                    Set the source programming language
+  -s Set                      
+  --target                    Set the target programming language
+  -t Set                      
+  --interactive (true|false)  Set the compiler mode
+  -i (true|false)             
+  --run (true|false)          Ask the compiler to run the compiled code
+  -r (true|false)             
+  --verbose (true|false)      Ask the compiler to be verbose
+  -V (true|false)             
+  --dry (true|false)          Ask the compiler not to produce compiled file
+  -d (true|false)             
+  --unsafe (true|false)       Ask the compiler not to typecheck
+  -u (true|false)             
+  --bench (true|false)        Ask the compiler to show evaluation time.
+  -B (true|false)             
+  --using                     Force the compilation to use this intermediate language
+  -! Force                    
+  --gcc (true|false)          Ask to compiler to produce assembly code in GCC format
+  -G (true|false)             
+  --types (true|false)        Ask the compiler to show types for toplevel values.
+  -T (true|false)             
+  --infer (true|false)        Ask the compiler to infer types for toplevel values.
+  -I (true|false)             
+  --typechecking (true|false) Ask the compiler to check types for toplevel values.
+  -C (true|false)             
+  -help                       Display this list of options
+  --help                      Display this list of options
+EXPECTED: 
+Foo
+Bar
+--------------------------------------------------------
+[ KO ]   -->  if5.hopix
+
+INPUT:
+val main =
+  if 0 = 0 then
+    if 1 = 0 then print_string ("Foo\n") else print_string ("Baz\n")
+  else
+    print_string ("Bar\n")
+OUTPUT: 
+../../../../flap: unknown option '-VV'.
+flap [options] input_filename
+  --version                   Show the version number and exits.
+  -v Show                     
+  --source                    Set the source programming language
+  -s Set                      
+  --target                    Set the target programming language
+  -t Set                      
+  --interactive (true|false)  Set the compiler mode
+  -i (true|false)             
+  --run (true|false)          Ask the compiler to run the compiled code
+  -r (true|false)             
+  --verbose (true|false)      Ask the compiler to be verbose
+  -V (true|false)             
+  --dry (true|false)          Ask the compiler not to produce compiled file
+  -d (true|false)             
+  --unsafe (true|false)       Ask the compiler not to typecheck
+  -u (true|false)             
+  --bench (true|false)        Ask the compiler to show evaluation time.
+  -B (true|false)             
+  --using                     Force the compilation to use this intermediate language
+  -! Force                    
+  --gcc (true|false)          Ask to compiler to produce assembly code in GCC format
+  -G (true|false)             
+  --types (true|false)        Ask the compiler to show types for toplevel values.
+  -T (true|false)             
+  --infer (true|false)        Ask the compiler to infer types for toplevel values.
+  -I (true|false)             
+  --typechecking (true|false) Ask the compiler to check types for toplevel values.
+  -C (true|false)             
+  -help                       Display this list of options
+  --help                      Display this list of options
+EXPECTED: 
+Baz
+--------------------------------------------------------
+[ KO ]   -->  lambda.hopix
+
+INPUT:
+fun f (x) = 2 * x
+
+val main =
+  print_int (f (21));
+  print_string ("!\n")
+OUTPUT: 
+../../../../flap: unknown option '-VV'.
+flap [options] input_filename
+  --version                   Show the version number and exits.
+  -v Show                     
+  --source                    Set the source programming language
+  -s Set                      
+  --target                    Set the target programming language
+  -t Set                      
+  --interactive (true|false)  Set the compiler mode
+  -i (true|false)             
+  --run (true|false)          Ask the compiler to run the compiled code
+  -r (true|false)             
+  --verbose (true|false)      Ask the compiler to be verbose
+  -V (true|false)             
+  --dry (true|false)          Ask the compiler not to produce compiled file
+  -d (true|false)             
+  --unsafe (true|false)       Ask the compiler not to typecheck
+  -u (true|false)             
+  --bench (true|false)        Ask the compiler to show evaluation time.
+  -B (true|false)             
+  --using                     Force the compilation to use this intermediate language
+  -! Force                    
+  --gcc (true|false)          Ask to compiler to produce assembly code in GCC format
+  -G (true|false)             
+  --types (true|false)        Ask the compiler to show types for toplevel values.
+  -T (true|false)             
+  --infer (true|false)        Ask the compiler to infer types for toplevel values.
+  -I (true|false)             
+  --typechecking (true|false) Ask the compiler to check types for toplevel values.
+  -C (true|false)             
+  -help                       Display this list of options
+  --help                      Display this list of options
+EXPECTED: 
+42!
+--------------------------------------------------------
+[ KO ]   -->  lambda1.hopix
+
+INPUT:
+val main =
+  print_int ((\(x) => 2 * x) (21));
+  print_string ("!\n")
+OUTPUT: 
+../../../../flap: unknown option '-VV'.
+flap [options] input_filename
+  --version                   Show the version number and exits.
+  -v Show                     
+  --source                    Set the source programming language
+  -s Set                      
+  --target                    Set the target programming language
+  -t Set                      
+  --interactive (true|false)  Set the compiler mode
+  -i (true|false)             
+  --run (true|false)          Ask the compiler to run the compiled code
+  -r (true|false)             
+  --verbose (true|false)      Ask the compiler to be verbose
+  -V (true|false)             
+  --dry (true|false)          Ask the compiler not to produce compiled file
+  -d (true|false)             
+  --unsafe (true|false)       Ask the compiler not to typecheck
+  -u (true|false)             
+  --bench (true|false)        Ask the compiler to show evaluation time.
+  -B (true|false)             
+  --using                     Force the compilation to use this intermediate language
+  -! Force                    
+  --gcc (true|false)          Ask to compiler to produce assembly code in GCC format
+  -G (true|false)             
+  --types (true|false)        Ask the compiler to show types for toplevel values.
+  -T (true|false)             
+  --infer (true|false)        Ask the compiler to infer types for toplevel values.
+  -I (true|false)             
+  --typechecking (true|false) Ask the compiler to check types for toplevel values.
+  -C (true|false)             
+  -help                       Display this list of options
+  --help                      Display this list of options
+EXPECTED: 
+42!
+--------------------------------------------------------
+[ KO ]   -->  lambda2.hopix
+
+INPUT:
+fun apply (f, x) = f (x)
+
+val main =
+  print_int (apply ((\(x) => 2 * x), 21));
+  print_string ("!\n")
+OUTPUT: 
+../../../../flap: unknown option '-VV'.
+flap [options] input_filename
+  --version                   Show the version number and exits.
+  -v Show                     
+  --source                    Set the source programming language
+  -s Set                      
+  --target                    Set the target programming language
+  -t Set                      
+  --interactive (true|false)  Set the compiler mode
+  -i (true|false)             
+  --run (true|false)          Ask the compiler to run the compiled code
+  -r (true|false)             
+  --verbose (true|false)      Ask the compiler to be verbose
+  -V (true|false)             
+  --dry (true|false)          Ask the compiler not to produce compiled file
+  -d (true|false)             
+  --unsafe (true|false)       Ask the compiler not to typecheck
+  -u (true|false)             
+  --bench (true|false)        Ask the compiler to show evaluation time.
+  -B (true|false)             
+  --using                     Force the compilation to use this intermediate language
+  -! Force                    
+  --gcc (true|false)          Ask to compiler to produce assembly code in GCC format
+  -G (true|false)             
+  --types (true|false)        Ask the compiler to show types for toplevel values.
+  -T (true|false)             
+  --infer (true|false)        Ask the compiler to infer types for toplevel values.
+  -I (true|false)             
+  --typechecking (true|false) Ask the compiler to check types for toplevel values.
+  -C (true|false)             
+  -help                       Display this list of options
+  --help                      Display this list of options
+EXPECTED: 
+42!
+--------------------------------------------------------
+[ KO ]   -->  lambda3.hopix
+
+INPUT:
+val main =
+  print_int (((\(f, x) => f (x)) ((\(x) => 2 * x), 21)));
+  print_string ("!\n")
+OUTPUT: 
+../../../../flap: unknown option '-VV'.
+flap [options] input_filename
+  --version                   Show the version number and exits.
+  -v Show                     
+  --source                    Set the source programming language
+  -s Set                      
+  --target                    Set the target programming language
+  -t Set                      
+  --interactive (true|false)  Set the compiler mode
+  -i (true|false)             
+  --run (true|false)          Ask the compiler to run the compiled code
+  -r (true|false)             
+  --verbose (true|false)      Ask the compiler to be verbose
+  -V (true|false)             
+  --dry (true|false)          Ask the compiler not to produce compiled file
+  -d (true|false)             
+  --unsafe (true|false)       Ask the compiler not to typecheck
+  -u (true|false)             
+  --bench (true|false)        Ask the compiler to show evaluation time.
+  -B (true|false)             
+  --using                     Force the compilation to use this intermediate language
+  -! Force                    
+  --gcc (true|false)          Ask to compiler to produce assembly code in GCC format
+  -G (true|false)             
+  --types (true|false)        Ask the compiler to show types for toplevel values.
+  -T (true|false)             
+  --infer (true|false)        Ask the compiler to infer types for toplevel values.
+  -I (true|false)             
+  --typechecking (true|false) Ask the compiler to check types for toplevel values.
+  -C (true|false)             
+  -help                       Display this list of options
+  --help                      Display this list of options
+EXPECTED: 
+42!
+--------------------------------------------------------
+[ KO ]   -->  lambda4.hopix
+
+INPUT:
+fun compose (f, g) = \(x) => f (g (x))
+
+val main =
+  print_int ((compose (\(x) => 2 * x, \(x) => x + 1)) (21));
+  print_string ("!\n")
+OUTPUT: 
+../../../../flap: unknown option '-VV'.
+flap [options] input_filename
+  --version                   Show the version number and exits.
+  -v Show                     
+  --source                    Set the source programming language
+  -s Set                      
+  --target                    Set the target programming language
+  -t Set                      
+  --interactive (true|false)  Set the compiler mode
+  -i (true|false)             
+  --run (true|false)          Ask the compiler to run the compiled code
+  -r (true|false)             
+  --verbose (true|false)      Ask the compiler to be verbose
+  -V (true|false)             
+  --dry (true|false)          Ask the compiler not to produce compiled file
+  -d (true|false)             
+  --unsafe (true|false)       Ask the compiler not to typecheck
+  -u (true|false)             
+  --bench (true|false)        Ask the compiler to show evaluation time.
+  -B (true|false)             
+  --using                     Force the compilation to use this intermediate language
+  -! Force                    
+  --gcc (true|false)          Ask to compiler to produce assembly code in GCC format
+  -G (true|false)             
+  --types (true|false)        Ask the compiler to show types for toplevel values.
+  -T (true|false)             
+  --infer (true|false)        Ask the compiler to infer types for toplevel values.
+  -I (true|false)             
+  --typechecking (true|false) Ask the compiler to check types for toplevel values.
+  -C (true|false)             
+  -help                       Display this list of options
+  --help                      Display this list of options
+EXPECTED: 
+44!
+--------------------------------------------------------
+[ KO ]   -->  lambda5.hopix
+
+INPUT:
+fun choice (x, y) = x
+fun compose2 (f, g, h) = \(x, y) => f (g (x), h (y))
+fun succ (x) = x + 1
+fun double (x) = 2 * x
+
+val main =
+  print_int ((compose2 (choice, succ, double)) (21, 10));
+  print_string ("!\n")
+OUTPUT: 
+../../../../flap: unknown option '-VV'.
+flap [options] input_filename
+  --version                   Show the version number and exits.
+  -v Show                     
+  --source                    Set the source programming language
+  -s Set                      
+  --target                    Set the target programming language
+  -t Set                      
+  --interactive (true|false)  Set the compiler mode
+  -i (true|false)             
+  --run (true|false)          Ask the compiler to run the compiled code
+  -r (true|false)             
+  --verbose (true|false)      Ask the compiler to be verbose
+  -V (true|false)             
+  --dry (true|false)          Ask the compiler not to produce compiled file
+  -d (true|false)             
+  --unsafe (true|false)       Ask the compiler not to typecheck
+  -u (true|false)             
+  --bench (true|false)        Ask the compiler to show evaluation time.
+  -B (true|false)             
+  --using                     Force the compilation to use this intermediate language
+  -! Force                    
+  --gcc (true|false)          Ask to compiler to produce assembly code in GCC format
+  -G (true|false)             
+  --types (true|false)        Ask the compiler to show types for toplevel values.
+  -T (true|false)             
+  --infer (true|false)        Ask the compiler to infer types for toplevel values.
+  -I (true|false)             
+  --typechecking (true|false) Ask the compiler to check types for toplevel values.
+  -C (true|false)             
+  -help                       Display this list of options
+  --help                      Display this list of options
+EXPECTED: 
+22!
+--------------------------------------------------------
+[ KO ]   -->  ref0.hopix
+
+INPUT:
+val main =
+  val x = ref 0;
+  print_int (!x);
+  print_string (" !\n")
+OUTPUT: 
+../../../../flap: unknown option '-VV'.
+flap [options] input_filename
+  --version                   Show the version number and exits.
+  -v Show                     
+  --source                    Set the source programming language
+  -s Set                      
+  --target                    Set the target programming language
+  -t Set                      
+  --interactive (true|false)  Set the compiler mode
+  -i (true|false)             
+  --run (true|false)          Ask the compiler to run the compiled code
+  -r (true|false)             
+  --verbose (true|false)      Ask the compiler to be verbose
+  -V (true|false)             
+  --dry (true|false)          Ask the compiler not to produce compiled file
+  -d (true|false)             
+  --unsafe (true|false)       Ask the compiler not to typecheck
+  -u (true|false)             
+  --bench (true|false)        Ask the compiler to show evaluation time.
+  -B (true|false)             
+  --using                     Force the compilation to use this intermediate language
+  -! Force                    
+  --gcc (true|false)          Ask to compiler to produce assembly code in GCC format
+  -G (true|false)             
+  --types (true|false)        Ask the compiler to show types for toplevel values.
+  -T (true|false)             
+  --infer (true|false)        Ask the compiler to infer types for toplevel values.
+  -I (true|false)             
+  --typechecking (true|false) Ask the compiler to check types for toplevel values.
+  -C (true|false)             
+  -help                       Display this list of options
+  --help                      Display this list of options
+EXPECTED: 
+0 !
+--------------------------------------------------------
+[ KO ]   -->  ref1.hopix
+
+INPUT:
+val main =
+  val x = ref 0;
+  print_int (!x);
+  print_string (" !\n");
+  x := 1;
+  print_int (!x);
+  print_string (" !\n")
+OUTPUT: 
+../../../../flap: unknown option '-VV'.
+flap [options] input_filename
+  --version                   Show the version number and exits.
+  -v Show                     
+  --source                    Set the source programming language
+  -s Set                      
+  --target                    Set the target programming language
+  -t Set                      
+  --interactive (true|false)  Set the compiler mode
+  -i (true|false)             
+  --run (true|false)          Ask the compiler to run the compiled code
+  -r (true|false)             
+  --verbose (true|false)      Ask the compiler to be verbose
+  -V (true|false)             
+  --dry (true|false)          Ask the compiler not to produce compiled file
+  -d (true|false)             
+  --unsafe (true|false)       Ask the compiler not to typecheck
+  -u (true|false)             
+  --bench (true|false)        Ask the compiler to show evaluation time.
+  -B (true|false)             
+  --using                     Force the compilation to use this intermediate language
+  -! Force                    
+  --gcc (true|false)          Ask to compiler to produce assembly code in GCC format
+  -G (true|false)             
+  --types (true|false)        Ask the compiler to show types for toplevel values.
+  -T (true|false)             
+  --infer (true|false)        Ask the compiler to infer types for toplevel values.
+  -I (true|false)             
+  --typechecking (true|false) Ask the compiler to check types for toplevel values.
+  -C (true|false)             
+  -help                       Display this list of options
+  --help                      Display this list of options
+EXPECTED: 
+0 !
+1 !
+--------------------------------------------------------
+[ KO ]   -->  ref2.hopix
+
+INPUT:
+val main =
+  val x = ref 1;
+  val y = ref 2;
+  val tmp = ref 0;
+  tmp := !x;
+  x := !y;
+  y := !tmp;
+  print_string ("x = ");
+  print_int (!x);
+  print_string (" y = ");
+  print_int (!y);
+  print_string ("\n")
+OUTPUT: 
+../../../../flap: unknown option '-VV'.
+flap [options] input_filename
+  --version                   Show the version number and exits.
+  -v Show                     
+  --source                    Set the source programming language
+  -s Set                      
+  --target                    Set the target programming language
+  -t Set                      
+  --interactive (true|false)  Set the compiler mode
+  -i (true|false)             
+  --run (true|false)          Ask the compiler to run the compiled code
+  -r (true|false)             
+  --verbose (true|false)      Ask the compiler to be verbose
+  -V (true|false)             
+  --dry (true|false)          Ask the compiler not to produce compiled file
+  -d (true|false)             
+  --unsafe (true|false)       Ask the compiler not to typecheck
+  -u (true|false)             
+  --bench (true|false)        Ask the compiler to show evaluation time.
+  -B (true|false)             
+  --using                     Force the compilation to use this intermediate language
+  -! Force                    
+  --gcc (true|false)          Ask to compiler to produce assembly code in GCC format
+  -G (true|false)             
+  --types (true|false)        Ask the compiler to show types for toplevel values.
+  -T (true|false)             
+  --infer (true|false)        Ask the compiler to infer types for toplevel values.
+  -I (true|false)             
+  --typechecking (true|false) Ask the compiler to check types for toplevel values.
+  -C (true|false)             
+  -help                       Display this list of options
+  --help                      Display this list of options
+EXPECTED: 
+x = 2 y = 1
+--------------------------------------------------------
+[ KO ]   -->  ref3.hopix
+
+INPUT:
+val main =
+  val x = ref (ref 0);
+  val y = ref (! x);
+  (! y) := 1;
+  print_int (! (! x));
+  print_string ("\n")
+OUTPUT: 
+../../../../flap: unknown option '-VV'.
+flap [options] input_filename
+  --version                   Show the version number and exits.
+  -v Show                     
+  --source                    Set the source programming language
+  -s Set                      
+  --target                    Set the target programming language
+  -t Set                      
+  --interactive (true|false)  Set the compiler mode
+  -i (true|false)             
+  --run (true|false)          Ask the compiler to run the compiled code
+  -r (true|false)             
+  --verbose (true|false)      Ask the compiler to be verbose
+  -V (true|false)             
+  --dry (true|false)          Ask the compiler not to produce compiled file
+  -d (true|false)             
+  --unsafe (true|false)       Ask the compiler not to typecheck
+  -u (true|false)             
+  --bench (true|false)        Ask the compiler to show evaluation time.
+  -B (true|false)             
+  --using                     Force the compilation to use this intermediate language
+  -! Force                    
+  --gcc (true|false)          Ask to compiler to produce assembly code in GCC format
+  -G (true|false)             
+  --types (true|false)        Ask the compiler to show types for toplevel values.
+  -T (true|false)             
+  --infer (true|false)        Ask the compiler to infer types for toplevel values.
+  -I (true|false)             
+  --typechecking (true|false) Ask the compiler to check types for toplevel values.
+  -C (true|false)             
+  -help                       Display this list of options
+  --help                      Display this list of options
+EXPECTED: 
+1
+--------------------------------------------------------
+[ KO ]   -->  ref4.hopix
+
+INPUT:
+val z = ref 0
+val x = ref (ref 0)
+val main =
+   x := z;
+   z := 1;
+   print_int (! (! x));
+   print_string ("!\n")
+OUTPUT: 
+../../../../flap: unknown option '-VV'.
+flap [options] input_filename
+  --version                   Show the version number and exits.
+  -v Show                     
+  --source                    Set the source programming language
+  -s Set                      
+  --target                    Set the target programming language
+  -t Set                      
+  --interactive (true|false)  Set the compiler mode
+  -i (true|false)             
+  --run (true|false)          Ask the compiler to run the compiled code
+  -r (true|false)             
+  --verbose (true|false)      Ask the compiler to be verbose
+  -V (true|false)             
+  --dry (true|false)          Ask the compiler not to produce compiled file
+  -d (true|false)             
+  --unsafe (true|false)       Ask the compiler not to typecheck
+  -u (true|false)             
+  --bench (true|false)        Ask the compiler to show evaluation time.
+  -B (true|false)             
+  --using                     Force the compilation to use this intermediate language
+  -! Force                    
+  --gcc (true|false)          Ask to compiler to produce assembly code in GCC format
+  -G (true|false)             
+  --types (true|false)        Ask the compiler to show types for toplevel values.
+  -T (true|false)             
+  --infer (true|false)        Ask the compiler to infer types for toplevel values.
+  -I (true|false)             
+  --typechecking (true|false) Ask the compiler to check types for toplevel values.
+  -C (true|false)             
+  -help                       Display this list of options
+  --help                      Display this list of options
+EXPECTED: 
+1!
+--------------------------------------------------------
+[ KO ]   -->  while.hopix
+
+INPUT:
+val i = 5
+val count = ref 1
+val n = ref i
+val main =
+  while (!n > 0) {
+   count := !count * !n;
+   n := !n - 1
+  };
+  print_string ("fact of ");
+  print_int (i);
+  print_string (" is ");
+  print_int (!count);
+  print_string ("\n")
+OUTPUT: 
+../../../../flap: unknown option '-VV'.
+flap [options] input_filename
+  --version                   Show the version number and exits.
+  -v Show                     
+  --source                    Set the source programming language
+  -s Set                      
+  --target                    Set the target programming language
+  -t Set                      
+  --interactive (true|false)  Set the compiler mode
+  -i (true|false)             
+  --run (true|false)          Ask the compiler to run the compiled code
+  -r (true|false)             
+  --verbose (true|false)      Ask the compiler to be verbose
+  -V (true|false)             
+  --dry (true|false)          Ask the compiler not to produce compiled file
+  -d (true|false)             
+  --unsafe (true|false)       Ask the compiler not to typecheck
+  -u (true|false)             
+  --bench (true|false)        Ask the compiler to show evaluation time.
+  -B (true|false)             
+  --using                     Force the compilation to use this intermediate language
+  -! Force                    
+  --gcc (true|false)          Ask to compiler to produce assembly code in GCC format
+  -G (true|false)             
+  --types (true|false)        Ask the compiler to show types for toplevel values.
+  -T (true|false)             
+  --infer (true|false)        Ask the compiler to infer types for toplevel values.
+  -I (true|false)             
+  --typechecking (true|false) Ask the compiler to check types for toplevel values.
+  -C (true|false)             
+  -help                       Display this list of options
+  --help                      Display this list of options
+EXPECTED: 
+fact of 5 is 120
+--------------------------------------------------------
+[ KO ]   -->  while0.hopix
+
+INPUT:
+val main =
+  while (false) {
+     print_string ("Not me!\n")
+  };
+  print_string ("But me!\n")
+OUTPUT: 
+../../../../flap: unknown option '-VV'.
+flap [options] input_filename
+  --version                   Show the version number and exits.
+  -v Show                     
+  --source                    Set the source programming language
+  -s Set                      
+  --target                    Set the target programming language
+  -t Set                      
+  --interactive (true|false)  Set the compiler mode
+  -i (true|false)             
+  --run (true|false)          Ask the compiler to run the compiled code
+  -r (true|false)             
+  --verbose (true|false)      Ask the compiler to be verbose
+  -V (true|false)             
+  --dry (true|false)          Ask the compiler not to produce compiled file
+  -d (true|false)             
+  --unsafe (true|false)       Ask the compiler not to typecheck
+  -u (true|false)             
+  --bench (true|false)        Ask the compiler to show evaluation time.
+  -B (true|false)             
+  --using                     Force the compilation to use this intermediate language
+  -! Force                    
+  --gcc (true|false)          Ask to compiler to produce assembly code in GCC format
+  -G (true|false)             
+  --types (true|false)        Ask the compiler to show types for toplevel values.
+  -T (true|false)             
+  --infer (true|false)        Ask the compiler to infer types for toplevel values.
+  -I (true|false)             
+  --typechecking (true|false) Ask the compiler to check types for toplevel values.
+  -C (true|false)             
+  -help                       Display this list of options
+  --help                      Display this list of options
+EXPECTED: 
+But me!
+--------------------------------------------------------
+[ KO ]   -->  while1.hopix
+
+INPUT:
+val main =
+  val x = ref true;
+  while (!x) {
+    x := false
+  };
+  print_string ("Loop exited!\n")
+OUTPUT: 
+../../../../flap: unknown option '-VV'.
+flap [options] input_filename
+  --version                   Show the version number and exits.
+  -v Show                     
+  --source                    Set the source programming language
+  -s Set                      
+  --target                    Set the target programming language
+  -t Set                      
+  --interactive (true|false)  Set the compiler mode
+  -i (true|false)             
+  --run (true|false)          Ask the compiler to run the compiled code
+  -r (true|false)             
+  --verbose (true|false)      Ask the compiler to be verbose
+  -V (true|false)             
+  --dry (true|false)          Ask the compiler not to produce compiled file
+  -d (true|false)             
+  --unsafe (true|false)       Ask the compiler not to typecheck
+  -u (true|false)             
+  --bench (true|false)        Ask the compiler to show evaluation time.
+  -B (true|false)             
+  --using                     Force the compilation to use this intermediate language
+  -! Force                    
+  --gcc (true|false)          Ask to compiler to produce assembly code in GCC format
+  -G (true|false)             
+  --types (true|false)        Ask the compiler to show types for toplevel values.
+  -T (true|false)             
+  --infer (true|false)        Ask the compiler to infer types for toplevel values.
+  -I (true|false)             
+  --typechecking (true|false) Ask the compiler to check types for toplevel values.
+  -C (true|false)             
+  -help                       Display this list of options
+  --help                      Display this list of options
+EXPECTED: 
+Loop exited!
+--------------------------------------------------------
+[ KO ]   -->  while2.hopix
+
+INPUT:
+val main =
+   while (0 = 0 && 1 = 0) {
+      print_string ("Foo!\n")
+   };
+   print_string ("Bar!\n")
+OUTPUT: 
+../../../../flap: unknown option '-VV'.
+flap [options] input_filename
+  --version                   Show the version number and exits.
+  -v Show                     
+  --source                    Set the source programming language
+  -s Set                      
+  --target                    Set the target programming language
+  -t Set                      
+  --interactive (true|false)  Set the compiler mode
+  -i (true|false)             
+  --run (true|false)          Ask the compiler to run the compiled code
+  -r (true|false)             
+  --verbose (true|false)      Ask the compiler to be verbose
+  -V (true|false)             
+  --dry (true|false)          Ask the compiler not to produce compiled file
+  -d (true|false)             
+  --unsafe (true|false)       Ask the compiler not to typecheck
+  -u (true|false)             
+  --bench (true|false)        Ask the compiler to show evaluation time.
+  -B (true|false)             
+  --using                     Force the compilation to use this intermediate language
+  -! Force                    
+  --gcc (true|false)          Ask to compiler to produce assembly code in GCC format
+  -G (true|false)             
+  --types (true|false)        Ask the compiler to show types for toplevel values.
+  -T (true|false)             
+  --infer (true|false)        Ask the compiler to infer types for toplevel values.
+  -I (true|false)             
+  --typechecking (true|false) Ask the compiler to check types for toplevel values.
+  -C (true|false)             
+  -help                       Display this list of options
+  --help                      Display this list of options
+EXPECTED: 
+Bar!
+--------------------------------------------------------
+[ KO ]   -->  while3.hopix
+
+INPUT:
+val main =
+  val x = ref 0;
+  while (!x < 10) {
+     while (!x < 5) {
+       x := !x + 2
+     };
+     x := !x + 1
+  };
+  print_string ("Exit!\n")
+OUTPUT: 
+../../../../flap: unknown option '-VV'.
+flap [options] input_filename
+  --version                   Show the version number and exits.
+  -v Show                     
+  --source                    Set the source programming language
+  -s Set                      
+  --target                    Set the target programming language
+  -t Set                      
+  --interactive (true|false)  Set the compiler mode
+  -i (true|false)             
+  --run (true|false)          Ask the compiler to run the compiled code
+  -r (true|false)             
+  --verbose (true|false)      Ask the compiler to be verbose
+  -V (true|false)             
+  --dry (true|false)          Ask the compiler not to produce compiled file
+  -d (true|false)             
+  --unsafe (true|false)       Ask the compiler not to typecheck
+  -u (true|false)             
+  --bench (true|false)        Ask the compiler to show evaluation time.
+  -B (true|false)             
+  --using                     Force the compilation to use this intermediate language
+  -! Force                    
+  --gcc (true|false)          Ask to compiler to produce assembly code in GCC format
+  -G (true|false)             
+  --types (true|false)        Ask the compiler to show types for toplevel values.
+  -T (true|false)             
+  --infer (true|false)        Ask the compiler to infer types for toplevel values.
+  -I (true|false)             
+  --typechecking (true|false) Ask the compiler to check types for toplevel values.
+  -C (true|false)             
+  -help                       Display this list of options
+  --help                      Display this list of options
+EXPECTED: 
+Exit!
+--------------------------------------------------------
+GOOD: 0 / 26
+
+BAD:  0 / 0
+make[1]: Leaving directory '/home/opam/source/flap/tests-m2/hopix/interpreter/good'
+--------------------------------------------------------
+Global results:
+BAD:   0 / 0
+GOOD:  0 / 26
+--------------------------------------------------------
+make: Leaving directory '/home/opam/source/flap/tests-m2'
