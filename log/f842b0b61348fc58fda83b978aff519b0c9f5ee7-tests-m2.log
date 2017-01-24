@@ -1,0 +1,398 @@
+make: Entering directory '/home/opam/source/flap/tests-m2'
+make -C ..
+make[1]: Entering directory '/home/opam/source/flap'
+Source configuration ...
+ * Ledit is not present: use default UserInput.
+rm -f flap.native
+make[1]: Leaving directory '/home/opam/source/flap'
+make[1]: Entering directory '/home/opam/source/flap/tests-m2/hopix/interpreter/bad'
+========================================================
+In interpreter/bad
+GOOD: 0 / 0
+
+BAD:  0 / 0
+make[1]: Leaving directory '/home/opam/source/flap/tests-m2/hopix/interpreter/bad'
+make[1]: Entering directory '/home/opam/source/flap/tests-m2/hopix/interpreter/good'
+========================================================
+In interpreter/good
+[ OK ]   adt.hopix
+
+INPUT:
+val nil = Nil
+val l1 = Cons (1, Cons (2, nil))
+val l2 = Cons (0, l1)
+val main =
+  l2 ? {
+  | Nil => print_string ("Wrong!\n")
+  | Cons (x, _) => print_int (x)
+  };
+  print_string ("!\n")
+OUTPUT: 
+0!
+EXPECTED: 
+0!
+--------------------------------------------------------
+[ OK ]   adt1.hopix
+
+INPUT:
+val nil = Nil
+val l1 = Cons (1, Cons (2, nil))
+val l2 = Cons (0, l1)
+val main =
+  l2 ? {
+  | Nil => print_string ("Wrong!\n")
+  | Cons (x, xs) =>
+    xs ? {
+    | Nil => print_string ("Wrong!\n")
+    | Cons (y, _) => print_int (y)
+    }
+  };
+  print_string ("!\n")
+OUTPUT: 
+1!
+EXPECTED: 
+1!
+--------------------------------------------------------
+[ OK ]   adt2.hopix
+
+INPUT:
+val nil = Nil
+val l1 = Cons (1, Cons (2, nil))
+val l2 = Cons (0, l1)
+fun len (l) = l ? { Nil => 0 | Cons (_, xs) => 1 + len (xs) }
+
+val main =
+  print_int (len (l1));
+  print_string ("!\n")
+OUTPUT: 
+2!
+EXPECTED: 
+2!
+--------------------------------------------------------
+[ OK ]   adt3.hopix
+
+INPUT:
+val nil = Nil
+val l1 = Cons (1, Cons (2, nil))
+val l2 = Cons (0, l1)
+fun len (l) = l ? { Nil => 0 | Cons (_, xs) => 1 + len (xs) }
+fun fold (l, f, accu) = l ? { Nil => accu | Cons (x, xs) => f (x, fold (xs, f, accu)) }
+fun add (x, y) = x + y
+
+val main =
+  print_int (fold (l2, add, 0));
+  print_string ("!\n")
+OUTPUT: 
+3!
+EXPECTED: 
+3!
+--------------------------------------------------------
+[ OK ]   helloworld.hopix
+
+INPUT:
+val main = print_string ("Hello world!\n")
+OUTPUT: 
+Hello world!
+EXPECTED: 
+Hello world!
+--------------------------------------------------------
+[ OK ]   if0.hopix
+
+INPUT:
+val main =
+  if 0 = 0 then print_string ("Foo\n") else print_string ("Bar\n")
+OUTPUT: 
+Foo
+EXPECTED: 
+Foo
+--------------------------------------------------------
+[ OK ]   if1.hopix
+
+INPUT:
+val main =
+  if 1 = 0 then print_string ("Foo\n") else print_string ("Bar\n")
+OUTPUT: 
+Bar
+EXPECTED: 
+Bar
+--------------------------------------------------------
+[ OK ]   if3.hopix
+
+INPUT:
+val main =
+  if 1 = 0 then print_string ("Foo\n");
+  print_string ("Bar\n")
+OUTPUT: 
+Bar
+EXPECTED: 
+Bar
+--------------------------------------------------------
+[ OK ]   if4.hopix
+
+INPUT:
+val main =
+  if 0 = 0 then print_string ("Foo\n");
+  print_string ("Bar\n")
+OUTPUT: 
+Foo
+Bar
+EXPECTED: 
+Foo
+Bar
+--------------------------------------------------------
+[ OK ]   if5.hopix
+
+INPUT:
+val main =
+  if 0 = 0 then
+    if 1 = 0 then print_string ("Foo\n") else print_string ("Baz\n")
+  else
+    print_string ("Bar\n")
+OUTPUT: 
+Baz
+EXPECTED: 
+Baz
+--------------------------------------------------------
+[ OK ]   lambda.hopix
+
+INPUT:
+fun f (x) = 2 * x
+
+val main =
+  print_int (f (21));
+  print_string ("!\n")
+OUTPUT: 
+42!
+EXPECTED: 
+42!
+--------------------------------------------------------
+[ OK ]   lambda1.hopix
+
+INPUT:
+val main =
+  print_int ((\(x) => 2 * x) (21));
+  print_string ("!\n")
+OUTPUT: 
+42!
+EXPECTED: 
+42!
+--------------------------------------------------------
+[ OK ]   lambda2.hopix
+
+INPUT:
+fun apply (f, x) = f (x)
+
+val main =
+  print_int (apply ((\(x) => 2 * x), 21));
+  print_string ("!\n")
+OUTPUT: 
+42!
+EXPECTED: 
+42!
+--------------------------------------------------------
+[ OK ]   lambda3.hopix
+
+INPUT:
+val main =
+  print_int (((\(f, x) => f (x)) ((\(x) => 2 * x), 21)));
+  print_string ("!\n")
+OUTPUT: 
+42!
+EXPECTED: 
+42!
+--------------------------------------------------------
+[ OK ]   lambda4.hopix
+
+INPUT:
+fun compose (f, g) = \(x) => f (g (x))
+
+val main =
+  print_int ((compose (\(x) => 2 * x, \(x) => x + 1)) (21));
+  print_string ("!\n")
+OUTPUT: 
+44!
+EXPECTED: 
+44!
+--------------------------------------------------------
+[ OK ]   lambda5.hopix
+
+INPUT:
+fun choice (x, y) = x
+fun compose2 (f, g, h) = \(x, y) => f (g (x), h (y))
+fun succ (x) = x + 1
+fun double (x) = 2 * x
+
+val main =
+  print_int ((compose2 (choice, succ, double)) (21, 10));
+  print_string ("!\n")
+OUTPUT: 
+22!
+EXPECTED: 
+22!
+--------------------------------------------------------
+[ OK ]   ref0.hopix
+
+INPUT:
+val main =
+  val x = ref 0;
+  print_int (!x);
+  print_string (" !\n")
+OUTPUT: 
+0 !
+EXPECTED: 
+0 !
+--------------------------------------------------------
+[ OK ]   ref1.hopix
+
+INPUT:
+val main =
+  val x = ref 0;
+  print_int (!x);
+  print_string (" !\n");
+  x := 1;
+  print_int (!x);
+  print_string (" !\n")
+OUTPUT: 
+0 !
+1 !
+EXPECTED: 
+0 !
+1 !
+--------------------------------------------------------
+[ OK ]   ref2.hopix
+
+INPUT:
+val main =
+  val x = ref 1;
+  val y = ref 2;
+  val tmp = ref 0;
+  tmp := !x;
+  x := !y;
+  y := !tmp;
+  print_string ("x = ");
+  print_int (!x);
+  print_string (" y = ");
+  print_int (!y);
+  print_string ("\n")
+OUTPUT: 
+x = 2 y = 1
+EXPECTED: 
+x = 2 y = 1
+--------------------------------------------------------
+[ OK ]   ref3.hopix
+
+INPUT:
+val main =
+  val x = ref (ref 0);
+  val y = ref (! x);
+  (! y) := 1;
+  print_int (! (! x));
+  print_string ("\n")
+OUTPUT: 
+1
+EXPECTED: 
+1
+--------------------------------------------------------
+[ OK ]   ref4.hopix
+
+INPUT:
+val z = ref 0
+val x = ref (ref 0)
+val main =
+   x := z;
+   z := 1;
+   print_int (! (! x));
+   print_string ("!\n")
+OUTPUT: 
+1!
+EXPECTED: 
+1!
+--------------------------------------------------------
+[ OK ]   while.hopix
+
+INPUT:
+val i = 5
+val count = ref 1
+val n = ref i
+val main =
+  while (!n > 0) {
+   count := !count * !n;
+   n := !n - 1
+  };
+  print_string ("fact of ");
+  print_int (i);
+  print_string (" is ");
+  print_int (!count);
+  print_string ("\n")
+OUTPUT: 
+fact of 5 is 120
+EXPECTED: 
+fact of 5 is 120
+--------------------------------------------------------
+[ OK ]   while0.hopix
+
+INPUT:
+val main =
+  while (false) {
+     print_string ("Not me!\n")
+  };
+  print_string ("But me!\n")
+OUTPUT: 
+But me!
+EXPECTED: 
+But me!
+--------------------------------------------------------
+[ OK ]   while1.hopix
+
+INPUT:
+val main =
+  val x = ref true;
+  while (!x) {
+    x := false
+  };
+  print_string ("Loop exited!\n")
+OUTPUT: 
+Loop exited!
+EXPECTED: 
+Loop exited!
+--------------------------------------------------------
+[ OK ]   while2.hopix
+
+INPUT:
+val main =
+   while (0 = 0 && 1 = 0) {
+      print_string ("Foo!\n")
+   };
+   print_string ("Bar!\n")
+OUTPUT: 
+Bar!
+EXPECTED: 
+Bar!
+--------------------------------------------------------
+[ OK ]   while3.hopix
+
+INPUT:
+val main =
+  val x = ref 0;
+  while (!x < 10) {
+     while (!x < 5) {
+       x := !x + 2
+     };
+     x := !x + 1
+  };
+  print_string ("Exit!\n")
+OUTPUT: 
+Exit!
+EXPECTED: 
+Exit!
+--------------------------------------------------------
+GOOD: 26 / 26
+
+BAD:  0 / 0
+make[1]: Leaving directory '/home/opam/source/flap/tests-m2/hopix/interpreter/good'
+--------------------------------------------------------
+Global results:
+BAD:   0 / 0
+GOOD:  26 / 26
+--------------------------------------------------------
+make: Leaving directory '/home/opam/source/flap/tests-m2'
