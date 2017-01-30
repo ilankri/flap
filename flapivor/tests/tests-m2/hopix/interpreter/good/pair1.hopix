@@ -1,0 +1,25 @@
+fun mk_pair (x, y) = Pair (x, y)
+
+fun fst (p) = p ? Pair (x, y) => x
+
+fun snd (p) = p ? Pair (x, y) => y
+
+fun map (f, g, p) = p ? Pair (x, y) => Pair (f (x), g (y))
+
+fun id (p) = Pair (fst (p), snd (p))
+
+fun print_pair (p) =
+  print_string ("(");
+  print_int (fst (p));
+  print_string (", ");
+  print_int (snd (p));
+  print_string (")")
+
+fun scalar (x) = \(y) => x * y
+
+fun fib (n, p) =
+  if n = 0 then p else fib (n - 1, mk_pair (snd (p), fst (p) + snd (p)))
+
+val main =
+  print_pair (fib (10, mk_pair (1, 1)));
+  print_string ("!\n")

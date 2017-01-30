@@ -1,0 +1,6 @@
+fun zero (x, y) =
+ (x + y) * (x + y) - x * x + 2 * x * y + y * y
+
+val main =
+  print_int (zero (4, 0));
+  print_string ("!\n")

@@ -1,0 +1,72 @@
+val nil = Nil
+fun cons (x, xs) = Cons (x, xs)
+
+fun map (f, l) =
+  l ? {
+  | Nil => nil
+  | Cons (x, xs) => cons (f (x), map (f, xs))
+ }
+
+fun append (l1, l2) =
+  l1 ? {
+  | Nil => l2
+  | Cons (x, xs) => cons (x, append (xs, l2))
+  }
+
+fun flatten (l) =
+  l ? {
+  | Nil => nil
+  | Cons (l, ls) => append (l, flatten (ls))
+  }
+
+fun return (x)  = cons (x, nil)
+fun bind (m, f) = flatten (map (f, m))
+
+fun choice (a, b) = cons (a, cons (b, nil))
+
+fun bits (n) =
+  if n = 0 then return (nil) else
+    bind (choice (0, 1), \(b) =>
+      bind (bits (n - 1), \(bs) =>
+        return (cons (b, bs))
+     )
+    )
+
+val all_bytes = bits (8)
+
+fun iter (f, l) =
+  l ? {
+  | Nil =>
+    nil
+  | Cons (x, xs) =>
+    (f (x);
+     iter (f, xs))
+  }
+
+fun print_bits (bs) =
+  print_string ("[");
+  fun aux (bs) =
+    bs ? {
+    | Nil => print_string ("")
+    | Cons (b, bs) => (print_int (b); print_string (";"); aux (bs))
+    };
+  aux (bs);
+  print_string ("]")
+
+val main1 =
+  iter (\(b) => (print_bits (b); print_string ("\n")),
+        all_bytes)
+
+val all_word12 = bits (12)
+
+fun fold (f, accu, l) = l? {
+  | Nil => accu
+  | Cons (x, xs) => fold (f, f (accu, x), xs)
+}
+
+fun ones (b) = fold ((\(a, b) => a + b), 0, b)
+
+val main2 =
+    val count = ref (0);
+    iter (\(b) => count := !count + ones (b), all_word12);
+    print_int (!count)

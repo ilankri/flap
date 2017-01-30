@@ -1,0 +1,14 @@
+val a = A
+val b1 = B (1)
+val c12 = C (1, 2)
+val dab = D (a, b1)
+
+val main =
+  dab ? {
+  | D (A, B (x)) => (
+    print_string ("D with a B of ");
+    print_int (x);
+    print_string ("!\n")
+  )
+  | _ => print_string ("something else!\n")
+  }

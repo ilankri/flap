@@ -1,0 +1,14 @@
+fun node (l, x, r) = Node (ref l, x, ref r)
+fun sum (n, t) =
+  if n < 0 then 0 else t ? {
+  | Node (l, x, r) => sum (n - 1, !l) + x + sum (n - 1, !r)
+  }
+
+val u = ref 0
+val t = Node (u, 1, u)
+val cycle = (u := t)
+
+val main =
+  print_int (sum (10, t));
+  print_string ("!\n")
+

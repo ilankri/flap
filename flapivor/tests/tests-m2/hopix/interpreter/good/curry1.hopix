@@ -1,0 +1,9 @@
+fun curry2 (f) = \(x, y) => f (x) (y)
+
+fun uncurry2 (f) = \(x) => \(y) => f (x, y)
+
+fun add (x, y) = x + y
+
+val main =
+  print_int (curry2 (uncurry2 (add)) (1, 2));
+  print_string ("!\n")

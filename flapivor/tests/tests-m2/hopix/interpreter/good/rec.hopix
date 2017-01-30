@@ -1,0 +1,20 @@
+fun odd (x) =
+  if x = 0 then false
+  else if x = 1 then true
+  else even (x - 1)
+and even (x) =
+  if x = 0 then true
+  else if x = 1 then false
+  else odd (x - 1)
+
+fun is_odd (x) =
+  if odd (x) then print_string ("Odd!\n") else print_string ("Not odd!\n")
+
+fun is_even (x) =
+  if even (x) then print_string ("Even!\n") else print_string ("Not even!\n")
+
+val main =
+  is_odd (2);
+  is_odd (3);
+  is_even (2);
+  is_even (3)

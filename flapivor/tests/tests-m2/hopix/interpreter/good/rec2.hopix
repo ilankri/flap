@@ -1,0 +1,16 @@
+fun folda (x, accu, f) =
+  if x <= 0 then accu else foldb (x - 1, f (accu, x), f)
+and foldb (x, accu, f) =
+  if x <= 0 then accu else foldc (x - 1, f (accu, x), f)
+and foldc (x, accu, f) =
+  if x <= 0 then accu else folda (x - 1, f (accu, x), f)
+
+fun fact (x) = folda (x, 1, \(x, y) => x * y)
+
+val main =
+  print_int (fact (5));
+  print_string ("!\n");
+  print_int (fact (10));
+  print_string ("!\n");
+  print_int (fact (-1));
+  print_string ("!\n")

@@ -1,0 +1,10 @@
+fun fact (x) =
+  if x <= 0 then 1 else x * fact (x - 1)
+
+val main =
+  print_int (fact (5));
+  print_string ("!\n");
+  print_int (fact (10));
+  print_string ("!\n");
+  print_int (fact (-1));
+  print_string ("!\n")

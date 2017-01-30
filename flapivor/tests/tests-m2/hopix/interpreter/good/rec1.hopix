@@ -1,0 +1,12 @@
+fun foldn (x, accu, f) =
+  if x <= 0 then accu else foldn (x - 1, f (accu, x), f)
+
+fun fact (x) = foldn (x, 1, \(x, y) => x * y)
+
+val main =
+  print_int (fact (5));
+  print_string ("!\n");
+  print_int (fact (10));
+  print_string ("!\n");
+  print_int (fact (-1));
+  print_string ("!\n")
