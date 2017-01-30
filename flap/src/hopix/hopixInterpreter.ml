@@ -274,27 +274,29 @@ and definition runtime d =
 and function_definition environment (FunctionDefinition (_, ps, e)) =
   VFun (ps, e, environment)
 
-(* Pb: If two functions have the same id?  *)
+(* Pb: If two functions have the same id? -> verification at typing
+   level?  *)
 and define_rec environment fs =
-  (* [eval_and_rebind environment (id, fd)] evaluates the function
-     definition [fd] into a value [v] in [environment] and then rebinds
-     the function identifier [id] to [v] in [environment].  *)
-  let eval_and_rebind environment (id, fd) =
-    let id, pos = Position.destruct id in
-    let v = Position.located (function_definition environment) fd in
-    Environment.update pos id environment v
-  in
-
-  (* Firstly, we bind all the function identifiers to a phony value
-     (here VUnit).  *)
+  (* First, we bind all the function identifiers to a phony value (here
+     VUnit).  *)
   let environment =
     List.fold_left
       (fun env (id, _) -> bind_identifier env id VUnit) environment fs
   in
 
+  (* [eval_and_rebind (id, fd)] evaluates the function definition [fd]
+     into a value [v] in the partially correct environment [environment]
+     defined above, and then rebinds the function identifier [id] to [v]
+     in [environment].  *)
+  let eval_and_rebind (id, fd) =
+    let id, pos = Position.destruct id in
+    let v = Position.located (function_definition environment) fd in
+    Environment.update pos id environment v
+  in
+
   (* Then we update the environment with the correct values for function
      identifiers.  *)
-  List.iter (eval_and_rebind environment) fs;
+  List.iter eval_and_rebind fs;
 
   (* Finally, we return the new environment.  *)
   environment
