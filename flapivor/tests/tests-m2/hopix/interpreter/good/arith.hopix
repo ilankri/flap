@@ -1,0 +1,7 @@
+val x = 21
+val y = 10 + 1
+val z = x + y / 2
+val t = x - y / 2
+val main =
+  print_int (t + z);
+  print_string ("!\n")

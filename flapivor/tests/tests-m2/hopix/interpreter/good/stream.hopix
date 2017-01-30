@@ -1,0 +1,21 @@
+fun stream (state, next) = Stream (state, next)
+
+fun from (n) = stream (n, \(n) => Return (n, n + 1))
+
+fun take (n, s) =
+  if n = 0 then
+    Nil
+  else s ? Stream (state, next) => next (state) ? {
+      | EOS =>
+        Nil
+      | Return (value, new_state) =>
+        Cons (value, take (n - 1, Stream (new_state, next)))
+      }
+
+fun fold_list (f, accu, l) =
+  l ? { Nil => accu | Cons (x, xs) => fold_list (f, f (accu, x), xs) }
+
+fun sum (l) = fold_list ((\(accu, x) => accu + x), 0, l)
+
+val main =
+  print_int (sum (take (10, from (0))))

@@ -1,0 +1,9 @@
+type t = T
+
+val x = (T : t)
+
+fun f ['a] (x : 'a, y : 'a) : 'a = x
+
+val z = f [int] (x, x)
+
+val main = print_string ("OK!\n")

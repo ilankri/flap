@@ -1,0 +1,35 @@
+fun some (x) =
+  Some (x)
+
+val none =
+  None
+
+fun return (x) =
+  Some (x)
+
+fun bind (m, f) =
+  m ? { None => None | Some (x) => f (x) }
+
+fun fail () =
+  none
+
+fun try_catch (m, on_error) =
+  m ? { None => on_error () | Some (x) => return (x) }
+
+fun div (m, n) =
+  if n = 0 then fail () else return (m / n)
+
+fun print_div (m, n) =
+  try_catch (
+    bind (div (m, n), \(r) => (
+      print_int (r);
+      print_string ("!\n");
+      return (0))
+    ), \() =>
+    print_string ("Error!\n")
+  )
+
+val main =
+  print_div (3, 2);
+  print_div (3, 0)
+

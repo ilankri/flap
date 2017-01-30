@@ -1,0 +1,13 @@
+val n = ref Nil
+val l = Cons (1, ref (Cons (2, n)))
+val make_cycle = (n := l)
+
+fun take (n, l) =
+  if n = 0 then 0 else l ? {
+  | Nil => 0
+  | Cons (x, lr) => x + take (n - 1, !lr)
+  }
+
+val main =
+  print_int (take (10, l));
+  print_string ("!\n")

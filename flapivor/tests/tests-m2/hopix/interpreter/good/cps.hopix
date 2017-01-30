@@ -1,0 +1,13 @@
+fun return (x) = \(k) => x
+fun bind (m, f) = \(k) => m (\(v) => f (v) (k))
+fun run (m) = m (\(x) => x)
+
+fun callcc (f) = \(k) => f (k) (k)
+
+fun throw (x, y) = \(k) => x (y)
+
+fun id (x) =
+  bind (return (x), \(x) => return (x))
+
+val main =
+   print_int (run (id (42)))

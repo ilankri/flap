@@ -1,0 +1,7 @@
+val x = 21
+val y = 10 + 1
+val z = (x + y) * (x + y)
+val t = x * x + 2 * x * y + y * y
+val main =
+  print_int (t - z);
+  print_string ("!\n")

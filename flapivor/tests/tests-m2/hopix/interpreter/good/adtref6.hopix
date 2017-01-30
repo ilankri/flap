@@ -1,0 +1,18 @@
+fun leaf (x) = Leaf (ref x)
+fun node (l, r) = Node (l, r)
+fun sum (t) = t ? {
+  | Leaf (r) => (r := !r + 1; !r)
+  | Node (l, r) => sum (l) + sum (r)
+  }
+
+val c = ref 0
+val t = node (node (Leaf (c), leaf (1)), Leaf (c))
+
+val main =
+  val i = ref 10;
+  while (!i > 0) {
+    print_int (sum (t));
+    print_string ("!\n");
+    c := sum (t);
+    i := !i - 1
+  }

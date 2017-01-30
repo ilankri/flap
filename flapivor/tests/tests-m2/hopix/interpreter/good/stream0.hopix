@@ -1,0 +1,36 @@
+fun stream (state, next) = Stream (state, next)
+
+fun from (n) = stream (n, \(n) => Return (n, n + 1))
+
+fun combine (s1, s2) =
+ s1 ? Stream (state1, next_state1) =>
+ s2 ? Stream (state2, next_state2) =>
+   Stream (Pair (state1, state2), \(state) =>
+     state ? Pair (state1, state2) =>
+       next_state1 (state1) ? {
+       | EOS => EOS
+       | Return (x1, next_state1) =>
+         next_state2 (state2) ? {
+	 | EOS => EOS
+	 | Return (x2, next_state2) =>
+	   Return (Pair (x1, x2), Pair (next_state1, next_state2))
+         }
+       })
+
+fun take (n, s) =
+  if n = 0 then
+    Nil
+  else s ? Stream (state, next) => next (state) ? {
+      | EOS =>
+        Nil
+      | Return (value, new_state) =>
+        Cons (value, take (n - 1, Stream (new_state, next)))
+      }
+
+fun fold_list_pair (f, accu, l) =
+  l ? { Nil => accu | Cons (Pair (x, y), xs) => fold_list_pair (f, f (accu, x, y), xs) }
+
+fun sum (l) = fold_list_pair ((\(accu, x, y) => accu + x + y), 0, l)
+
+val main =
+  print_int (sum (take (10, combine (from (0), from (0)))))

@@ -1,0 +1,8 @@
+fun zero (x, y) =
+ val z = (x + y) * (x + y);
+ val t = x * x + 2 * x * y + y * y;
+ z - t
+
+val main =
+  print_int (zero (4, 0));
+  print_string ("!\n")
