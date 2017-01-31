@@ -3,4 +3,4 @@ _build/
 *.native
 flap/flap
 flap/myocamlbuild_config.ml
-log/local-tests-m1.log
+log/local-tests-*.log

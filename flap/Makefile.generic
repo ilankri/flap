@@ -39,15 +39,17 @@ HEADACHE = headache
 
 RLWRAP = rlwrap
 
-# Generic command to run tests locally.
-check_cmd = LOCAL_TEST=yes $(MAKE) -C ../flapivor/tests/tests-m1 check
+# Macros to run tests locally.
+check_cmd = LOCAL_TEST=yes $(MAKE) -C ../flapivor/tests/$(1) check
+check_log_cmd = $(call check_cmd,$(1)) > ../log/local-$(1).log
 
 #########
 # Rules #
 #########
 
 .PHONY: configure all-generic byte opt doc clean dist install uninstall	\
-	headers clear byte-debug all-debug check check-with-log run
+	headers clear byte-debug all-debug check check-log check-m1	\
+	check-m2 check-log-m1 check-log-m2 run
 
 all-generic: configure clear $(STARGET) $(TARGET)
 
@@ -82,17 +84,29 @@ endif
 
 all-debug: byte-debug $(TARGET)
 
-# Run tests locally.
-check: all-debug
-	$(check_cmd)
+# Run tests locally without creating log files.
+check: check-m1 check-m2
 
-# Run tests locally and create a log file.
-check-with-log: all-debug
-	VERBOSE=1 $(check_cmd) > ../log/local-tests-m1.log
+# Run tests locally and write results into log files.
+check-log: check-log-m1  check-log-m2
+
+check-m1 check-m2 check-log-m1 check-log-m2: all-debug
+
+check-m1:
+	$(call check_cmd,tests-m1)
+
+check-m2:
+	$(call check_cmd,tests-m2)
+
+check-log-m1:
+	$(call check_log_cmd,tests-m1)
+
+check-log-m2:
+	$(call check_log_cmd,tests-m2)
 
 # Run flap quickly.
 run: all-debug
-	$(RLWRAP) ./$(TARGET) -s hopix -i true -V true
+	$(RLWRAP) ./$(TARGET) -s hopix -i true -V true -VV true
 
 #######################
 # Administrative part #
