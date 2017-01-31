@@ -9,7 +9,7 @@ all: all-generic
 
 STUDENTS  = $(shell cat AUTEURS | tr '\n' ',' | cut -d, -f1,4 | tr ',' '-')
 
-VERSION	  = 16.1
+VERSION	  = 16.2
 TARGET	  = flap
 TARGETEXT = flap
 PACKAGE	  = flap-$(STUDENTS)-$(VERSION)

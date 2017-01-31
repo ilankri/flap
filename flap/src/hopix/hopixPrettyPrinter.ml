@@ -101,6 +101,9 @@ and ty t = match t with
 	   ))
   | TyVar tvar ->
     type_variable tvar
+  | TyArrow (ins, out) ->
+    separate_map (break 1 ^^ string "*" ^^ break 1) (located ty) ins
+    ++ string "->" ++ parens (located ty out)
 
 and mayparen_ty ctx a =
   match ctx, a with
@@ -274,10 +277,6 @@ and literal = function
     char c
   | LString s ->
     string_literal s
-  | LBool true ->
-    string "true"
-  | LBool false ->
-    string "false"
 
 and char c =
   group (string "'" ^^ string (Char.escaped c) ^^ string "'")

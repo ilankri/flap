@@ -83,12 +83,13 @@ and ty =
   | TyCon of type_constructor * ty located list
   (** A type variable ['a]. *)
   | TyVar of type_variable
+  (** A function type [(ty_1, .., ty_N) -> ty]. *)
+  | TyArrow of ty located list * ty located
 
 and literal =
   | LInt    of Int32.t
   | LString of string
   | LChar   of char
-  | LBool   of bool
 
 and identifier =
   | Id of string

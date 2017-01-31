@@ -232,6 +232,7 @@ let primitives =
   |> bind' "print_string" print_string
   |> bind' "true"         (VBool true)
   |> bind' "false"        (VBool false)
+  |> bind' "nothing"      VUnit
 
 let initial_runtime () = {
   memory      = Memory.create (640 * 1024 (* should be enough. -- B.Gates *));
