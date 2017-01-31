@@ -197,4 +197,5 @@
 * Cours 11 <2017-01-24>
 ** TODO MIPS
 ** TODO Le typage
-
+* Cours 12 <2017-01-31>
+** TODO Typage
