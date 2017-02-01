@@ -467,7 +467,7 @@ and literal = function
   | LInt x -> VInt x
   | LString s -> VString s
   | LChar c -> VChar c
-  | LBool b -> VBool b
+  (* | LBool b -> VBool b *)
 
 and extract_observable runtime runtime' =
   let rec substract new_environment env env' =

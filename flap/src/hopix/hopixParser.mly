@@ -9,7 +9,7 @@ let prefixid_of_binop b = Id ("`" ^ b)
 %}
 
 %token EOF
-%token TYPE EXTERN VAL FUN AND IF THEN ELIF ELSE REF WHILE FALSE TRUE
+%token TYPE EXTERN VAL FUN AND IF THEN ELIF ELSE REF WHILE (* FALSE TRUE *)
 %token PLUS MINUS TIMES DIV LAND LOR EQ LEQ GEQ LT GT
 %token LPAREN RPAREN LBRACKET RBRACKET LBRACE RBRACE
 %token COLON COMMA SEMICOLON BACKSLASH QMARK EMARK PIPE AMPERSAND UNDERSCORE
@@ -313,8 +313,8 @@ multi_branches(X):
   | MINUS i = INT { LInt (Int32.neg i) }
   | c = CHAR { LChar c }
   | str = STRING { LString str }
-  | FALSE { LBool false }
-  | TRUE { LBool true }
+  (* | FALSE { LBool false } *)
+  (* | TRUE { LBool true } *)
 
 %inline binop:
   | PLUS { prefixid_of_binop "+" }

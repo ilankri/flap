@@ -119,8 +119,8 @@ rule token = parse
   | "else"   { ELSE }
   | "ref"    { REF }
   | "while"  { WHILE }
-  | "false"  { FALSE }
-  | "true"   { TRUE }
+  (* | "false"  { FALSE } *)
+  (* | "true"   { TRUE } *)
 
   (** Operators *)
   | '+'  { PLUS }
