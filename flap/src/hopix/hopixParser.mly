@@ -6,10 +6,54 @@ let list_of_listoption = function
   | Some l -> l
 
 let prefixid_of_binop b = Id ("`" ^ b)
+
+let seq_expr es =
+  let wrap acc e =
+    (* Pb: Is it risky to use a valid id like "nothing"?  *)
+    Position.(unknown_pos (Define(unknown_pos (Id "nothing"), e, acc)))
+  in
+  let e, acc =
+    match es with
+    | [] -> assert false
+    | h :: t -> (h, t)
+  in
+  Position.value (List.fold_left wrap e acc)
+
+(* [flatten_patterns extract_patterns ps] *inlines* the pattern
+   lists extracted from the given pattern list [ps] via the
+   function [extract_patterns].  It returns the resulting list.  *)
+let flatten_patterns extract_patterns ps =
+  (* [patterns p acc] extends [acc] with the list of patterns
+     composing the pattern [p].  *)
+  let patterns p acc =
+    match extract_patterns (Position.value p) with
+    | Some ps -> ps :: acc
+    | None -> [p] :: acc
+  in
+  List.(flatten (fold_right patterns ps []))
+
+let wrap_patterns wrapper = function
+  | [] -> assert false
+  | [p] -> Position.value p
+  | ps -> wrapper ps
+
+let por ps =
+  let extract_patterns = function
+    | POr x -> Some x
+    | _ -> None
+  in
+  wrap_patterns (fun ps -> POr ps) (flatten_patterns extract_patterns ps)
+
+let pand ps =
+  let extract_patterns = function
+    | PAnd x -> Some x
+    | _ -> None
+  in
+  wrap_patterns (fun ps -> PAnd ps) (flatten_patterns extract_patterns ps)
 %}
 
 %token EOF
-%token TYPE EXTERN VAL FUN AND IF THEN ELIF ELSE REF WHILE (* FALSE TRUE *)
+%token TYPE EXTERN VAL FUN AND IF THEN ELIF ELSE REF WHILE
 %token PLUS MINUS TIMES DIV LAND LOR EQ LEQ GEQ LT GT
 %token LPAREN RPAREN LBRACKET RBRACKET LBRACE RBRACE
 %token COLON COMMA SEMICOLON BACKSLASH QMARK EMARK PIPE AMPERSAND UNDERSCORE
@@ -22,8 +66,7 @@ let prefixid_of_binop b = Id ("`" ^ b)
 
 %nonassoc THEN IMPL
 %nonassoc ELSE ELIF
-%left PIPE
-%left AMPERSAND
+%nonassoc PIPE
 %right COLONEQ
 %left LOR
 %left LAND
@@ -112,6 +155,26 @@ var_id_list(X):
     ( FunctionDefinition( list_of_listoption(typ_list), pat_list, e))) }
 
 (*
+ * For terminals
+ * pattern ::=
+ * | pattern : type
+ *)
+very_simple_pattern:
+  | id = located(var_id) { PVariable id }
+  | li = located(literal) { PLiteral li }
+  | UNDERSCORE { PWildcard }
+  | LPAREN p = pattern RPAREN { p }
+  | p = located(very_simple_pattern) COLON t = located(ty)
+      { PTypeAnnotation(p, t) }
+  | id = located(constr_id)
+    pat_list = paren_comma_nonempty_list(located(pattern))?
+      { PTaggedValue(id, list_of_listoption pat_list) }
+
+simple_pattern:
+  | el = separated_nonempty_list(AMPERSAND, located(very_simple_pattern))
+      { pand el }
+
+(*
  * For
  * pattern ::=
  * | pattern | pattern
@@ -120,38 +183,7 @@ var_id_list(X):
  * | ( pattern )
  *)
 pattern:
-  | p = simple_pattern { p }
-  | p = located(simple_pattern) COLON t = located(ty) { PTypeAnnotation(p, t) }
-  | p1 = located(pattern) PIPE p2 = located(pattern)
-      {
-        match Position.value p1, Position.value p2 with
-        | POr l1, POr l2 -> POr (l1 @ l2)
-        | POr l1, _ -> POr (l1 @ [p2])
-        | _, POr l2 -> POr (p1 :: l2)
-        | _ -> POr [p1; p2]
-      }
-
-(*
- * For terminals
- * pattern ::=
- * | pattern : type
- *)
-simple_pattern:
-  | id = located(var_id) { PVariable id }
-  | li = located(literal) { PLiteral li }
-  | UNDERSCORE { PWildcard }
-  | LPAREN p = pattern RPAREN { p }
-  | id = located(constr_id)
-    pat_list = paren_comma_nonempty_list(located(pattern))?
-      { PTaggedValue(id, list_of_listoption pat_list) }
-  | p1 = located(simple_pattern) AMPERSAND p2 = located(simple_pattern)
-      {
-        match Position.value p1, Position.value p2 with
-        | PAnd l1, PAnd l2 -> PAnd (l1 @ l2)
-        | PAnd l1, _ -> PAnd (l1 @ [p2])
-        | _, PAnd l2 -> PAnd (p1 :: l2)
-        | _ -> PAnd [p1; p2]
-      }
+  | el = separated_nonempty_list(PIPE, located(simple_pattern)) { por el }
 
 simple_ty:
   | tv = type_variable { TyVar tv }
@@ -215,26 +247,21 @@ binop_expr(right_expr):
   | e1 = located(simple_expr) b = located(binop) e2 = located(right_expr)
       { Apply (Position.unknown_pos (Variable b), [], [e1; e2]) }
 
-complex_binop_expr:
-  | e = binop_expr(localdef_expr) { e }
+(* expr { ; expr } *)
+seq_expr:
+  | e = located(simple_expr) { [e] }
+  | el = seq_expr SEMICOLON e = located(simple_expr) { e :: el }
+
+unseq_expr:
+  | e = simple_expr { e }
+  | e = localdef_expr { e }
 
 expr:
-  | e = simple_expr | e = localdef_expr | e = seq_expr | e = complex_binop_expr
-  | e = cond_expr(localdef_expr) | e = cond_expr(complex_binop_expr)
+  | e = unseq_expr | e = binop_expr(localdef_expr) |
+    e = cond_expr(localdef_expr)
       { e }
-
-seq_expr:
-  (* expr { ; expr } *)
-  | e = located(simple_expr) SEMICOLON
-    el = separated_nonempty_list(SEMICOLON, located(simple_expr))
-      {
-        let el = e :: el in
-        let el = List.rev el in
-        (* It is risky to use a valid id like "nothing".  *)
-        let dummy_id = Position.unknown_pos (Id "nothing") in
-        let f e2 e1 = Position.(unknown_pos (Define(dummy_id, e1, e2))) in
-        Position.value (List.fold_left f (List.hd el) (List.tl el))
-      }
+  | es = seq_expr SEMICOLON e = located(unseq_expr)
+      { seq_expr (e :: es) }
 
 (*
  * vdefinition ; expr
@@ -268,7 +295,7 @@ cond_expr(rightmost_expr):
   | b = if_branch(rightmost_expr)
       { If ([b], None) }
 
-%inline nonempty_elif_list(right_expr):
+nonempty_elif_list(right_expr):
   | l = nonempty_list(elif_branch(right_expr)) { l }
 
 else_branch(expr):
@@ -313,8 +340,6 @@ multi_branches(X):
   | MINUS i = INT { LInt (Int32.neg i) }
   | c = CHAR { LChar c }
   | str = STRING { LString str }
-  (* | FALSE { LBool false } *)
-  (* | TRUE { LBool true } *)
 
 %inline binop:
   | PLUS { prefixid_of_binop "+" }
