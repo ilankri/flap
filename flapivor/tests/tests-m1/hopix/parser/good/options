@@ -1,1 +1,1 @@
--s hopix --verbose true --dry true
+-u true -s hopix --verbose true --dry true

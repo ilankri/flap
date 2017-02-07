@@ -207,3 +207,171 @@
 ** TODO Le typage
 * Cours 12 <2017-01-31>
 ** TODO Typage
+* Cours 13 <2017-02-07>
+** Retour sur le typage
+** Inférence de type
+*** Problème
+    Un programme pas ou peu annoté comme par exemple:
+
+          let f = fun x -> x + 1
+
+*** Solutions
+**** Algorithme W
+        Soit α le type de x.
+
+	En supposant (x : α), essayons de calculer le
+	type de "( + ) x 1". C'est une application, je
+	calcule le type de la fonction. `+ a le type
+	"int -> (int -> int)". Je dois dois vérifier
+	que "x" a le type de l'entrée de cette fonction.
+
+	On doit alors *unifier* le type connu pour "x" et
+	le type attendu pour "x". Cela veut que l'on unifie
+	"α" et "int".
+
+	On doit aussi vérifier que 1 a le type int.
+
+	Puis on peut déduire que le type de l'application
+	est le type de retour de +, i.e. int.
+
+	Donc le type de l'expression "fun x -> x + 1" est
+	donc "int -> int".
+
+***** Unification du premier ordre
+
+******* Exemple 1
+
+	P₀ := α₁ -> α₁ =? (α₂ -> int) -> (int -> α₃)
+
+	Au départ la file des problèmes contient seulement
+	P₀. On observe le premier problème de la file, c'est P.
+	Comme les deux termes à unifier ne sont pas des variables,
+	on doit les décomposer : cela insère deux nouveaux problèmes:
+
+	P₁ := α₁ =? (α₂ -> int)
+	P₂ := α₁ =? (int -> α₃)
+
+	Par P₁, j'apprends que φ(α₁) = α₂ -> int
+
+	Par P₂, j'apprends que φ(α₁) = int -> α₃
+
+	Comme j'avais déjà une information sur α₁ dans
+	φ, je produis un nouveau problème pour vérifier
+	que φ reste cohérent:
+
+	P₃ := α₂ -> int =? int -> α₃
+
+	J'applique la règle de décomposition:
+
+	P₄ := α₂ =? int
+	P₅ := int =? α₃
+
+	Par P₄, j'apprends que φ(α₂) = int
+	Par P₅, j'apprends que φ(α₃) = int
+
+	donc ma solution du problème d'unification initial est:
+
+	φ(α₁) = int -> int
+	φ(α₂) = int
+	φ(α₃) = int
+
+******* Exemple 2
+
+	P₀ := α₁ -> α₁ =? (α₂ -> α₃) -> (int -> α₃)
+
+	Ici, α₃ n'est pas déterminé.
+
+      L'algorithme W s'appuie sur l'unification du premier ordre.
+
+      t =^? u  –> ⊥ | substitution φ
+
+      On travaille sur une file de problèmes à résoudre,
+      chaque problème est un problème d'unification et
+      on construit une substitution φ au fur et à mesure
+      de la résolution de ces problèmes. On doit
+      vérifier que φ n'a pas de cycle.
+
+      • Règle des variables:
+      x =? u
+
+      • Règle de décomposition:
+      f(t₁, …, tₙ) = f (u₁, …, uₙ) →
+      alors on rajoute les nouveaux problèmes
+      tᵢ = uᵢ
+
+      f(t₁, …, tₙ) = g(u₁, …, uₘ) → ⊥
+
+***** Généralisation
+
+      let id = fun x -> x in (id 0, id true)
+
+      (x : α) |- x : α
+      —————————————————————————–
+      |- fun x -> x : α -> α
+      —————————————————————————–
+      |- fun x -> x : ∀α. α -> α     (id : ∀α. α -> α) ⊢ (id 0, id true) : int × bool
+      ————————————————————————————————————————————————————–————————————–————————————–
+                |- let id = fun x -> x in (id 0, id true) : int × bool
+
+**** La génération de contraintes
+
+     [ let apply = fun f x -> f x ] =
+
+     def apply : ∀α[∃γβγ₁γ₂. α = γ₁ -> γ₂ ∧ γ₁ = (γ -> β) ∧ γ₂ = γ -> β].α
+
+** Jalon 3
+** Datix
+** Hopix -> Datix
+*** Compilation du pattern-matching
+**** avec des "ifs"
+
+     En Hopix:
+
+       fun len (l) = l ? Nil => 0 | Cons (x, xs) => 1 + len (xs)
+
+     est compilé en Datix comme suit:
+
+       fun len (l) =
+	 if l[0] = 0 then
+	   0
+	 else if l[0] = 1 then
+	   val x = l[1];
+	   val xs = l[2];
+	   1 + len (xs)
+
+      Un autre exemple:
+
+        fun uniq (l) = l ? {
+	| Nil => true
+	| Cons (x, Nil) => true
+        | Cons (x, Cons (y, xs)) => x <> y && uniq (Cons (y, xs))
+        }
+
+      est compilé:
+
+        fun uniq (l) =
+          if l[0] = 0 then
+            true
+          else if l[0] = 1 && l[2][0] = 0 then
+            true
+          else if l[0] = 1 && l[2][0] = 1 then
+            val x = l[1];
+            val y = l[2][1];
+	    val xs = l[2][2];
+            x <> y && uniq (val b = block 2; b[0] = 1; b[1] = y; b[2] = xs)
+
+        fun uniq (l) =
+          switch l[0] {
+	  case 0:
+	     true
+	  case 1:
+	     switch l[2][0] {
+	       case 0: 
+	          true
+	       case 1:
+                  val x = l[1];
+                  val y = l[2][1];
+    	          val xs = l[2][2];
+                  x <> y && uniq (val b = block 2; b[0] = 1; b[1] = y; b[2] = xs)
+	     }
+          }
