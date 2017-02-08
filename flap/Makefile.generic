@@ -41,15 +41,18 @@ RLWRAP = rlwrap
 
 # Macros to run tests locally.
 check_cmd = LOCAL_TEST=yes $(MAKE) -C ../flapivor/tests/$(1) check
-check_log_cmd = $(call check_cmd,$(1)) > ../log/local-$(1).log
+check_log_cmd = VERBOSE=1 $(call check_cmd,$(1)) > ../log/local-$(1).log
+
+# Test suite variables.
+MS = 1 2
+TESTS = $(addprefix tests-m,$(MS))
 
 #########
 # Rules #
 #########
 
 .PHONY: configure all-generic byte opt doc clean dist install uninstall	\
-	headers clear byte-debug all-debug check check-log check-m1	\
-	check-m2 check-log-m1 check-log-m2 run
+	headers clear byte-debug all-debug check $(TESTS)
 
 all-generic: configure clear $(STARGET) $(TARGET)
 
@@ -84,25 +87,16 @@ endif
 
 all-debug: byte-debug $(TARGET)
 
-# Run tests locally without creating log files.
-check: check-m1 check-m2
+# Run all the test suites locally.
+check: $(TESTS)
 
-# Run tests locally and write results into log files.
-check-log: check-log-m1  check-log-m2
-
-check-m1 check-m2 check-log-m1 check-log-m2: all-debug
-
-check-m1:
-	$(call check_cmd,tests-m1)
-
-check-m2:
-	$(call check_cmd,tests-m2)
-
-check-log-m1:
-	$(call check_log_cmd,tests-m1)
-
-check-log-m2:
-	$(call check_log_cmd,tests-m2)
+# Run individually a test suite locally.
+$(TESTS): all-debug
+ifeq ($(LOG), yes)
+	$(call check_log_cmd,$@)
+else
+	$(call check_cmd,$@)
+endif
 
 # Run flap quickly.
 run: all-debug
