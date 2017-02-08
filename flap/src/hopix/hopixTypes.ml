@@ -21,8 +21,18 @@ and aty_of_ty' x = aty_of_ty (Position.value x)
 let tvar x =
   ATyVar (TId x)
 
+let fresh =
+  let r = ref 0 in
+  fun () -> incr r; TId ("'" ^ string_of_int !r)
+
 let ( --> ) tys ty =
   ATyArrow (tys, ty)
+
+exception NotAFunction
+
+let output_type_of_function = function
+  | ATyArrow (_, ty) -> ty
+  | _ -> raise NotAFunction
 
 let constant x = TCon x, ATyCon (TCon x, [])
 let tcunit,   hunit    = constant "unit"
@@ -31,10 +41,26 @@ let tcint,    hint     = constant "int"
 let tcstring, hstring  = constant "string"
 let tcchar,   hchar    = constant "char"
 
+let tcref = TCon "ref"
+let href ty = ATyCon (tcref, [ty])
+
+exception NotAReference
+
+let type_of_reference_type = function
+  | ATyCon (t, [ty]) when t = tcref ->
+    ty
+  | _ ->
+    raise NotAReference
+
 module TypeVariableSet = Set.Make (struct
   type t = type_variable
   let compare = compare
 end)
+
+let rec occurs x = function
+  | ATyVar tv -> x = tv
+  | ATyCon (_, tys) -> List.exists (occurs x) tys
+  | ATyArrow (ins, out) -> List.exists (occurs x) (out :: ins)
 
 let free_type_variables ty =
   let rec aux accu = function
@@ -55,6 +81,64 @@ let mk_type_scheme ty =
 let monotype ty =
   Scheme ([], ty)
 
+exception NotAMonotype
+
+let type_of_monotype = function
+  | Scheme ([], ty) -> ty
+  | _ -> raise NotAMonotype
+
+exception InvalidInstantiation of int * int
+
+let rec substitute phi = function
+  | ATyVar tv ->
+    (try List.assoc tv phi with Not_found -> ATyVar tv)
+  | ATyArrow (ins, out) ->
+    ATyArrow (List.map (substitute phi) ins, substitute phi out)
+  | ATyCon (t, tys) ->
+    ATyCon (t, List.map (substitute phi) tys)
+
+let instantiate_type_scheme (Scheme (ts, ty)) types =
+  if List.(length ts <> length types) then
+    raise (InvalidInstantiation (List.length ts, List.length types));
+  let substitution = List.combine ts types in
+  substitute substitution ty
+
+exception UnificationFailed of aty * aty
+
+let unify_types ty1 ty2 =
+  let rec unify = function
+    | [] ->
+      []
+    | (a, b) :: pbs when a = b ->
+      unify pbs
+    | (ty, ATyVar x) :: pbs ->
+      unify ((ATyVar x, ty) :: pbs)
+    | (ATyVar x, ty) :: pbs ->
+      if occurs x ty then raise (UnificationFailed (ty1, ty2));
+      let eliminate_x = substitute [(x, ty)] in
+      let phi = unify (List.map (fun (a, b) ->
+	(eliminate_x a, eliminate_x b)
+      ) pbs)
+      in
+      (x, ty) :: phi
+    | (ATyArrow (ins1, out1), ATyArrow (ins2, out2)) :: pbs ->
+	if List.(length ins1 <> length ins2) then
+	  raise (UnificationFailed (ty1, ty2));
+	unify (List.combine (out1 :: ins1) (out2 :: ins2) @ pbs)
+    | (ATyCon (t1, ts1), ATyCon (t2, ts2)) :: pbs ->
+      if t1 <> t2 || List.(length ts1 <> length ts2) then
+	raise (UnificationFailed (ty1, ty2));
+      unify (List.combine ts1 ts2 @ pbs)
+    | _ ->
+      raise (UnificationFailed (ty1, ty2))
+  in
+  let phi = unify [(ty1, ty2)] in
+  assert (substitute phi ty1 = substitute phi ty2);
+  phi
+
+let guess_instantiation (Scheme (ts1, ty1)) ts2 ty2 =
+     failwith "Students! This is your job!"
+
 type typing_environment = {
   values            : (identifier * aty_scheme) list;
   constructors      : (constructor * aty_scheme) list;
@@ -69,8 +153,7 @@ and type_information = {
 exception UnboundTypeConstructor of Position.position * type_constructor
 
 let check_well_formed_type env ty =
-  (* FIXME: Wrong! Student, fix this! *)
-  ()
+     failwith "Students! This is your job!"
 
 let internalize_ty env ty =
   check_well_formed_type env ty;
@@ -127,13 +210,13 @@ let bind_type_definition x ts tdef env =
   in
   { env with type_constructors; constructors }
 
-exception UnboundConstructor of Position.position * constructor
+exception UnboundConstructor
 
-let lookup_type_scheme_of_constructor pos x env =
+let lookup_type_scheme_of_constructor x env =
   try
     List.assoc x env.constructors
   with Not_found ->
-    raise (UnboundConstructor (pos, x))
+    raise UnboundConstructor
 
 let initial_typing_environment () =
   empty_typing_environment |>
