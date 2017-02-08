@@ -52,7 +52,7 @@ TESTS = $(addprefix tests-m,$(MS))
 #########
 
 .PHONY: configure all-generic byte opt doc clean dist install uninstall	\
-	headers clear byte-debug all-debug check $(TESTS)
+	headers clear byte-debug all-debug check $(TESTS) run
 
 all-generic: configure clear $(STARGET) $(TARGET)
 
