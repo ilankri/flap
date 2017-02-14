@@ -319,17 +319,21 @@
 
      En Hopix:
 
-       fun len (l) = l ? Nil => 0 | Cons (x, xs) => 1 + len (xs)
+       fun len (l) = f (l) ? Nil => 0 | Cons (x, xs) => 1 + len (xs)
 
      est compilé en Datix comme suit:
 
        fun len (l) =
-	 if l[0] = 0 then
+         val _l_ = f (l);
+	 if _l_[0] = 0 then
 	   0
-	 else if l[0] = 1 then
-	   val x = l[1];
-	   val xs = l[2];
+	 else if _l_[0] = 1 then
+	   val x = _l_[1];
+	   val xs = _l_[2];
 	   1 + len (xs)
+
+
+
 
       Un autre exemple:
 
@@ -367,3 +371,29 @@
                   x <> y && uniq (val b = block 2; b[0] = 1; b[1] = y; b[2] = xs)
 	     }
           }
+ 
+        fun foo (l) = l ? {
+        | (A(x) | B(x)) => x
+        }
+
+* Cours 14 <2017-02-14>
+** Hopix -> Datix
+*** Compilation du pattern-matching
+**** Des choix dans le pattern-matching
+#+BEGIN_EXAMPLE
+\x => x ? {
+  Pair (A, A) => 0
+| Pair (A, B) => 1
+| Pair (_, C) => 2
+}
+#+END_EXAMPLE
+
+**** Développement des motifs disjonctifs
+#+BEGIN_EXAMPLE
+\x => x ? {
+| Pair ((A | B | C), (A | B)) => 0
+| Pair ((A | B), (B | C)) => 1
+}
+** Implémentation de DATIX
+*** Syntaxe concrète
+*** Interpréteur
