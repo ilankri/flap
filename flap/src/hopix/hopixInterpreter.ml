@@ -25,6 +25,7 @@ let value_as_int      = function VInt x -> Some x | _ -> None
 let value_as_bool     = function VBool x -> Some x | _ -> None
 let value_as_char     = function VChar c -> Some c | _ -> None
 
+(** Get address from VAddress  **)
 let value_as_address = function
   | VAddress a -> Some a
   | VBool _ | VInt _ | VChar _ | VString _ | VUnit |
@@ -147,7 +148,6 @@ end = struct
       | EBind (x, v, e) -> push x v; Buffer.add_string b "\n"; aux e
     in
     aux e
-
 end
 
 type value = Environment.t gvalue
@@ -265,6 +265,7 @@ and definition runtime d =
       environment = bind_identifier runtime.environment x v;
       memory = memory
     }
+
   | DefineType _ | DeclareExtern _ -> runtime
 
   | DefineRecFuns fs ->
@@ -284,7 +285,6 @@ and define_rec environment fs =
     List.fold_left
       (fun env (id, _) -> bind_identifier env id VUnit) environment fs
   in
-
   (* [eval_and_rebind (id, fd)] evaluates the function definition [fd]
      into a value [v] in the partially correct environment [environment]
      defined above, and then rebinds the function identifier [id] to [v]
