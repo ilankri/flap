@@ -32,6 +32,8 @@ let flatten_patterns extract_patterns ps =
   in
   List.(flatten (fold_right patterns ps []))
 
+(* Build a pattern from a pattern list with the given wrapper
+   function.  *)
 let wrap_patterns wrapper = function
   | [] -> assert false
   | [p] -> Position.value p

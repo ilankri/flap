@@ -276,9 +276,12 @@ and definition runtime d =
 and function_definition environment (FunctionDefinition (_, ps, e)) =
   VFun (ps, e, environment)
 
-(* Pb: If two functions have the same id? -> verification at typing
-   level?  *)
+(** [define_rec environment fs] extends [environment] with the bindings
+    of mutually recursive functions given by [fs].  *)
 and define_rec environment fs =
+  (* Pb: If two functions have the same id? -> verification at typing
+     level?  *)
+
   (* First, we bind all the function identifiers to a phony value (here
      VUnit).  *)
   let environment =
@@ -423,8 +426,8 @@ and expressions environment memory es =
 and pattern' environment v p =
   Position.(pattern (position p) environment v (value p))
 
-(** [pattern pos env v p] extends [env] such that the value [v] is
-    captured by the pattern [p].  Raise {!Pattern_mismatch} if [v]
+(** [pattern pos env v p] extends [env] in such a way that the value [v]
+    is captured by the pattern [p].  Raise {!Pattern_mismatch} if [v]
     cannot be captured by [p].  *)
 and pattern position environment v = function
   | PTypeAnnotation (p, _) -> pattern' environment v p
@@ -458,7 +461,9 @@ and pattern position environment v = function
 
   | PAnd ps -> List.fold_left (fun env -> pattern' env v) environment ps
 
-and patterns environment vs ps = List.fold_left2 pattern' environment vs ps
+and patterns environment vs ps =
+  try List.fold_left2 pattern' environment vs ps with
+  | Invalid_argument _ -> assert false (* By typing.  *)
 
 and bind_identifier environment x v =
   Environment.bind environment (Position.value x) v
@@ -467,7 +472,6 @@ and literal = function
   | LInt x -> VInt x
   | LString s -> VString s
   | LChar c -> VChar c
-  (* | LBool b -> VBool b *)
 
 and extract_observable runtime runtime' =
   let rec substract new_environment env env' =

@@ -13,7 +13,10 @@ let next_line_and f lexbuf  =
 let error lexbuf =
   error "during lexing" (lex_join lexbuf.lex_start_p lexbuf.lex_curr_p)
 
-let char_of_char_atom = function
+(* Return the char represented by the given string with escape
+   sequences.  This function behaves like Scanf.unescaped except that it
+   returns a char instead of a string.  *)
+let unescaped_char = function
   | "\\\\" -> '\\'
   | "\\'" -> '\''
   | "\\\"" -> '"'
@@ -119,8 +122,6 @@ rule token = parse
   | "else"   { ELSE }
   | "ref"    { REF }
   | "while"  { WHILE }
-  (* | "false"  { FALSE } *)
-  (* | "true"   { TRUE } *)
 
   (** Operators *)
   | '+'  { PLUS }
@@ -163,7 +164,7 @@ rule token = parse
     }
   | '\'' (char_atom as a) '\''
     {
-      try CHAR (char_of_char_atom a) with
+      try CHAR (unescaped_char a) with
       | Invalid_char_literal -> error lexbuf "Invalid character literal."
     }
   | '"' (string_atom* as s) '"'
