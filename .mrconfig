@@ -1,3 +1,6 @@
+[students/bongrand]
+checkout = git clone git@moule.informatique.univ-paris-diderot.fr:bongrand/compilation-m1-2016.git bongrand
+
 [students/timera-oulebsir]
 checkout = git clone git@moule.informatique.univ-paris-diderot.fr:oulebsir/compilation-m1-2016.git timera-oulebsir
 
