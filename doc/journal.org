@@ -393,6 +393,7 @@
   Pair (A, A) => 0
 | Pair (A, B) => 1
 | Pair (_, C) => 2
+| Pair (_, _) => 3
 }
 #+END_EXAMPLE
 

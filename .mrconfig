@@ -1,8 +1,17 @@
+[students/timera-oulebsir]
+checkout = git clone git@moule.informatique.univ-paris-diderot.fr:oulebsir/compilation-m1-2016.git timera-oulebsir
+
+[students/kochkurov-ryabinin]
+checkout = git clone 'git@moule.informatique.univ-paris-diderot.fr:g1/compilation-m1-2016.git' kochkurov-ryabinin
+
+[students/bunel-diallo]
+checkout = git clone 'git@moule.informatique.univ-paris-diderot.fr:bunel/compilation-m1-2016.git' bunel-diallo
+
 [students/krimo-hamadi]
-checkout = git clone 'git@moule.informatique.univ-paris-diderot.fr:krimo/compilation2016.git' krimo-hamadi
+checkout = git clone 'git@moule.informatique.univ-paris-diderot.fr:hamadi/compilation-m1-2016.git' krimo-hamadi
 
 [students/masselot-hucher]
-checkout = git clone 'git@moule.informatique.univ-paris-diderot.fr:masselot/compilation-m1.git' masselot-hucher
+checkout = git clone git@moule.informatique.univ-paris-diderot.fr:hucher/compilation-m1-2016.git masselot-hucher
 
 [students/acker-dionisio]
 checkout = git clone 'git@moule.informatique.univ-paris-diderot.fr:acker/compilation-m1-2016.git' acker-dionisio
@@ -20,10 +29,13 @@ checkout = git clone 'git@moule.informatique.univ-paris-diderot.fr:acker/compila
 checkout = git clone 'git@moule.informatique.univ-paris-diderot.fr:berkane/compilation-m1-2016.git' berkane-chen
 
 [students/lenczner-paul]
-checkout = git clone 'git@moule.informatique.univ-paris-diderot.fr:Lenczner/compilation-m1.git' lenczner-paul
+checkout = git clone 'git@moule.informatique.univ-paris-diderot.fr:Lenczner/compilation-m1-2016.git' lenczner-paul 
 
 [students/laporte-nalpon]
 checkout = git clone 'git@moule.informatique.univ-paris-diderot.fr:Nicolas/compilation-m1-2016.git' laporte-nalpon
 
 [students/abderrazak-zidane]
 checkout = git clone 'git@moule.informatique.univ-paris-diderot.fr:abderrazak/compilation-m1-2016.git' abderrazak-zidane
+
+[students/diaby-ebourefe]
+checkout = git clone 'git@moule.informatique.univ-paris-diderot.fr:diaby/compilation-m1-2016.git' diaby-ebourefe
