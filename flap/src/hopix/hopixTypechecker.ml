@@ -34,7 +34,7 @@ let check_program_is_fully_annotated ast =
 
   and expression pos = function
     | Define (_, e1, e2) ->
-	 failwith "Students! This is your job!"
+         failwith "Students! This is your job!"
     | DefineRec (recdefs, e) ->
       failwith "Students! This is your job!"
     | Apply (a, _, args) ->
@@ -84,23 +84,23 @@ let typecheck tenv ast : typing_environment =
   and definition tenv pos = function
     | DefineValue (x, e) ->
       bind_value (Position.value x) (
-	located (type_scheme_of_expression tenv) e
+        located (type_scheme_of_expression tenv) e
       ) tenv
     | DefineRecFuns recdefs ->
       failwith "Students! This is your job!"
 
     | DefineType (t, ts, tdef) ->
-	 failwith "Students! This is your job!"
+      failwith "Students! This is your job!"
 
     | DeclareExtern (x, ty) ->
-	 failwith "Students! This is your job!"
+      failwith "Students! This is your job!"
 
   (** [extract_function_type_scheme tenv pos fdef] constructs a type
       scheme from the user type annotations found in the function
       definition [fdef]. This function does not check that the function
       definition actually has the type scheme written by the programmer. *)
   and extract_function_type_scheme tenv pos (FunctionDefinition (ts, ps, e)) =
-       failwith "Students! This is your job!"
+    failwith "Students! This is your job!"
 
   (** [check_function_definition tenv pos fdef] checks that the
       function definition [fdef] is well-typed with respect to the
@@ -118,8 +118,8 @@ let typecheck tenv ast : typing_environment =
   and check_expected_type pos xty ity =
     if xty <> ity then
       Error.error "typechecking" pos (
-	Printf.sprintf "Type error:\nExpected:%s\nGiven:%s\n"
-	  (print_aty xty) (print_aty ity)
+        Printf.sprintf "Type error:\nExpected:%s\nGiven:%s\n"
+          (print_aty xty) (print_aty ity)
       )
 
   (** [check_expression_monotype tenv xty e] checks if [e] has
@@ -130,8 +130,8 @@ let typecheck tenv ast : typing_environment =
     begin match s with
       | Scheme ([], ity) -> check_expected_type pos xty ity; s
       | _ -> Error.error "typechecking" pos (
-	Printf.sprintf "The type of this expression is too polymorphic."
-      )
+          Printf.sprintf "The type of this expression is too polymorphic."
+        )
     end
 
   (** [type_scheme_of_expression tenv pos e] computes a type scheme
@@ -139,9 +139,15 @@ let typecheck tenv ast : typing_environment =
       monotype if no type instanciation is provided in the enclosing
       expression. *)
   and type_scheme_of_expression tenv pos = function
+    (* Γ ⊢ σ    Γ(x : σ) ⊢ e' : σ'
+       ————————————————————————–—–
+       Γ ⊢ val x = e; e' : σ'      *)
     | Define (x, e1, e2) ->
       failwith "Students! This is your job!"
 
+    (* Γ ⊢ e : σ'    σ = σ'
+       ——————————–—–———–———
+       Γ ⊢ (e : σ) : σ      *)
     | TypeAnnotation (e, xty) ->
       failwith "Students! This is your job!"
 
@@ -163,21 +169,36 @@ let typecheck tenv ast : typing_environment =
     | Case (e, bs) ->
       failwith "Students! This is your job!"
 
+    (* Γ ⊢ e : τ
+       —–————————–———————
+       Γ ⊢ ref e : ref(τ) *)
     | Ref e ->
       failwith "Students! This is your job!"
 
+    (* Γ ⊢ e : ref(τ)
+       ——————————————
+       Γ ⊢ !e : τ     *)
     | Read e ->
       failwith "Students! This is your job!"
 
+    (* Γ ⊢ e : ref(τ)    Γ ⊢ e' : τ'    τ = τ'
+       ——————————————————————————————–———————–
+       Γ ⊢ e := e' : unit                      *)
     | Write (e1, e2) ->
       failwith "Students! This is your job!"
 
+    (* Γ ⊢ e : bool    Γ ⊢ e' : unit
+       —————————————————————————————
+       Γ ⊢ while e { e' } : unit     *)
     | While (e1, e2) ->
       failwith "Students! This is your job!"
 
     | Literal l ->
       failwith "Students! This is your job!"
 
+    (* (x : σ) ∈ Γ
+       ———————————
+       Γ ⊢ x : σ   *)
     | Variable ({ Position.value = (Id s) as x }) ->
       failwith "Students! This is your job!"
 
@@ -186,11 +207,22 @@ let typecheck tenv ast : typing_environment =
       is an arrow. The input types of this arrow must correspond to
       the types of the expressions [args]. *)
   and apply pos tenv s types args =
-       failwith "Students! This is your job!"
+    failwith "Students! This is your job!"
 
   and type_of_literal pos = function
+    (*
+       —————————
+       ⊢ n : int *)
     | LInt _ -> hint
+
+    (*
+       ————————–——–
+       ⊢ s : string *)
     | LString _ -> hstring
+
+    (*
+       ————————–—
+       ⊢ c : char *)
     | LChar _ -> hchar
 
   and type_of_pattern pos tenv p =
@@ -227,13 +259,13 @@ let typecheck tenv ast : typing_environment =
       failwith "Students! This is your job!"
 
     | PWildcard ->
-	 failwith "Students! This is your job!"
+      failwith "Students! This is your job!"
 
     | PTypeAnnotation (p, ty) ->
-	 failwith "Students! This is your job!"
+      failwith "Students! This is your job!"
 
     | PLiteral l ->
-	 failwith "Students! This is your job!"
+      failwith "Students! This is your job!"
 
   (** [branches tenv sty oty bs] checks that the patterns of the
       branches [bs] have type [sty] and that the bodies of these
@@ -241,16 +273,16 @@ let typecheck tenv ast : typing_environment =
   and branches tenv sty oty bs =
     let oty =
       List.fold_left (fun oty b ->
-	located (branch tenv sty oty) b
-      ) None bs
+          located (branch tenv sty oty) b
+        ) None bs
     in
     match oty with
-      | None -> assert false (* By syntax. *)
-      | Some oty -> oty
+    | None -> assert false (* By syntax. *)
+    | Some oty -> oty
 
   and branch tenv sty oty pos = function
     | Branch (p, e) ->
-	 failwith "Students! This is your job!"
+      failwith "Students! This is your job!"
 
   in
   program ast
