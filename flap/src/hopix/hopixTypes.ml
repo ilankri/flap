@@ -18,6 +18,20 @@ let rec aty_of_ty = function
   | TyArrow (ins, out) -> ATyArrow (List.map aty_of_ty' ins, aty_of_ty' out)
 and aty_of_ty' x = aty_of_ty (Position.value x)
 
+let rec print_aty = function
+  | ATyVar (TId x) ->
+    x
+  | ATyArrow (ins, out) ->
+    String.concat " * " (List.map print_aty' ins)
+    ^ " -> " ^ print_aty' out
+  | ATyCon (TCon x, []) ->
+    x
+  | ATyCon (TCon x, ts) ->
+    x ^ "(" ^ String.concat ", " (List.map print_aty' ts) ^ ")"
+and print_aty' = function
+  | (ATyArrow (_, _)) as t -> "(" ^ print_aty t ^ ")"
+  | x -> print_aty x
+
 let tvar x =
   ATyVar (TId x)
 
@@ -133,7 +147,17 @@ let unify_types ty1 ty2 =
       raise (UnificationFailed (ty1, ty2))
   in
   let phi = unify [(ty1, ty2)] in
-  assert (substitute phi ty1 = substitute phi ty2);
+  let phi = List.map (fun (x, ty) -> (x, substitute phi ty)) phi in
+
+  if (substitute phi ty1 <> substitute phi ty2) then (
+    Error.global_error "internal" (
+      Printf.sprintf "Unification has a bug on:\n %s\nand\n %s, producing phi:\n%s\n"
+	(print_aty ty1)
+	(print_aty ty2)
+	(String.concat ", " (List.map (fun (TId x, ty) -> Printf.sprintf "%s -> %s" x (print_aty ty))
+			       phi)
+	));
+  );
   phi
 
 let guess_instantiation (Scheme (ts1, ty1)) ts2 ty2 =
@@ -244,23 +268,14 @@ let initial_typing_environment () =
     "`/",  [hint; hint] --> hint;
   ]
 
-let rec print_aty = function
-  | ATyVar (TId x) ->
-    x
-  | ATyArrow (ins, out) ->
-    String.concat " * " (List.map print_aty' ins)
-    ^ " -> " ^ print_aty' out
-  | ATyCon (TCon x, []) ->
-    x
-  | ATyCon (TCon x, ts) ->
-    x ^ "(" ^ String.concat ", " (List.map print_aty' ts) ^ ")"
-and print_aty' = function
-  | (ATyArrow (_, _)) as t -> "(" ^ print_aty t ^ ")"
-  | x -> print_aty x
-
 let print_binding (Id x, Scheme (_, s)) =
   x ^ " : " ^ print_aty s
 
 let print_typing_environment tenv =
-  String.concat "\n" (List.map print_binding tenv.values)
+  let excluded = initial_typing_environment () in
+  let values = List.filter (fun (x, _) ->
+    not (List.mem_assoc x excluded.values)
+  ) tenv.values
+  in
+  String.concat "\n" (List.map print_binding values)
 

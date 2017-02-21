@@ -72,9 +72,9 @@ let print_value m v =
           Printf.sprintf "<primitive: %s>" s
   and print_array_value d block =
     let r = Memory.read block in
-    let n = Memory.size block in
+    let n = Int32.to_int (Memory.size block) in
     "[ " ^ String.concat ", " (
-      List.(map (fun i -> print_value (d + 1) (r i)) (ExtStd.List.range 0 (n - 1))
+      List.(map (fun i -> print_value (d + 1) (r (Int32.of_int i))) (ExtStd.List.range 0 (n - 1))
       )) ^ " ]"
   in
   print_value 0 v

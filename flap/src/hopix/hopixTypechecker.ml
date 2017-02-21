@@ -41,7 +41,7 @@ let check_program_is_fully_annotated ast =
       failwith "Students! This is your job!"
     | If (cts, f) ->
       failwith "Students! This is your job!"
-    | Fun fdef ->
+    | Fun (FunctionDefinition (_, ps, e)) ->
       failwith "Students! This is your job!"
     | Tagged (_, _, es) ->
       failwith "Students! This is your job!"
@@ -211,13 +211,13 @@ let typecheck tenv ast : typing_environment =
     | PTypeAnnotation ({ Position.value = PVariable x }, ty) ->
       failwith "Students! This is your job!"
 
-    | PTypeAnnotation (p, ty) ->
-	 failwith "Students! This is your job!"
-
     | PVariable _ ->
       assert false (* by check_program_is_fully_annotated. *)
 
     | PTaggedValue (k, ps) ->
+      failwith "Students! This is your job!"
+
+    | PTypeAnnotation ({ Position.value = PTaggedValue (k, ps) }, ty) ->
       failwith "Students! This is your job!"
 
     | POr ps ->
@@ -227,6 +227,9 @@ let typecheck tenv ast : typing_environment =
       failwith "Students! This is your job!"
 
     | PWildcard ->
+	 failwith "Students! This is your job!"
+
+    | PTypeAnnotation (p, ty) ->
 	 failwith "Students! This is your job!"
 
     | PLiteral l ->

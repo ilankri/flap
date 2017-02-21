@@ -1,9 +1,6 @@
 type location = int
 
-type 'a block = {
-  mutable tag : int;
-  cells      : 'a array;
-}
+type 'a block = 'a array
 
 type 'a memory = {
   mutable bound : int;
@@ -20,11 +17,12 @@ let create size = {
 exception OutOfMemory
 
 let allocate mem size init =
+  let size = Int32.to_int size in
   if mem.bound >= Array.length mem.data then
     raise OutOfMemory
   else (
     let location = mem.bound in
-    mem.data.(location) <- Some { tag = 0; cells = Array.make size init };
+    mem.data.(location) <- Some (Array.make size init);
     mem.bound <- mem.bound + 1;
     location
   )
@@ -37,18 +35,15 @@ let dereference mem location =
     | Some b -> b
 
 let size block =
-  Array.length block.cells
+  Int32.of_int (Array.length block)
 
 let read block i =
-  block.cells.(i)
+  block.(Int32.to_int i)
 
 let write block i x =
-  block.cells.(i) <- x
+  block.(Int32.to_int i) <- x
 
-let get_tag block =
-  block.tag
-
-let set_tag block x =
-  block.tag <- x
+let array_of_block block =
+  block
 
 let print_location x = "#" ^ string_of_int x
