@@ -382,14 +382,15 @@ and expression position environment memory = function
   | Ref e ->
     let v, memory = expression' environment memory e in
     let location =
-      try Memory.allocate memory 1 v with
+      try Memory.allocate memory Int32.one v with
       | Memory.OutOfMemory -> error [position] "Out of memory." in
     (VAddress location, memory)
 
   | Read e ->
     let v, memory = expression' environment memory e in
     begin match value_as_address v with
-      | Some addr -> (Memory.(read (dereference memory addr) 0), memory)
+      | Some addr ->
+        (Memory.(read (dereference memory addr) Int32.zero), memory)
       | None -> assert false    (* By typing.  *)
     end
 
@@ -398,7 +399,7 @@ and expression position environment memory = function
     begin match value_as_address v1 with
       | Some addr ->
         let v2, memory = expression' environment memory e2 in
-        Memory.(write (dereference memory addr) 0 v2);
+        Memory.(write (dereference memory addr) Int32.zero v2);
         (VUnit, memory)
       | None -> assert false    (* By typing.  *)
     end
