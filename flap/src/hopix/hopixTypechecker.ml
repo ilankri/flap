@@ -139,15 +139,15 @@ let typecheck tenv ast : typing_environment =
       monotype if no type instanciation is provided in the enclosing
       expression. *)
   and type_scheme_of_expression tenv pos = function
-    (* Γ ⊢ σ    Γ(x : σ) ⊢ e' : σ'
-       ————————————————————————–—–
-       Γ ⊢ val x = e; e' : σ'      *)
+    (* Γ ⊢ e : σ    Γ(x : σ) ⊢ e' : σ'
+       ————————————————————————–—–———–
+       Γ ⊢ val x = e; e' : σ'          *)
     | Define (x, e1, e2) ->
       failwith "Students! This is your job!"
 
-    (* Γ ⊢ e : σ'    σ = σ'
-       ——————————–—–———–———
-       Γ ⊢ (e : σ) : σ      *)
+    (* Γ ⊢ e : σ
+       ——————————–—–——
+       Γ ⊢ (e : σ) : σ *)
     | TypeAnnotation (e, xty) ->
       failwith "Students! This is your job!"
 
@@ -157,8 +157,25 @@ let typecheck tenv ast : typing_environment =
     | Apply (a, types, args) ->
       failwith "Students! This is your job!"
 
+    (* With else branch:
+
+       Γ ⊢ c : bool    ∀i Γ ⊢ cᵢ : bool
+       Γ ⊢ e : σ    ∀i Γ ⊢ eᵢ : σ    Γ ⊢ e' : σ
+       ———————————————————————————————————————————
+                       _______________
+       Γ ⊢ if c then e elif cᵢ then eᵢ else e' : σ
+
+       and without:
+
+       Γ ⊢ c : bool    ∀i Γ ⊢ cᵢ : bool
+       Γ ⊢ e : unit    ∀i Γ ⊢ eᵢ : unit
+       —————————————————————————————————————–
+                       _______________
+       Γ ⊢ if c then e elif cᵢ then eᵢ : unit *)
     | If (cts, f) ->
       failwith "Students! This is your job!"
+
+
 
     | Fun fdef ->
       failwith "Students! This is your job!"
@@ -181,9 +198,9 @@ let typecheck tenv ast : typing_environment =
     | Read e ->
       failwith "Students! This is your job!"
 
-    (* Γ ⊢ e : ref(τ)    Γ ⊢ e' : τ'    τ = τ'
-       ——————————————————————————————–———————–
-       Γ ⊢ e := e' : unit                      *)
+    (* Γ ⊢ e : ref(τ)    Γ ⊢ e' : τ
+       ————————————————————————————
+       Γ ⊢ e := e' : unit           *)
     | Write (e1, e2) ->
       failwith "Students! This is your job!"
 
@@ -196,9 +213,9 @@ let typecheck tenv ast : typing_environment =
     | Literal l ->
       failwith "Students! This is your job!"
 
-    (* (x : σ) ∈ Γ
-       ———————————
-       Γ ⊢ x : σ   *)
+    (*
+       ———————————————–
+       Γ(x : σ) ⊢ x : σ *)
     | Variable ({ Position.value = (Id s) as x }) ->
       failwith "Students! This is your job!"
 
