@@ -19,18 +19,23 @@ let located f x = f (Position.position x) (Position.value x)
     annotated by a type. *)
 let check_program_is_fully_annotated ast =
 
-  let rec program p = List.iter (located definition) p
+  let rec program p = List.iter (fun item -> located definition item) p
 
   and definition pos = function
     | DefineValue (x, e) ->
-      failwith "Students! This is your job!"
+      located expression e
     | DefineRecFuns recdefs ->
       List.iter (fun (_, fdef) -> located function_definition fdef) recdefs
-    | _ ->
-      ()
+    | _ -> ()
+
   and function_definition pos = function
     | FunctionDefinition (_, ps, e) ->
-      failwith "Students! This is your job!"
+      List.iter (located pattern) ps;
+      begin
+      match (Position.value e) with
+      | TypeAnnotation (e, _) -> located expression e
+      | _ -> missing_type_annotation pos
+      end
 
   and expression pos = function
     | Define (_, e1, e2) ->
@@ -53,6 +58,7 @@ let check_program_is_fully_annotated ast =
       failwith "Students! This is your job!"
     | Literal _ | Variable _ ->
       failwith "Students! This is your job!"
+
   and pattern pos = function
     | PTypeAnnotation ({ Position.value = (PWildcard | PVariable _) }, _) ->
       failwith "Students! This is your job!"
@@ -143,7 +149,7 @@ let typecheck tenv ast : typing_environment =
        ————————————————————————–—–———–
        Γ ⊢ val x = e; e' : σ'          *)
     | Define (x, e1, e2) ->
-      failwith "Students! This is your job!"
+      failwith "Students! This is your job!"  
 
     (* Γ ⊢ e : σ
        ——————————–—–——

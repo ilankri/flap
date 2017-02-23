@@ -16,8 +16,8 @@ and definition =
     e.g : var aVarId = expr *)
   | DefineValue of identifier located * expression located
 (** A toplevel definition for mutually recursive values. 
-    e.g : fun oneVarId [oneTypeVar, twoTypeVar] (pattern1, pattern2) : aType = expr1
-          and twoVarId [thirdTypeVar] (pattern) : bType = expr2... *)
+    e.g : fun oneVarId [oneTypeVar, twoTypeVar] (pattern1, pattern2) : aReturnType = expr1
+          and twoVarId [thirdTypeVar] (pattern) : bReturnType = expr2... *)
   | DefineRecFuns of (identifier located * function_definition located) list
 
 and type_definition =
