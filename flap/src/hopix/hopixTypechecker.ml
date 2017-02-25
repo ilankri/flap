@@ -38,26 +38,32 @@ let check_program_is_fully_annotated ast =
       end
 
   and expression pos = function
-    | Define (_, e1, e2) ->
-         failwith "Students! This is your job!"
+    | Define (_, e1, e2) | Write (e1, e2) | While (e1, e2) ->
+      located expression e1;
+      located expression e2;
     | DefineRec (recdefs, e) ->
-      failwith "Students! This is your job!"
-    | Apply (a, _, args) ->
-      failwith "Students! This is your job!"
-    | If (cts, f) ->
-      failwith "Students! This is your job!"
-    | Fun (FunctionDefinition (_, ps, e)) ->
-      failwith "Students! This is your job!"
-    | Tagged (_, _, es) ->
-      failwith "Students! This is your job!"
-    | Case (e, bs) ->
-      failwith "Students! This is your job!"
+      List.iter (fun (_, fdef) -> located function_definition fdef) recdefs;
+      located expression e
+    | Apply (e, _, exprlist) ->
+      located expression e;
+      List.iter (fun expr -> located expression expr) exprlist;
+    | If (eelist, optexpr) ->
+      List.iter (fun (e1, e2) -> located expression e1; located expression e2) eelist;
+      begin
+      match optexpr with
+      | Some expr -> located expression expr
+      | None -> ()
+      end
+    | Fun fdef -> function_definition pos fdef
+  
+    | Tagged (_, _, exprlist) -> 
+      List.iter (fun e -> located expression e) exprlist;
+    | Case (e, branchlist) ->
+      located expression e;
+      List.iter (fun br -> located branch br) branchlist;
     | TypeAnnotation (e, _) | Ref e | Read e ->
-      failwith "Students! This is your job!"
-    | Write (e1, e2) | While (e1, e2) ->
-      failwith "Students! This is your job!"
-    | Literal _ | Variable _ ->
-      failwith "Students! This is your job!"
+      located expression e
+    | Literal _ | Variable _ -> ()
 
   and pattern pos = function
     | PTypeAnnotation ({ Position.value = (PWildcard | PVariable _) }, _) ->
@@ -70,6 +76,7 @@ let check_program_is_fully_annotated ast =
       failwith "Students! This is your job!"
     | PLiteral _ ->
       failwith "Students! This is your job!"
+
   and branch pos = function
     | Branch (p, e) ->
       failwith "Students! This is your job!"
@@ -148,8 +155,10 @@ let typecheck tenv ast : typing_environment =
     (* Γ ⊢ e : σ    Γ(x : σ) ⊢ e' : σ'
        ————————————————————————–—–———–
        Γ ⊢ val x = e; e' : σ'          *)
-    | Define (x, e1, e2) ->
-      failwith "Students! This is your job!"  
+    | Define (x, e, e') ->
+let sigma = located (type_scheme_of_expression tenv) e in
+      let tenv' = {tenv with values = (Position.value x, sigma)::tenv.values} in
+      let sigma' = located (type_scheme_of_expression tenv') e' in sigma'
 
     (* Γ ⊢ e : σ
        ——————————–—–——
@@ -217,7 +226,7 @@ let typecheck tenv ast : typing_environment =
       failwith "Students! This is your job!"
 
     | Literal l ->
-      failwith "Students! This is your job!"
+      mk_type_scheme(located type_of_literal l)
 
     (*
        ———————————————–
