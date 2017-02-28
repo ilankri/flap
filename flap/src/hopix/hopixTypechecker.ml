@@ -55,7 +55,6 @@ let check_program_is_fully_annotated ast =
       | None -> ()
       end
     | Fun fdef -> function_definition pos fdef
-  
     | Tagged (_, _, exprlist) -> 
       List.iter (fun e -> located expression e) exprlist;
     | Case (e, branchlist) ->
@@ -66,20 +65,17 @@ let check_program_is_fully_annotated ast =
     | Literal _ | Variable _ -> ()
 
   and pattern pos = function
-    | PTypeAnnotation ({ Position.value = (PWildcard | PVariable _) }, _) ->
-      failwith "Students! This is your job!"
+    | PTypeAnnotation ({ Position.value = (PWildcard | PVariable _) }, _) -> ()
     | PTypeAnnotation (p, _) ->
-      failwith "Students! This is your job!"
-    | PVariable _ | PWildcard ->
-      failwith "Students! This is your job!"
-    | PTaggedValue (_, ps) | POr ps | PAnd ps ->
-      failwith "Students! This is your job!"
-    | PLiteral _ ->
-      failwith "Students! This is your job!"
+      located pattern p 
+    | PVariable _ | PWildcard | PLiteral _ -> ()
+    | PTaggedValue (_, palist) | POr palist | PAnd palist ->
+      List.iter (fun p -> located pattern p) palist
 
   and branch pos = function
     | Branch (p, e) ->
-      failwith "Students! This is your job!"
+	located pattern p;
+	located expression e
   and missing_type_annotation pos =
     Error.error "typechecking" pos "A type annotation is missing."
   in
@@ -156,15 +152,14 @@ let typecheck tenv ast : typing_environment =
        ————————————————————————–—–———–
        Γ ⊢ val x = e; e' : σ'          *)
     | Define (x, e, e') ->
-let sigma = located (type_scheme_of_expression tenv) e in
+      let sigma = located (type_scheme_of_expression tenv) e in
       let tenv' = {tenv with values = (Position.value x, sigma)::tenv.values} in
       let sigma' = located (type_scheme_of_expression tenv') e' in sigma'
 
     (* Γ ⊢ e : σ
        ——————————–—–——
        Γ ⊢ (e : σ) : σ *)
-    | TypeAnnotation (e, xty) ->
-      failwith "Students! This is your job!"
+    | TypeAnnotation (e, ty) -> located (type_scheme_of_expression tenv) e (* We don't handle ty??? *)
 
     | DefineRec (recdefs, e) ->
       failwith "Students! This is your job!"
@@ -189,8 +184,6 @@ let sigma = located (type_scheme_of_expression tenv) e in
        Γ ⊢ if c then e elif cᵢ then eᵢ : unit *)
     | If (cts, f) ->
       failwith "Students! This is your job!"
-
-
 
     | Fun fdef ->
       failwith "Students! This is your job!"
