@@ -156,10 +156,14 @@ let typecheck tenv ast : typing_environment =
       let tenv' = {tenv with values = (Position.value x, sigma)::tenv.values} in
       let sigma' = located (type_scheme_of_expression tenv') e' in sigma'
 
-    (* Γ ⊢ e : σ
-       ——————————–—–——
+    (* Γ ⊢ e : σ'   σ = σ'
+       ——————————–—–——-----
        Γ ⊢ (e : σ) : σ *)
-    | TypeAnnotation (e, ty) -> located (type_scheme_of_expression tenv) e (* We don't handle ty??? *)
+    | TypeAnnotation (e, ty) -> 
+      let sigma = located (type_scheme_of_expression tenv) e in
+      let pty = type_of_monotype sigma in
+      check_expected_type (Position.position ty) pty (aty_of_ty (Position.value ty));
+      sigma
 
     | DefineRec (recdefs, e) ->
       failwith "Students! This is your job!"
@@ -182,8 +186,10 @@ let typecheck tenv ast : typing_environment =
        —————————————————————————————————————–
                        _______________
        Γ ⊢ if c then e elif cᵢ then eᵢ : unit *)
-    | If (cts, f) ->
-      failwith "Students! This is your job!"
+    | If (eelist, expr) -> failwith "TODO"
+      (* TODO let f e1 e2 = 
+      let b = located (type_scheme_of_expression tenv) e1
+      List.iter *)
 
     | Fun fdef ->
       failwith "Students! This is your job!"

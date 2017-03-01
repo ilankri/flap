@@ -122,8 +122,7 @@ let rec conjs = HobixAST.(function
 
 (** [component x i] returns [x[i]]. *)
 let component x i =
-  failwith "Students! This is your job!"
-
+    failwith "Students! This is your job!"
 
 let located  f x = f (Position.value x)
 let located' f x = Position.map f x
@@ -187,7 +186,7 @@ and expression env = HobixAST.(function
     )
 
   | HopixAST.Read r ->
-    ReadBlock (located (expression env) r, Literal (LInt Int32.zero))
+    read_block (located (expression env) r) 0
 
   | HopixAST.Write (r, v) ->
     WriteBlock (located (expression env) r,
@@ -197,8 +196,6 @@ and expression env = HobixAST.(function
   | HopixAST.While (c, b) ->
     HobixAST.While (located (expression env) c,
 		    located (expression env) b)
-
-  (* </corrige> *)
 
   | HopixAST.Apply (e1, _, es) ->
     Apply (located (expression env) e1,
