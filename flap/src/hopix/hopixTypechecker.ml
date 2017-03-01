@@ -186,10 +186,21 @@ let typecheck tenv ast : typing_environment =
        —————————————————————————————————————–
                        _______________
        Γ ⊢ if c then e elif cᵢ then eᵢ : unit *)
-    | If (eelist, expr) -> failwith "TODO"
-      (* TODO let f e1 e2 = 
-      let b = located (type_scheme_of_expression tenv) e1
-      List.iter *)
+    | If (eelist, expr) ->
+      let elsety = 
+        match expr with
+        | Some e -> type_of_monotype(located (type_scheme_of_expression tenv) e)
+        | None -> hunit
+      in
+	let f (e1, e2) = 
+	(
+          let e1ty = type_of_monotype(located (type_scheme_of_expression tenv) e1) in
+          check_expected_type (Position.position e1) e1ty hbool;
+          let e2ty = type_of_monotype(located (type_scheme_of_expression tenv) e2) in
+          check_expected_type (Position.position e2) e2ty elsety;
+	)
+      in
+      List.iter f eelist; monotype elsety
 
     | Fun fdef ->
       failwith "Students! This is your job!"
