@@ -120,10 +120,9 @@ let rec conjs = HobixAST.(function
   | c :: cs -> conj c (conjs cs)
 )
 
-(** [component x i] returns [x[i]]. *)
-let component x i =
-  failwith "Students! This is your job!"
-
+(** [read_block hobixe i] returns [hobixe[i]]. *)
+let read_block hobixe i =
+  HobixAST.(ReadBlock (hobixe, Literal (LInt (Int32.of_int i))))
 
 let located  f x = f (Position.value x)
 let located' f x = Position.map f x
@@ -183,7 +182,7 @@ and expression env = HobixAST.(function
       x,
       AllocateBlock (Literal (LInt (Int32.of_int 1))),
       WriteBlock (Variable x, Literal (LInt Int32.zero),
-		  located (expression env) e))
+                  located (expression env) e))
     )
 
   | HopixAST.Read r ->
@@ -191,30 +190,30 @@ and expression env = HobixAST.(function
 
   | HopixAST.Write (r, v) ->
     WriteBlock (located (expression env) r,
-		Literal (LInt Int32.zero),
-		located (expression env) v)
+                Literal (LInt Int32.zero),
+                located (expression env) v)
 
   | HopixAST.While (c, b) ->
     HobixAST.While (located (expression env) c,
-		    located (expression env) b)
+                    located (expression env) b)
 
   (* </corrige> *)
 
   | HopixAST.Apply (e1, _, es) ->
     Apply (located (expression env) e1,
-	   List.map (located (expression env)) es)
+           List.map (located (expression env)) es)
 
   | HopixAST.Literal l ->
     Literal (located literal l)
 
   | HopixAST.Define (x, e1, e2) ->
     Define (located identifier x,
-	    located (expression env) e1,
-	    located (expression env) e2)
+            located (expression env) e1,
+            located (expression env) e2)
 
   | HopixAST.DefineRec (recs, e) ->
     DefineRec (List.map (function_definition env) recs,
-	       located (expression env) e)
+               located (expression env) e)
 
   | HopixAST.TypeAnnotation (e, ty) ->
     located (expression env) e
@@ -226,8 +225,8 @@ and expression env = HobixAST.(function
     in
     List.fold_left (fun t (cond, thenb) ->
       HobixAST.IfThenElse (located (expression env) cond,
-			   located (expression env) thenb,
-			   t)
+                           located (expression env) thenb,
+                           t)
     ) final (List.rev conditions)
 
   | HopixAST.Fun (HopixAST.FunctionDefinition (_, ps, e)) ->
