@@ -259,7 +259,15 @@ and literal = HobixAST.(function
 
 (** Compilation of type definitions. *)
 and type_definition env t =
-  failwith "Students! This is your job!"
+  match t with
+  | HopixAST.Abstract -> env
+  | HopixAST.DefineSumType l ->
+     let r = ref Int32.zero in
+     let incr_32 re = re := Int32.succ !re in
+     let fIter ctags (k, _) = incr_32 r; ConstructorMap.add (Position.value k) !r ctags in 
+     {
+        constructor_tags = List.fold_left fIter env.constructor_tags l
+     }
 
 (** Here is the compiler! *)
 let translate source env =
