@@ -7,7 +7,7 @@ type program = definition located list
 
 and definition =
 (** A type definition. 
-    e.g : type aTypeCon ( oneTypeVar, twoTypeVar... ) = TypeDefinition  *)
+    e.g : type aTypeCon ( oneTypeVar, twoTypeVar... ) = TypeDefinition(ty)  *)
   | DefineType of type_constructor located * type_variable located list * type_definition
 (** A toplevel declaration for an external value. 
     e.g : extern aVarId : aType *)
@@ -16,18 +16,22 @@ and definition =
     e.g : var aVarId = expr *)
   | DefineValue of identifier located * expression located
 (** A toplevel definition for mutually recursive values. 
-    e.g : fun oneVarId [oneTypeVar, twoTypeVar] (pattern1, pattern2) : aReturnType = expr1
-          and twoVarId [thirdTypeVar] (pattern) : bReturnType = expr2... *)
+    e.g : fun oneVarId ['oneTypeVar, 'twoTypeVar] (pattern1, pattern2) : expr1Type = expr1
+          and twoVarId ['thirdTypeVar] (pattern) : expr2Type = expr2... *)
   | DefineRecFuns of (identifier located * function_definition located) list
 
 and type_definition =
-  (** A sum type for tagged values [{ K₁ : ty₁₁ * ... * ty₁ₙ | ... | Kₙ : tyₙ₁ * ... * tyₘₖ}]. *)
+(** A sum type for tagged values [{ K₁ : ty₁₁ * ... * ty₁n| ... | Km: tym1 * ... * tymn]. 
+    e.g : ATypeCon (ty1) | BTypeCon (ty2 -> ty3) | CTypeCon (int) 
+*)
   | DefineSumType of (constructor located * ty located list) list
   (** A type with no visible definition. *)
   | Abstract
 
 and function_definition =
-  (** A function definition [['a₁, ⋯, 'aₙ] (p₁, ⋯, pₙ) = e]. *)
+(** A function definition [['a₁, ⋯, 'an] (p₁, ⋯, pm) = e]. 
+    e.g : ['oneTypeVar, 'twoTypeVar] (pattern1, pattern2) : expr1Type = expr1
+*)
   | FunctionDefinition of
       type_variable located list
     * pattern located list
@@ -38,57 +42,57 @@ and expression =
   | Literal of literal located
   (** A variable identifies a value. *)
   | Variable of identifier located
-  (** A local definition [val x₁ = e₁ in e₂]. *)
+  (** A local definition e.g : val x₁ = e₁ in e₂ *)
   | Define of identifier located * expression located * expression located
   (** Local mutually recursive values. *)
   | DefineRec of (identifier located * function_definition located) list * expression located
-  (** A function application [a [ty₁, ⋯, tyₙ] (b₁, ⋯, bₙ)]. *)
+  (** A function application e.g : e [ty₁, ⋯, tyn] (e₁, ⋯, em) *)
   | Apply of expression located * ty located list * expression located list
-  (** A conditional expression of the form [if ... then ... elif ... else ...]. *)
+  (** A conditional expression of the form e.g : if ... then ... elif ... else .... *)
   | If of (expression located * expression located) list * expression located option
-  (** An anonymous function [ \ [ty₁, ⋯, ty₂] (p₁, ⋯, pₙ) => e ]. *)
+  (** An anonymous function e.g : \ [ty₁, ⋯, tyn] (p₁, ⋯, pm) => e  *)
   | Fun of function_definition
-  (** A tagged value [K [ty₁, ⋯, tyₙ] (e_1, ..., e_n)]. *)
+  (** A tagged value e.g : K [ty₁, ⋯, tyn] (e_1, ..., e_n) *)
   | Tagged of constructor located * ty located list * expression located list
-  (** A pattern matching [e ? p_1 => e_1 | ... | p_n => e_n]. *)
+  (** A pattern matching e.g : e ? p_1 => e_1 | ... | p_n => e_n *)
   | Case of expression located * branch located list
-  (** A type annotation [(e : ty)]. *)
+  (** A type annotation e.g : (e : ty) *)
   | TypeAnnotation of expression located * ty located
-  (** A reference creation [ref e]. *)
+  (** A reference creation e.g : ref e *)
   | Ref of expression located
-  (** A reference dereference [!e]. *)
+  (** A reference dereference e.g : !e *)
   | Read of expression located
-  (** A reference assignment [x := e]. *)
+  (** A reference assignment e.g : x := e *)
   | Write of expression located * expression located
-  (** A loop [while e { b }] *)
+  (** A loop e.g : while e1 { e2 } *)
   | While of expression located * expression located
 
 and pattern =
-  (** A pattern with a type annotation of type form [p : ty] *)
+  (** A pattern with a type annotation of type form e.g : p : ty *)
   | PTypeAnnotation of pattern located * ty located
   (** A pattern which is simply an identifier. *)
   | PVariable of identifier located
-  (** A pattern for a tagged value [K (p_1, ..., p_n)]. *)
+  (** A pattern for a tagged value e.g : K (p_1, ..., p_n) *)
   | PTaggedValue of constructor located * pattern located list
-  (** A wildcard pattern [_]. *)
+  (** A wildcard pattern _ *)
   | PWildcard
   (** A literal pattern. *)
   | PLiteral of literal located
-  (** A disjunctive pattern [ p₁ | ... | pₙ ]. *)
+  (** A disjunctive pattern e.g : p₁ | ... | pn *)
   | POr of pattern located list
-  (** A conjunctive pattern [ p₁ & ... & pₙ ]. *)
+  (** A conjunctive pattern e.g : p₁ & ... & pn *)
   | PAnd of pattern located list
 
 and branch =
-  (** A branch in a pattern matching [p => e]. *)
+  (** A branch in a pattern matching e.g : p => e *)
   | Branch of pattern located * expression located
 
 and ty =
-  (** An instantiated type constructor [t [ty_1, .., ty_2]]. *)
+  (** An instantiated type constructor e.g : tcon [ty_1, .., ty_2] *)
   | TyCon of type_constructor * ty located list
-  (** A type variable ['a]. *)
+  (** A type variable e.g : 'a. *)
   | TyVar of type_variable
-  (** A function type [(ty_1, .., ty_N) -> ty]. *)
+  (** A function type e.g : (ty_1, .., ty_N) -> ty *)
   | TyArrow of ty located list * ty located
 
 and literal =
