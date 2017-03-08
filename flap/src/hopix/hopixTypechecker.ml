@@ -215,24 +215,25 @@ let typecheck tenv ast : typing_environment =
        —–————————–———————
        Γ ⊢ ref e : ref(τ) *)
     | Ref e ->
-      failwith "Students! This is your job!"
+      located (type_scheme_of_expression tenv) e (** ref(τ)??? **)
 
     (* Γ ⊢ e : ref(τ)
        ——————————————
        Γ ⊢ !e : τ     *)
     | Read e ->
-      failwith "Students! This is your job!"
+      located (type_scheme_of_expression tenv) e
 
     (* Γ ⊢ e : ref(τ)    Γ ⊢ e' : τ
        ————————————————————————————
        Γ ⊢ e := e' : unit           *)
-    | Write (e1, e2) ->
+    | Write (e, e') ->
+      (**let tau = located (type_scheme_of_expression tenv) e in hunit TODO *)
       failwith "Students! This is your job!"
 
     (* Γ ⊢ e : bool    Γ ⊢ e' : unit
        —————————————————————————————
        Γ ⊢ while e { e' } : unit     *)
-    | While (e1, e2) ->
+    | While (e, e') ->
       failwith "Students! This is your job!"
 
     | Literal l ->

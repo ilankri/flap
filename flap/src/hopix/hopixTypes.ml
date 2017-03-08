@@ -61,6 +61,13 @@ let href ty = ATyCon (tcref, [ty])
 exception NotAReference
 
 let type_of_reference_type = function
+(**
+    | Pattern(p) when conditionP -> return
+
+equals to
+
+    | Pattern(p) -> (match p with | Condition -> return )
+*)
   | ATyCon (t, [ty]) when t = tcref ->
     ty
   | _ ->
