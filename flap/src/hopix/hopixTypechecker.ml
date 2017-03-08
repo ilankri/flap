@@ -7,7 +7,7 @@ let initial_typing_environment = HopixTypes.initial_typing_environment
 
 type typing_environment = HopixTypes.typing_environment
 
-let type_error = Error.error "typechecking"
+let type_error = HopixTypes.type_error
 
 let located f x = f (Position.position x) (Position.value x)
 
@@ -55,7 +55,7 @@ let check_program_is_fully_annotated ast =
       | None -> ()
       end
     | Fun fdef -> function_definition pos fdef
-    | Tagged (_, _, exprlist) -> 
+    | Tagged (_, _, exprlist) ->
       List.iter (fun e -> located expression e) exprlist;
     | Case (e, branchlist) ->
       located expression e;
@@ -67,17 +67,17 @@ let check_program_is_fully_annotated ast =
   and pattern pos = function
     | PTypeAnnotation ({ Position.value = (PWildcard | PVariable _) }, _) -> ()
     | PTypeAnnotation (p, _) ->
-      located pattern p 
+      located pattern p
     | PVariable _ | PWildcard | PLiteral _ -> ()
     | PTaggedValue (_, palist) | POr palist | PAnd palist ->
       List.iter (fun p -> located pattern p) palist
 
   and branch pos = function
     | Branch (p, e) ->
-	located pattern p;
-	located expression e
+        located pattern p;
+        located expression e
   and missing_type_annotation pos =
-    Error.error "typechecking" pos "A type annotation is missing."
+    type_error pos "A type annotation is missing."
   in
   program ast
 
@@ -126,7 +126,7 @@ let typecheck tenv ast : typing_environment =
       and raises an error otherwise. *)
   and check_expected_type pos xty ity =
     if xty <> ity then
-      Error.error "typechecking" pos (
+      type_error pos (
         Printf.sprintf "Type error:\nExpected:%s\nGiven:%s\n"
           (print_aty xty) (print_aty ity)
       )
@@ -138,9 +138,9 @@ let typecheck tenv ast : typing_environment =
     let s = located (type_scheme_of_expression tenv) e in
     begin match s with
       | Scheme ([], ity) -> check_expected_type pos xty ity; s
-      | _ -> Error.error "typechecking" pos (
-          Printf.sprintf "The type of this expression is too polymorphic."
-        )
+      | _ -> type_error pos (
+        Printf.sprintf "The type of this expression is too polymorphic."
+      )
     end
 
   (** [type_scheme_of_expression tenv pos e] computes a type scheme
@@ -159,7 +159,7 @@ let typecheck tenv ast : typing_environment =
     (* Γ ⊢ e : σ'   σ = σ'
        ——————————–—–——-----
        Γ ⊢ (e : σ) : σ *)
-    | TypeAnnotation (e, ty) -> 
+    | TypeAnnotation (e, ty) ->
       let sigma = located (type_scheme_of_expression tenv) e in
       let pty = type_of_monotype sigma in
       check_expected_type (Position.position ty) pty (aty_of_ty (Position.value ty));
@@ -187,18 +187,18 @@ let typecheck tenv ast : typing_environment =
                        _______________
        Γ ⊢ if c then e elif cᵢ then eᵢ : unit *)
     | If (eelist, expr) ->
-      let elsety = 
+      let elsety =
         match expr with
         | Some e -> type_of_monotype(located (type_scheme_of_expression tenv) e)
         | None -> hunit
       in
-	let f (e1, e2) = 
-	(
+        let f (e1, e2) =
+        (
           let e1ty = type_of_monotype(located (type_scheme_of_expression tenv) e1) in
           check_expected_type (Position.position e1) e1ty hbool;
           let e2ty = type_of_monotype(located (type_scheme_of_expression tenv) e2) in
           check_expected_type (Position.position e2) e2ty elsety;
-	)
+        )
       in
       List.iter f eelist; monotype elsety
 
@@ -300,6 +300,8 @@ let typecheck tenv ast : typing_environment =
 
     | PAnd ps ->
       failwith "Students! This is your job!"
+
+
 
     | PWildcard ->
       failwith "Students! This is your job!"

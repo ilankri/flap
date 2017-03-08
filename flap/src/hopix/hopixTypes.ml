@@ -1,5 +1,7 @@
 open HopixAST
 
+let type_error = Error.error "typechecking"
+
 (** Abstract syntax for types.
 
     The following internal syntax for types is isomorphic
@@ -37,7 +39,7 @@ let tvar x =
 
 let fresh =
   let r = ref 0 in
-  fun () -> incr r; TId ("'" ^ string_of_int !r)
+  fun () -> incr r; TId ("'a" ^ string_of_int !r)
 
 let ( --> ) tys ty =
   ATyArrow (tys, ty)
@@ -55,7 +57,7 @@ let tcint,    hint     = constant "int"
 let tcstring, hstring  = constant "string"
 let tcchar,   hchar    = constant "char"
 
-let tcref = TCon "ref"
+let tcref = TCon "cell"
 let href ty = ATyCon (tcref, [ty])
 
 exception NotAReference
@@ -124,6 +126,11 @@ let instantiate_type_scheme (Scheme (ts, ty)) types =
   let substitution = List.combine ts types in
   substitute substitution ty
 
+let refresh_type_scheme (Scheme (ts, ty)) =
+  let ts' = List.map (fun _ -> fresh ()) ts in
+  let phi = List.(map (fun (x, y) -> (x, ATyVar y)) (combine ts ts')) in
+  Scheme (ts', substitute phi ty)
+
 exception UnificationFailed of aty * aty
 
 let unify_types ty1 ty2 =
@@ -132,8 +139,6 @@ let unify_types ty1 ty2 =
       []
     | (a, b) :: pbs when a = b ->
       unify pbs
-    | (ty, ATyVar x) :: pbs ->
-      unify ((ATyVar x, ty) :: pbs)
     | (ATyVar x, ty) :: pbs ->
       if occurs x ty then raise (UnificationFailed (ty1, ty2));
       let eliminate_x = substitute [(x, ty)] in
@@ -142,6 +147,8 @@ let unify_types ty1 ty2 =
       ) pbs)
       in
       (x, ty) :: phi
+    | (ty, ATyVar x) :: pbs ->
+      unify ((ATyVar x, ty) :: pbs)
     | (ATyArrow (ins1, out1), ATyArrow (ins2, out2)) :: pbs ->
 	if List.(length ins1 <> length ins2) then
 	  raise (UnificationFailed (ty1, ty2));
@@ -181,14 +188,18 @@ and type_information = {
   data_constructors : constructor list
 }
 
+
 exception UnboundTypeConstructor of Position.position * type_constructor
 
-let check_well_formed_type env ty =
+let check_well_formed_type pos env ty =
      failwith "Students! This is your job!"
 
 let internalize_ty env ty =
-  check_well_formed_type env ty;
-  aty_of_ty ty
+  let pos = Position.position ty in
+  let ty = Position.value ty in
+  let aty = aty_of_ty ty in
+  check_well_formed_type pos env aty;
+  aty
 
 let empty_typing_environment = {
   values = [];
@@ -203,6 +214,11 @@ let bind_type_variable pos env tv =
   if List.mem tv env.type_variables then
     raise (AlreadyBoundTypeVariable (pos, tv));
   { env with type_variables = tv :: env.type_variables }
+
+let bind_type_variables pos env ts =
+  List.fold_left (fun env t ->
+      bind_type_variable pos env t
+    ) env ts
 
 let is_type_variable_defined pos env tv =
   List.mem tv env.type_variables
@@ -221,12 +237,13 @@ let lookup_type_scheme_of_value pos x env =
 
 let bind_type_definition x ts tdef env =
   let arity = List.length ts in
+  let env = bind_type_variables Position.dummy env ts in
   let data_constructors = match tdef with
     | Abstract -> []
     | DefineSumType ds -> List.map (fun (k, _) -> Position.value k) ds
   in
   let constructor_definition (k, tys) =
-    let atys = List.map (fun ty -> internalize_ty env (Position.value ty)) tys in
+    let atys = List.map (internalize_ty env) tys in
     let scheme =
       mk_type_scheme (atys --> ATyCon (x, List.map (fun v -> ATyVar v) ts))
     in
@@ -254,7 +271,7 @@ let initial_typing_environment () =
   List.fold_right (fun ti env -> bind_type_definition ti [] Abstract env) [
     tcbool; tcunit; tcstring; tcchar; tcint
   ] |>
-  bind_type_definition (TCon "ref") [TId "'a"] Abstract
+  bind_type_definition (TCon "cell") [TId "'a"] Abstract
   |> List.fold_right (fun (x, s) env -> bind_value (Id x) (mk_type_scheme s) env) [
     "true"     , hbool;
     "false"    , hbool;
@@ -282,7 +299,7 @@ let print_typing_environment tenv =
   let excluded = initial_typing_environment () in
   let values = List.filter (fun (x, _) ->
     not (List.mem_assoc x excluded.values)
-  ) tenv.values
+  ) (List.rev tenv.values)
   in
   String.concat "\n" (List.map print_binding values)
 
