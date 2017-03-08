@@ -239,7 +239,11 @@ and expression runtime = function
     failwith "Student! This is your job!"
 
   | FunCall (FunId "write_block", [location; index; e]) ->
-    
+    begin
+      match (expression runtime location), (expression runtime index) with
+      | VAddress addr, VInt i -> Memory.(write (dereference runtime.memory addr) i (expression runtime e)); VUnit
+      | _ -> error [] "'write_block' should have 3 parameters as (VAddress, VInt, expression)"
+    end
 
   | FunCall (FunId s, [e1; e2]) when is_binary_primitive s ->
     evaluation_of_binary_symbol runtime s e1 e2
