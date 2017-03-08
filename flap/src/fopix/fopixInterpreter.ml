@@ -213,7 +213,7 @@ and expression runtime = function
 
   | IfThenElse (c, t, f) ->
     begin match value_as_bool (expression runtime c) with
-    | None -> error [] "If should have a condition that return boolean"
+    | None -> error [] "'If' should have a condition that return boolean"
     | Some b -> if b then expression runtime t else expression runtime f
     end
 
@@ -226,13 +226,20 @@ and expression runtime = function
     expression runtime e
 
   | FunCall (FunId "allocate_block", [size]) ->
-    failwith "Student! This is your job!"
+    let l = expression runtime size in
+    begin
+      match l with
+      | VInt i -> 
+        let addr = Memory.allocate runtime.memory i VUnit in 
+        VAddress addr
+      | _ -> error [] "'allocate_block' should have a size in type Literal(int)"
+    end
 
   | FunCall (FunId "read_block", [location; index]) ->
     failwith "Student! This is your job!"
 
   | FunCall (FunId "write_block", [location; index; e]) ->
-    failwith "Student! This is your job!"
+    
 
   | FunCall (FunId s, [e1; e2]) when is_binary_primitive s ->
     evaluation_of_binary_symbol runtime s e1 e2
