@@ -212,7 +212,10 @@ and expression runtime = function
     end
 
   | IfThenElse (c, t, f) ->
-    failwith "Student! This is your job!"
+    begin match value_as_bool (expression runtime c) with
+    | None -> error [] "If should have a condition that return boolean"
+    | Some b -> if b then expression runtime t else expression runtime f
+    end
 
   | Define (x, ex, e) ->
     let v = expression runtime ex in
