@@ -7,7 +7,7 @@ let initial_typing_environment = HopixTypes.initial_typing_environment
 
 type typing_environment = HopixTypes.typing_environment
 
-let type_error = Error.error "typechecking"
+let type_error = HopixTypes.type_error
 
 let located f x = f (Position.position x) (Position.value x)
 
@@ -68,7 +68,7 @@ let check_program_is_fully_annotated ast =
     | Branch (p, e) ->
       failwith "Students! This is your job!"
   and missing_type_annotation pos =
-    Error.error "typechecking" pos "A type annotation is missing."
+    type_error pos "A type annotation is missing."
   in
   program ast
 
@@ -117,7 +117,7 @@ let typecheck tenv ast : typing_environment =
       and raises an error otherwise. *)
   and check_expected_type pos xty ity =
     if xty <> ity then
-      Error.error "typechecking" pos (
+      type_error pos (
 	Printf.sprintf "Type error:\nExpected:%s\nGiven:%s\n"
 	  (print_aty xty) (print_aty ity)
       )
@@ -129,7 +129,7 @@ let typecheck tenv ast : typing_environment =
     let s = located (type_scheme_of_expression tenv) e in
     begin match s with
       | Scheme ([], ity) -> check_expected_type pos xty ity; s
-      | _ -> Error.error "typechecking" pos (
+      | _ -> type_error pos (
 	Printf.sprintf "The type of this expression is too polymorphic."
       )
     end
@@ -225,6 +225,8 @@ let typecheck tenv ast : typing_environment =
 
     | PAnd ps ->
       failwith "Students! This is your job!"
+
+
 
     | PWildcard ->
 	 failwith "Students! This is your job!"

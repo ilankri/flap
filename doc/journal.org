@@ -398,3 +398,571 @@
 ** Implémentation de DATIX
 *** Syntaxe concrète
 *** Interpréteur
+* Cours 15 <2017-02-21>
+** DONE Retour sur Jalon 3
+** DONE Préparation du TD sur Datix
+** TODO Présentation de Fopix
+   - Un langage proche de C, un langage du premier ordre.
+** TODO Présentation de Retrolix
+   - val x = 1 + 2 * 3;
+     val y = x + x;
+     y
+
+     se compile en:
+
+     z <- * [2, 3]
+     x <- + [1, z]
+     y <- + [x, x]
+     ret y
+
+   - while b { e }
+
+     se compile:
+
+     l:
+	"instructions of b -> B"
+	jmpif B -> l1, l2
+     l1:
+	"instructions of e"
+        jmp l
+     l2:
+	"the rest of the instructions"
+
+
+    - if c then e1 else e2
+
+      se compile en:
+
+      "instructions of c -> B"
+      jmpif B -> l1, l2
+
+      l1:
+          "instructions of e1"
+	  jmp l3
+      l2:
+          "instructions of e2"
+          jmp l3
+      l3:
+          ...
+
+* Cours 15 <2017-02-28>
+** Allocation de registres, késako?
+
+   ReTroLix : RTL-like languages
+   Register Transfer Language
+
+   r3 <- r1 + r2
+
+   Problème: dans Retrolix, nous avons considéré qu'il y a un
+   ensemble infini de registres. On les appelle d'ailleurs des
+   *pseudo-registres*.
+
+** Un exemple
+
+   l1: r1 <- 100     -> l2
+   l2: r2 <- 0       -> l3
+   l3: r3 <- 3       -> l4
+   l4: cmp r1 = 0    -> l8, l5
+   l5: r2 <- r2 + r3 -> l6
+   l6: r1 <- r1 - 1  -> l7
+   l7: jmp l4        -> l3
+   l8: exit
+
+   Supposons que la machine n'a que deux registres a et b.
+
+   l1: a <- 100      -> l2
+   l2: b <- 0        -> l3
+   l3: r3 <- 3       -> l4
+   l4: cmp a = 0     -> l8, l5
+   l5: b <- b + r3   -> l6
+   l6: a <- a - 1    -> l7
+   l7: jmp l4        -> l3
+   l8: exit
+
+   Après la propagation des constantes, on obtient:
+
+   l1: a <- 100      -> l2
+   l2: b <- 0        -> l4
+   l4: cmp a = 0     -> l8, l5
+   l5: b <- b + 3    -> l6
+   l6: a <- a - 1    -> l7
+   l7: jmp l4        -> l3
+   l8: exit
+
+** Interférence entre variables
+
+   La règle pour qu'une certaine allocation de registres soit valide,
+   c'est que deux pseudoregistres (les rk) qui sont utiles en même
+   temps, on dit en fait qui sont "vivants en même temps" ne sont pas
+   représentés par le même registre physique.
+
+** Décomposition de l'allocation de registres 
+
+   On doit répondre à deux questions:
+
+   1. Quelles sont les variables/pseudoregistres qui sont vivantes en même temps?
+      => La réponse à cette question est un graphe d'interférence.
+      Ses noeuds ce sont les pseudoregistres et il y aura une arête entre deux noeuds
+      si les pseudoregistres de ces noeuds vivent en même temps.
+
+   2. Sachant les interférences entre variables, comment allouer du mieux possible
+      des registres physiques aux variables?
+      Cela revient à *colorier* le graphe.
+
+   Une fois que l'on a trouvé un coloriage, peut réécrire le programme Retrolix
+   en remplaçant chaque pseudoregistre par son registre physique correspond ou
+   pas, s'il n'a pas été colorié.
+
+** Retour sur l'exemple:
+
+   Dans notre exemple, r1, r2 et r3 sont toutes vivantes en même
+   temps: le graphe d'interférence est donc complet et on ne peut pas
+   le colorier avec seulement deux couleurs.
+
+   Voici un nouvel exemple:
+
+   l1: r1 <- 100     -> l2
+   l2: r2 <- 0       -> l3
+   l3: r3 <- 3       -> l4
+   l4: cmp r1 = 0    -> l8, l5
+   l5: r2 <- r2 + r3 -> l6
+   l6: r1 <- r1 - 1  -> l7
+   l7: jmp l4        -> l3
+   l8: r4 <- r2 * r1 -> l9
+   l9: r5 <- r3 + 1  -> l10
+   l10: ret (r5 + r4)
+
+   se réécrit en :
+
+   l1: a <- 100      -> l2
+   l2: b <- 0        -> l3
+   l3: r3 <- 3       -> l4
+   l4: cmp a = 0     -> l8, l5
+   l5: b <- b + r3   -> l6
+   l6: a <- a - 1    -> l7
+   l7: jmp l4        -> l3
+   l8: b <- b * a    -> l9
+   l9: a <- r3 + 1   -> l10
+   l10: ret (a + b)
+
+   Voici encore un nouvel exemple:
+
+   l1: r1 <- 100     -> l2
+   l2: r2 <- 0       -> l3
+   l3: r3 <- 3       -> l4
+   l4: cmp r1 = 0    -> l8, l5
+   l5: r2 <- r2 + r3 -> l6
+   l6: r1 <- r1 - 1  -> l7
+   l7: jmp l4        -> l3
+   l8: r4 <- r2 * r1 -> l9
+   l9: r5 <- r3 + 1  -> l10
+   l10: ret r5
+
+   Ici, r4 n'est pas une variable utile donc le programme peut finalement
+   s'optimiser drastiquement!
+
+   l10: ret 4
+
+** Analyse de vivacité
+
+   L'analyse de vivacité, c'est une analyse statique.
+
+   IN(l1)  associe l'ensemble des variables vivantes à l'entrée de l1.
+   OUT(l1) associe l'ensemble des variables vivantes à la sortie de l1.
+
+   x ∈ IN(l)  si x ∈ (OUT(l) \ DEF(l)) ∨ (∃ l' -> l, x ∈ OUT(l')) ∨ x ∈ USE(l)
+   x ∈ OUT(l) si ∃ l', l -> l', x ∈ IN(l')
+
+   l1: r1 <- 100     -> l2
+   l2: r2 <- 0       -> l3
+   l3: r3 <- 3       -> l4
+   l4: cmp r1 = 0    -> l8, l5
+   l5: r2 <- r2 + r3 -> l6
+   l6: r1 <- r1 - 1  -> l7
+   l7: jmp l4        -> l4
+   l8: r4 <- r2 * r1 -> l9
+   l9: r5 <- r3 + 1  -> l10
+   l10: ret (r5 + r4)
+
+**** Calcul en avant
+
+   En itérant sur le programme plusieurs fois du début à la fin, on
+   arrive péniblement à faire avancer les approximations des variables
+   vivantes... mais c'est terriblement long! C'est tellement que je ne
+   suis allé jusqu'au bout et que je me suis endormi.
+
+   |-----+----------+---------|
+   | L   | IN       | OUT     |
+   |-----+----------+---------|
+   | l1  | {}       | {}      |
+   | l2  | {}       | {}      |
+   | l3  | {}       | {r1}    |
+   | l4  | {r1}     | {r2,r3} |
+   | l5  | {r2, r3} | {r1}    |
+   | l6  | {r1}     | {}      |
+   | l7  | {r1}     | {r1}    |
+   | l8  | {r2, r1} | {}      |
+   | l9  | {r3}     | {}      |
+   | l10 | {r4, r5} | {}      |
+   |-----+----------+---------|
+
+**** Calcul en arrière
+
+   |-----+--------------+--------------|
+   | L   | IN           | OUT          |
+   |-----+--------------+--------------|
+   | l1  | {}           | {r1}         |
+   | l2  | {r1}         | {r1, r2}     |
+   | l3  | {r1, r2}     | {r1, r2, r3} |
+   | l4  | {r1, r2, r3} | {r1, r2, r3} |
+   | l5  | {r1, r2, r3} | {r1, r2, r3} |
+   | l6  | {r1, r2, r3} | {r1, r2, r3} |
+   | l7  | {r1, r2, r3} | {r1, r2, r3} |
+   | l8  | {r1, r2, r3} | {r3, r4}     |
+   | l9  | {r3, r4}     | {r5, r4}     |
+   | l10 | {r5, r4}     | {}           |
+   |-----+--------------+--------------|
+
+** Un premier algorithme (naif) de coloriage de graphe
+   let rec colorize : graph -> coloring = fun g ->
+     match pick_simplifiable_node g with
+     | Some n ->
+       let coloring = colorize (g \\ { n }) in
+       assign_remaining_color coloring n g
+     | None ->
+       let coloring = colorize (g \\ { n }) in
+       try
+        assign_remaining_color coloring n g
+       with NoMoreColor -> give_up coloring n
+* Cours 16 <2017-03-06>
+** Présentation du prochain TD : Hobix vers Fopix, Fopix vers Retrolix
+*** Hobix -> Fopix
+**** Traduction des fonctions mutuellement récursives
+    On suppose pour le moment que les fonctions ne sont pas anonymes,
+    cela signifie que l'on transforme les programmes Hobix de la forme:
+
+    fun f1 (x11, ..., x1n) = e1
+    and ...
+    and fM (xM1, ..., xMK) = eM
+
+    c'est-à-dire des programmes dont les fonctions sont définies à
+    "toplevel".
+
+    En Fopix, toutes les fonctions sont mutuellement récursives et
+    les identificateurs des fonctions doivent être uniques.
+
+    Comment donc traiter le programme Hobix suivant?
+
+       fun f (x) = x
+       and g (x) = f(x)
+
+       val y = f (0)
+
+       fun f (x) = x + 1
+
+       val z = f (0)
+
+     => Il suffit de renommer la seconde occurrence de f en f1 par exemple.
+
+**** Traduction des applications
+
+     Pour le moment, on ne traite que les applications de la forme "f (e1, .., eN)"
+     où f est connue et définie à toplevel.
+
+**** Traduction des fonctions anonymes
+
+     Pour le moment, on ne le fait pas!
+
+*** Fopix -> Retrolix
+**** Un premier exemple
+
+     Le programme Fopix suivant:
+
+     fun f (x, y) =
+       3 * x + 2 * y
+
+     se transforme en Retrolix:
+
+     routine f (x, y):
+     locals: u, z, t
+       u <- mul 3 x
+       z <- mul 2 y
+       t <- add z u
+       ret t
+
+**** Un second exemple
+
+    fun f (x, y) =
+       val x = x + 1;
+       val x = y * x;
+       x + y
+
+    se compile:
+
+    routine f (x, y) =
+       x <- x + 1;
+       x <- y * x;
+       z <- x + y;
+       ret z
+
+    mais par contre:
+
+    fun f (x, y) =
+       val y =
+         val x = x + 1;
+         x;
+       x + y
+
+    NE se compile PAS en:
+
+    routine f (x, y) =
+      x <- x + 1
+      y <- x
+      z <- x + y
+      ret z
+
+    car f (1, 3) dans hobix vaut : 3 alors dans le code compilé,
+    f (1, 3) renvoie 4.
+
+    Pour résoudre ce problème, il suffit de renommer les variables
+    dont le nom est déjà utilisé. Dans notre exemple, cela donne:
+
+    fun f (x, y) =
+       val y =
+         val x1 = x + 1;
+         x1;
+       x + y
+
+    routine f (x, y) =
+      x1 <- x + 1
+      y <- x1
+      z <- x + y
+      ret z
+
+**** Traduction des déclarations de valeurs toplevels de Fopix
+
+     En fopix:
+
+     val x = 3 + 3
+     val y = 3 * x
+
+     En retrolix, cela donne:
+
+     val x {
+       // Le code qui initialise la variable globale "x"
+       locals z
+       z <- 3 + 3
+       ret z
+     }
+
+     val y {
+       locals z
+       z <- 3 * x
+       ret z
+     }
+
+**** Traduction des if-then-else
+
+     En fopix:
+
+     fun fact (n) =
+       if n == 0 then 1 else n * fact (n - 1)
+
+
+     En retrolix:
+
+     routine fact (n)
+          c <- eq? n 0
+          cjmp c == 1, ltrue, lfalse
+
+       ltrue:
+          z <- 1
+          jmp ljoin
+
+       lfalse:
+          k <- n - 1
+          y <- fact (k)
+	  z <- n * y
+	  jmp ljoin
+
+       ljoin:
+          ;; join branches
+          ret z
+
+** Retour sur les conventions d'appel
+*** Introduction du problème
+
+    Le programme Retrolix suivant ne respecte pas les conventions
+    d'appels de MIPS.
+
+     routine fact (n)
+          c <- eq? n 0
+          cjmp c == 1, ltrue, lfalse
+
+       ltrue:
+          z <- 1
+          jmp ljoin
+
+       lfalse:
+          k <- n - 1
+          y <- fact (k)
+	  z <- n * y
+	  jmp ljoin
+
+       ljoin:
+          ;; join branches
+          ret z
+
+    On pourrait se dire que ce n'est pas un problème car justement
+    nous sommes en Retrolix et non en MIPS. Cependant, il est
+    nécessaire d'implémenter les conventions d'appel dès Retrolix car
+    les conventions d'appel imposent des contraintes sur l'allocation
+    de registres. On pourrait se dire de nouveau que l'allocation de
+    registres devraient être faite en MIPS et non en
+    Retrolix. Cependant, ce serait trop tard car MIPS n'a plus de
+    notion de variables mais seulement de mémoire et de registres.
+
+    Pourquoi les conventions d'appel ont une influence sur l'allocation
+    de registres? Prenons l'exemple après allocation de registres sans
+    implémentation des conventions d'appel, on pourrait obtenir:
+
+     routine fact () // is in $t0
+          $a0 <- eq? $t0 0
+          cjmp $a0 == 1, ltrue, lfalse
+
+       ltrue:
+          $a3 <- 1
+          jmp ljoin
+
+       lfalse:
+          $t4 <- $t0 - 1
+          $a2 <- fact ($t4)
+	  $a3 <- $t0 * $a2
+	  jmp ljoin
+
+       ljoin:
+          ;; join branches
+          ret $a3
+
+   On veut plutôt commencer par implémenter les conventions d'appel comme suit:
+
+     routine fact ()
+          ymp0 <- $s0
+	  ...
+          ymp7 <- $s7
+	  ymp8 <- $ra
+          c <- eq? $a0 0
+          cjmp c == 1, ltrue, lfalse
+
+       ltrue:
+          z <- 1
+          jmp ljoin
+
+       lfalse:
+          k <- $a0 - 1
+	  x <- $a0
+	  $a0 <- k
+
+	  tmp0 <- $t0
+	  tmp1 <- $t1
+	  tmp2 <- $t2
+	  tmp3 <- $t3
+	  tmp4 <- $t4
+	  tmp5 <- $t5
+	  tmp6 <- $t6
+	  tmp7 <- $t7
+	  tmp8 <- $t8
+	  tmp9 <- $t9
+          fact ()
+	  $t0 <- tmp0
+	  $t1 <- tmp1
+	  $t2 <- tmp2
+	  $t3 <- tmp3
+	  $t4 <- tmp4
+	  $t5 <- tmp5
+	  $t6 <- tmp6
+	  $t7 <- tmp7
+	  $t8 <- tmp8
+	  $t9 <- tmp9
+	  y <- $v0
+	  z <- x * y
+	  jmp ljoin
+
+       ljoin:
+          ;; join branches
+	  $v0 <- z
+	  $ra <- ymp9
+	  $s0 <- ymp0
+	  ...
+	  $s7 <- ymp7
+
+
+** <2017-03-13>
+*** Le module MipsArch
+    - Lire MipsArch
+*** Modification de la compilation FopixToRetrolix
+    - Passage des arguments et du retour.
+    - Sauvegarde/Restaurations des registres.
+*** Modification de l'analyse de vivacité
+    - Les registres définis par les appels de fonctions
+*** Modification du coloriage de graphe naïf
+    - Utilisation d'un graphe précolorié
+** Coloriage d'un graphe avec relation de préférence
+*** Fusion de deux nœuds
+*** Deux heuristiques
+**** Briggs
+
+     - Si en fusionnant a et b dans G, le nombre de noeuds voisins du
+       nouveau noeud qui ne sont pas simplifiables est strictement
+       inferieur au nombre de couleurs disponibles alors OK.
+
+**** George
+
+     - Si les noeuds non simplifiables et en conflit avec a sont des
+       noeuds qui etaient aussi en conflit avec b (ou inversement)
+       alors OK.
+
+**** Justifications informelles
+
+     Pourquoi si G était k-coloriable alors après fusion G est encore
+     k-coloriable?
+
+***** Briggs
+
+      Après avoir simplifié tous les noeuds adjacents du noeud fusionné,
+      il va en rester un nombre strictement inférieur à k donc le noeud
+      fusionné sera simplifiable et donc si le graphe sans ce noeud était
+      k-coloriable, il sera encore k-coloriable.
+
+***** George
+
+      Soit S l'ensemble des noeuds simplifiables adjacents à "a".
+
+      Si on simplifie S dans G - sans faire la fusion - on obtient
+      un graphe G₁.
+
+      Si on simplifie S dans G après fusion, on obtient un graphe
+      G₂ qui est un sous-graphe de G₁.
+
+      G₂ est au moins aussi facile à colorier que G₁.
+
+*** Nouvel algorithme
+   colorize G colors =
+     Pick a node in G which degree < |colors| and with no preference relation.
+     There are four cases:
+     - G is empty => an empty coloring is fine.
+     - there is a node n which degree < |colors|
+       let coloring = colorize (G \ { n }) colors in
+       let remaining_colors = colors \ colors_of (neighbours(n)) in coloring in
+       if remaining_colors = ∅ then
+         mark n as spilled
+       else
+         return (coloring ∪ { n ↦ pick_color in remaining_colors })
+     - there are two nodes a and b that love each other.
+       if briggs or georges give their blessing then
+         colorize (coalesce a b in G) colors
+       else
+         colorize (remove preference between a b in G) colors
+     - otherwise, there is some node n and try optimistic simplification.
+*** Design de l'interface du module de Graph
+
