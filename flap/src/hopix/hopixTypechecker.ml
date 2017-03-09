@@ -156,7 +156,7 @@ let typecheck tenv ast : typing_environment =
       let tenv' = {tenv with values = (Position.value x, sigma)::tenv.values} in
       let sigma' = located (type_scheme_of_expression tenv') e' in sigma'
 
-    (* Γ ⊢ e : σ'   σ = σ'
+    (* Γ ⊢ e : σ'   σ : σ'
        ——————————–—–——-----
        Γ ⊢ (e : σ) : σ *)
     | TypeAnnotation (e, ty) ->
@@ -215,20 +215,25 @@ let typecheck tenv ast : typing_environment =
        —–————————–———————
        Γ ⊢ ref e : ref(τ) *)
     | Ref e ->
-      located (type_scheme_of_expression tenv) e (** ref(τ)??? **)
+      let tau = located (type_scheme_of_expression tenv) e in
+      monotype (href (type_of_monotype tau))
 
     (* Γ ⊢ e : ref(τ)
        ——————————————
        Γ ⊢ !e : τ     *)
     | Read e ->
-      located (type_scheme_of_expression tenv) e
+      let oneRef = located (type_scheme_of_expression tenv) e in
+      monotype (type_of_reference_type (type_of_monotype oneRef)) 
 
     (* Γ ⊢ e : ref(τ)    Γ ⊢ e' : τ
        ————————————————————————————
        Γ ⊢ e := e' : unit           *)
     | Write (e, e') ->
-      (**let tau = located (type_scheme_of_expression tenv) e in hunit TODO *)
-      failwith "Students! This is your job!"
+      let oneRef = located (type_scheme_of_expression tenv) e in
+      let tau = type_of_reference_type (type_of_monotype oneRef) in 
+      let tyToWrite = located (type_scheme_of_expression tenv) e' in
+      check_expected_type (Position.position e') tau (type_of_monotype tyToWrite);
+      monotype hunit
 
     (* Γ ⊢ e : bool    Γ ⊢ e' : unit
        —————————————————————————————
