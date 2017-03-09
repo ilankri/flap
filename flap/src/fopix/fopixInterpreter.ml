@@ -41,16 +41,16 @@ let print_value m v =
           "true"
         | VBool false ->
           "false"
-	| VChar c ->
-	  "'" ^ Char.escaped c ^ "'"
-	| VString s ->
-	  "\"" ^ String.escaped s ^ "\""
-	| VUnit ->
-	  "()"
-	| VAddress a ->
-	  print_block m d a
-	| VFun _ ->
-	  "<fun>"
+        | VChar c ->
+          "'" ^ Char.escaped c ^ "'"
+        | VString s ->
+          "\"" ^ String.escaped s ^ "\""
+        | VUnit ->
+          "()"
+        | VAddress a ->
+          print_block m d a
+        | VFun _ ->
+          "<fun>"
         | VPrimitive (s, _) ->
           Printf.sprintf "<primitive: %s>" s
   and print_block m d a =
@@ -112,11 +112,16 @@ type observable = {
     new_environment : Environment.t;
   }
 
-let initial_runtime () = {
+let initial_runtime () =
+  let bind_bool s b env = Environment.bind env (Id s) (VBool b) in
+  {
     memory = Memory.create (640 * 1024);
-    environment = Environment.initial;
+    environment =
+      Environment.initial
+      |> bind_bool "true" true
+      |> bind_bool "false" false;
     functions  = [];
-}
+  }
 
 let rec evaluate runtime ast =
   let runtime = List.fold_left bind_function runtime ast in
@@ -203,12 +208,12 @@ and expression runtime = function
     begin match value_as_int (expression runtime e) with
       | None -> error [] "Switch on integers only."
       | Some i ->
-	let i = Int32.to_int i in
-	if i < Array.length bs then
-	  expression runtime bs.(i)
-	else match default with
-	  | Some t -> expression runtime t
-	  | None -> error [] "No default case in switch."
+        let i = Int32.to_int i in
+        if i < Array.length bs then
+          expression runtime bs.(i)
+        else match default with
+          | Some t -> expression runtime t
+          | None -> error [] "No default case in switch."
     end
 
   | IfThenElse (c, t, f) ->
