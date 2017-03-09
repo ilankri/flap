@@ -41,16 +41,16 @@ let print_value m v =
           "true"
         | VBool false ->
           "false"
-	| VChar c ->
-	  "'" ^ Char.escaped c ^ "'"
-	| VString s ->
-	  "\"" ^ String.escaped s ^ "\""
-	| VUnit ->
-	  "()"
-	| VAddress a ->
-	  print_block m d a
-	| VFun _ ->
-	  "<fun>"
+        | VChar c ->
+          "'" ^ Char.escaped c ^ "'"
+        | VString s ->
+          "\"" ^ String.escaped s ^ "\""
+        | VUnit ->
+          "()"
+        | VAddress a ->
+          print_block m d a
+        | VFun _ ->
+          "<fun>"
         | VPrimitive (s, _) ->
           Printf.sprintf "<primitive: %s>" s
   and print_block m d a =
@@ -186,42 +186,42 @@ and expression runtime = function
     Environment.lookup x runtime.environment
 
   | While (cond, e) ->
-     let rec loop () =
-       match expression runtime cond with
-       | VBool true ->
-          ignore (expression runtime e);
-          loop ()
-       | VBool false ->
-          ()
-       | _ ->
-          assert false (* By typing. *)
-     in
-     loop ();
-     VUnit
+    let rec loop () =
+      match expression runtime cond with
+      | VBool true ->
+        ignore (expression runtime e);
+        loop ()
+      | VBool false ->
+        ()
+      | _ ->
+        assert false (* By typing. *)
+    in
+    loop ();
+    VUnit
 
   | Switch (e, bs, default) ->
     begin match value_as_int (expression runtime e) with
       | None -> error [] "Switch on integers only."
       | Some i ->
-	let i = Int32.to_int i in
-	if i < Array.length bs then
-	  expression runtime bs.(i)
-	else match default with
-	  | Some t -> expression runtime t
-	  | None -> error [] "No default case in switch."
+        let i = Int32.to_int i in
+        if i < Array.length bs then
+          expression runtime bs.(i)
+        else match default with
+          | Some t -> expression runtime t
+          | None -> error [] "No default case in switch."
     end
 
   | IfThenElse (c, t, f) ->
     begin match value_as_bool (expression runtime c) with
-    | None -> error [] "'If' should have a condition that return boolean"
-    | Some b -> if b then expression runtime t else expression runtime f
+      | None -> error [] "'If' should have a condition that return boolean"
+      | Some b -> if b then expression runtime t else expression runtime f
     end
 
   | Define (x, ex, e) ->
     let v = expression runtime ex in
     let runtime = { runtime with
-      environment = Environment.bind runtime.environment x v
-    }
+                    environment = Environment.bind runtime.environment x v
+                  }
     in
     expression runtime e
 
@@ -229,14 +229,21 @@ and expression runtime = function
     let l = expression runtime size in
     begin
       match l with
-      | VInt i -> 
-        let addr = Memory.allocate runtime.memory i VUnit in 
+      | VInt i ->
+        let addr = Memory.allocate runtime.memory i VUnit in
         VAddress addr
       | _ -> error [] "'allocate_block' should have a size in type Literal(int)"
     end
 
   | FunCall (FunId "read_block", [location; index]) ->
-    failwith "Student! This is your job!"
+    begin match value_as_address (expression runtime location) with
+      | Some addr ->
+        begin match value_as_int (expression runtime index) with
+          | Some i -> Memory.read (Memory.dereference runtime.memory addr) i
+          | None -> error [] "A block index must be an integer."
+        end
+      | None -> error [] "A block must be an address."
+    end
 
   | FunCall (FunId "write_block", [location; index; e]) ->
     begin
@@ -248,9 +255,25 @@ and expression runtime = function
   | FunCall (FunId s, [e1; e2]) when is_binary_primitive s ->
     evaluation_of_binary_symbol runtime s e1 e2
 
+  | FunCall (FunId id as f, es) ->
+    let formals, body =
+      try List.assoc f runtime.functions with
+      | Not_found -> error [] ("Undefined function " ^ id ^ ".")
+    in
+    let bind_arg env formal e =
+      Environment.bind env formal (expression runtime e)
+    in
+    let runtime =
+      {runtime with
+       environment =
+         try List.fold_left2 bind_arg runtime.environment formals es with
+         | Invalid_argument _ ->
+           error [] ("Wrong number of arguments given to " ^ id ^ "." )}
+    in
+    expression runtime body
 
 and binop
-: type a b. a coercion -> b wrapper -> _ -> (a -> a -> b) -> _ -> _ -> value
+  : type a b. a coercion -> b wrapper -> _ -> (a -> a -> b) -> _ -> _ -> value
 = fun coerce wrap runtime op l r ->
   let lv = expression runtime l
   and rv = expression runtime r in
