@@ -112,11 +112,16 @@ type observable = {
     new_environment : Environment.t;
   }
 
-let initial_runtime () = {
+let initial_runtime () =
+  let bind_bool s b env = Environment.bind env (Id s) (VBool b) in
+  {
     memory = Memory.create (640 * 1024);
-    environment = Environment.initial;
+    environment =
+      Environment.initial
+      |> bind_bool "true" true
+      |> bind_bool "false" false;
     functions  = [];
-}
+  }
 
 let rec evaluate runtime ast =
   let runtime = List.fold_left bind_function runtime ast in
