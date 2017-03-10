@@ -32,9 +32,9 @@ let check_program_is_fully_annotated ast =
     | FunctionDefinition (_, ps, e) ->
       List.iter (located pattern) ps;
       begin
-      match (Position.value e) with
-      | TypeAnnotation (e, _) -> located expression e
-      | _ -> missing_type_annotation pos
+        match (Position.value e) with
+        | TypeAnnotation (e, _) -> located expression e
+        | _ -> missing_type_annotation pos
       end
 
   and expression pos = function
@@ -50,9 +50,9 @@ let check_program_is_fully_annotated ast =
     | If (eelist, optexpr) ->
       List.iter (fun (e1, e2) -> located expression e1; located expression e2) eelist;
       begin
-      match optexpr with
-      | Some expr -> located expression expr
-      | None -> ()
+        match optexpr with
+        | Some expr -> located expression expr
+        | None -> ()
       end
     | Fun fdef -> function_definition pos fdef
     | Tagged (_, _, exprlist) ->
@@ -74,8 +74,8 @@ let check_program_is_fully_annotated ast =
 
   and branch pos = function
     | Branch (p, e) ->
-        located pattern p;
-        located expression e
+      located pattern p;
+      located expression e
   and missing_type_annotation pos =
     type_error pos "A type annotation is missing."
   in
@@ -139,8 +139,8 @@ let typecheck tenv ast : typing_environment =
     begin match s with
       | Scheme ([], ity) -> check_expected_type pos xty ity; s
       | _ -> type_error pos (
-        Printf.sprintf "The type of this expression is too polymorphic."
-      )
+          Printf.sprintf "The type of this expression is too polymorphic."
+        )
     end
 
   (** [type_scheme_of_expression tenv pos e] computes a type scheme
@@ -149,16 +149,16 @@ let typecheck tenv ast : typing_environment =
       expression. *)
   and type_scheme_of_expression tenv pos = function
     (* Γ ⊢ e : σ    Γ(x : σ) ⊢ e' : σ'
-       ————————————————————————–—–———–
+       ———————————————————————————————
        Γ ⊢ val x = e; e' : σ'          *)
     | Define (x, e, e') ->
       let sigma = located (type_scheme_of_expression tenv) e in
       let tenv' = {tenv with values = (Position.value x, sigma)::tenv.values} in
       let sigma' = located (type_scheme_of_expression tenv') e' in sigma'
 
-    (* Γ ⊢ e : σ'   σ : σ'
-       ——————————–—–——-----
-       Γ ⊢ (e : σ) : σ *)
+    (* Γ ⊢ e : σ'    σ' = σ
+       ————————————————————
+       Γ ⊢ (e : σ) : σ      *)
     | TypeAnnotation (e, ty) ->
       let sigma = located (type_scheme_of_expression tenv) e in
       let pty = type_of_monotype sigma in
@@ -168,6 +168,10 @@ let typecheck tenv ast : typing_environment =
     | DefineRec (recdefs, e) ->
       failwith "Students! This is your job!"
 
+    (* Γ ⊢ e : ∀α₁ … αₖ.τ₁'⋆ … ⋆τₙ' → τ
+       ∀i Γ ⊢ eᵢ : τᵢ'[α₁ ↦ τ₁] … [αₖ ↦ τₖ]
+       ————————————————————————————————————————————————————
+       Γ ⊢ e[τ₁, …, τₖ](e₁, …, eₙ) : τ[α₁ ↦ τ₁] … [αₖ ↦ τₖ] *)
     | Apply (a, types, args) ->
       failwith "Students! This is your job!"
 
@@ -175,24 +179,29 @@ let typecheck tenv ast : typing_environment =
 
        Γ ⊢ c : bool    ∀i Γ ⊢ cᵢ : bool
        Γ ⊢ e : σ    ∀i Γ ⊢ eᵢ : σ    Γ ⊢ e' : σ
-       ———————————————————————————————————————————
-                       _______________
-       Γ ⊢ if c then e elif cᵢ then eᵢ else e' : σ
+       —————————————————————————————————————————
+       Γ ⊢ if c then e
+           elif c₁ then e₁
+           …
+           elif cₙ then eₙ
+           else e'         : σ
 
        and without:
 
        Γ ⊢ c : bool    ∀i Γ ⊢ cᵢ : bool
        Γ ⊢ e : unit    ∀i Γ ⊢ eᵢ : unit
-       —————————————————————————————————————–
-                       _______________
-       Γ ⊢ if c then e elif cᵢ then eᵢ : unit *)
+       ————————————————————————————————
+       Γ ⊢ if c then e
+           elif c₁ then e₁
+           …
+           elif cₙ then eₙ : unit       *)
     | If (eelist, expr) ->
       let elsety =
         match expr with
         | Some e -> type_of_monotype(located (type_scheme_of_expression tenv) e)
         | None -> hunit
       in
-        let f (e1, e2) =
+      let f (e1, e2) =
         (
           let e1ty = type_of_monotype(located (type_scheme_of_expression tenv) e1) in
           check_expected_type (Position.position e1) e1ty hbool;
@@ -202,17 +211,27 @@ let typecheck tenv ast : typing_environment =
       in
       List.iter f eelist; monotype elsety
 
+    (* Γ₀ = Γ(α₁ … αₖ)    ∀i Γᵢ₋₁ ⊢ pᵢ ⇒ Γᵢ, τᵢ    Γₙ ⊢ e : τ
+       ———————————————————————————————————————————————————————
+       Γ ⊢ \[α₁ … αₖ](p₁, …, pₙ) => e : ∀α₁ … αₖ.τ₁⋆ … ⋆τₙ → τ *)
     | Fun fdef ->
       failwith "Students! This is your job!"
 
+    (* (K : ∀α₁ … αₖ.τ₁'⋆ … ⋆τₙ' → τ) ∈ Γ
+       ∀i Γ ⊢ eᵢ : τᵢ'[α₁ ↦ τ₁] … [αₖ ↦ τₖ]
+       ————————————————————————————————————————————————————
+       Γ ⊢ K[τ₁, …, τₖ](e₁, …, eₙ) : τ[α₁ ↦ τ₁] … [αₖ ↦ τₖ] *)
     | Tagged ({ Position.value = (KId x) as k }, types, args) ->
       failwith "Students! This is your job!"
 
+    (* Γ ⊢ e : σ'    ∀i Γ ⊢ pᵢ ⇒ Γᵢ, σ'    ∀i Γᵢ ⊢ eᵢ : σ
+       ——————————————————————————————————————————————————
+       Γ ⊢ e ? p₁ => e₁ | … | pₙ => eₙ : σ                *)
     | Case (e, bs) ->
       failwith "Students! This is your job!"
 
     (* Γ ⊢ e : τ
-       —–————————–———————
+       ——————————————————
        Γ ⊢ ref e : ref(τ) *)
     | Ref e ->
       let tau = located (type_scheme_of_expression tenv) e in
@@ -223,14 +242,14 @@ let typecheck tenv ast : typing_environment =
        Γ ⊢ !e : τ     *)
     | Read e ->
       let oneRef = located (type_scheme_of_expression tenv) e in
-      monotype (type_of_reference_type (type_of_monotype oneRef)) 
+      monotype (type_of_reference_type (type_of_monotype oneRef))
 
     (* Γ ⊢ e : ref(τ)    Γ ⊢ e' : τ
        ————————————————————————————
        Γ ⊢ e := e' : unit           *)
     | Write (e, e') ->
       let oneRef = located (type_scheme_of_expression tenv) e in
-      let tau = type_of_reference_type (type_of_monotype oneRef) in 
+      let tau = type_of_reference_type (type_of_monotype oneRef) in
       let tyToWrite = located (type_scheme_of_expression tenv) e' in
       check_expected_type (Position.position e') tau (type_of_monotype tyToWrite);
       monotype hunit
@@ -244,9 +263,9 @@ let typecheck tenv ast : typing_environment =
     | Literal l ->
       mk_type_scheme(located type_of_literal l)
 
-    (*
-       ———————————————–
-       Γ(x : σ) ⊢ x : σ *)
+    (* (x : σ) ∈ Γ
+       ———————————
+       Γ ⊢ x : σ   *)
     | Variable ({ Position.value = (Id s) as x }) ->
       failwith "Students! This is your job!"
 
@@ -264,12 +283,12 @@ let typecheck tenv ast : typing_environment =
     | LInt _ -> hint
 
     (*
-       ————————–——–
+       ————————————
        ⊢ s : string *)
     | LString _ -> hstring
 
     (*
-       ————————–—
+       ——————————
        ⊢ c : char *)
     | LChar _ -> hchar
 
@@ -288,32 +307,51 @@ let typecheck tenv ast : typing_environment =
       the variables introduced by the pattern [p] as well as the type
       of this pattern. *)
   and pattern tenv pos = function
+    (*
+       ———————————————————————
+       Γ ⊢ x : σ ⇒ Γ(x : σ), σ *)
     | PTypeAnnotation ({ Position.value = PVariable x }, ty) ->
       failwith "Students! This is your job!"
 
     | PVariable _ ->
       assert false (* by check_program_is_fully_annotated. *)
 
+    (* (K : ∀α₁ … αₖ.τ₁⋆ … ⋆τₙ → τ) ∈ Γ    ∀i Γᵢ₋₁ ⊢ pᵢ ⇒ Γᵢ, τᵢ
+       ——————————————————————————————————————————————————————————
+       Γ₀ ⊢ K (p₁, …, pₙ) ⇒ Γₙ, τ                                 *)
     | PTaggedValue (k, ps) ->
       failwith "Students! This is your job!"
 
-    | PTypeAnnotation ({ Position.value = PTaggedValue (k, ps) }, ty) ->
-      failwith "Students! This is your job!"
+    (* | PTypeAnnotation ({ Position.value = PTaggedValue (k, ps) }, ty) -> *)
+    (*   failwith "Students! This is your job!" *)
 
+    (* ∀i Γ ⊢ pᵢ ⇒ Γᵢ, σᵢ    σ₁ = … = σₙ    Γ₁ = … = Γₙ
+       ————————————————————————————————————————————————
+       Γ ⊢ p₁ | … | pₙ ⇒ Γ₁, σ₁                         *)
     | POr ps ->
       failwith "Students! This is your job!"
 
+    (* ∀i Γᵢ₋₁ ⊢ pᵢ ⇒ Γᵢ, σᵢ   σ₁ = … = σₙ
+       ———————————————————————————————————
+       Γ₀ ⊢ p₁ & … & pₙ ⇒ Γₙ, σₙ           *)
     | PAnd ps ->
       failwith "Students! This is your job!"
 
-
-
+    (*
+       ———————————————
+       Γ ⊢ _ ⇒ Γ, ∀α.α *)
     | PWildcard ->
       failwith "Students! This is your job!"
 
+    (* Γ ⊢ p ⇒ Γ', σ'    σ' = σ
+       ————————————————————————
+       Γ ⊢ p : σ ⇒ Γ', σ        *)
     | PTypeAnnotation (p, ty) ->
       failwith "Students! This is your job!"
 
+    (*
+       ——————————————    ———————————————    —————————————————
+       Γ ⊢ n ⇒ Γ, int    Γ ⊢ n ⇒ Γ, char    Γ ⊢ n ⇒ Γ, string *)
     | PLiteral l ->
       failwith "Students! This is your job!"
 
