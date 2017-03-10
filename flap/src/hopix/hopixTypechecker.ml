@@ -34,7 +34,7 @@ let check_program_is_fully_annotated ast =
 
   and expression pos = function
     | Define (_, e1, e2) ->
-	 failwith "Students! This is your job!"
+         failwith "Students! This is your job!"
     | DefineRec (recdefs, e) ->
       failwith "Students! This is your job!"
     | Apply (a, _, args) ->
@@ -84,16 +84,16 @@ let typecheck tenv ast : typing_environment =
   and definition tenv pos = function
     | DefineValue (x, e) ->
       bind_value (Position.value x) (
-	located (type_scheme_of_expression tenv) e
+        located (type_scheme_of_expression tenv) e
       ) tenv
     | DefineRecFuns recdefs ->
       failwith "Students! This is your job!"
 
     | DefineType (t, ts, tdef) ->
-	 failwith "Students! This is your job!"
+         failwith "Students! This is your job!"
 
     | DeclareExtern (x, ty) ->
-	 failwith "Students! This is your job!"
+         failwith "Students! This is your job!"
 
   (** [extract_function_type_scheme tenv pos fdef] constructs a type
       scheme from the user type annotations found in the function
@@ -118,8 +118,8 @@ let typecheck tenv ast : typing_environment =
   and check_expected_type pos xty ity =
     if xty <> ity then
       type_error pos (
-	Printf.sprintf "Type error:\nExpected:%s\nGiven:%s\n"
-	  (print_aty xty) (print_aty ity)
+        Printf.sprintf "Type error:\nExpected:%s\nGiven:%s\n"
+          (print_aty xty) (print_aty ity)
       )
 
   (** [check_expression_monotype tenv xty e] checks if [e] has
@@ -130,7 +130,7 @@ let typecheck tenv ast : typing_environment =
     begin match s with
       | Scheme ([], ity) -> check_expected_type pos xty ity; s
       | _ -> type_error pos (
-	Printf.sprintf "The type of this expression is too polymorphic."
+        Printf.sprintf "The type of this expression is too polymorphic."
       )
     end
 
@@ -229,13 +229,13 @@ let typecheck tenv ast : typing_environment =
 
 
     | PWildcard ->
-	 failwith "Students! This is your job!"
+         failwith "Students! This is your job!"
 
     | PTypeAnnotation (p, ty) ->
-	 failwith "Students! This is your job!"
+         failwith "Students! This is your job!"
 
     | PLiteral l ->
-	 failwith "Students! This is your job!"
+         failwith "Students! This is your job!"
 
   (** [branches tenv sty oty bs] checks that the patterns of the
       branches [bs] have type [sty] and that the bodies of these
@@ -243,7 +243,7 @@ let typecheck tenv ast : typing_environment =
   and branches tenv sty oty bs =
     let oty =
       List.fold_left (fun oty b ->
-	located (branch tenv sty oty) b
+        located (branch tenv sty oty) b
       ) None bs
     in
     match oty with
@@ -252,10 +252,12 @@ let typecheck tenv ast : typing_environment =
 
   and branch tenv sty oty pos = function
     | Branch (p, e) ->
-	 failwith "Students! This is your job!"
+         failwith "Students! This is your job!"
 
   in
   program ast
 
 let print_typing_environment =
   HopixTypes.print_typing_environment
+
+let print_new_type_bindings = HopixTypes.print_new_type_bindings

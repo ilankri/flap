@@ -12,3 +12,6 @@ let typecheck tenv ast =
 
 let print_typing_environment =
   HopixTypes.print_typing_environment
+
+let print_new_type_bindings =
+  HopixTypes.print_new_type_bindings
