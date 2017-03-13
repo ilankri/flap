@@ -130,12 +130,20 @@ let read_block hobixe i = HobixAST.ReadBlock (hobixe, int_literal i)
 
 let write_block b i e = HobixAST.WriteBlock (b, int_literal i, e)
 
+(** Typical expression whose evaluation lead the program to crash.  *)
+let crash_expression =
+  (* We just build an expression that does a division by zero.  *)
+  let zero = int_literal 0 in
+  HobixAST.(Apply (Variable (Id "`/"), [zero; zero]))
+
+let located  f x = f (Position.value x)
+let located' f x = Position.map f x
+
 (** Build the Hobix expression corresponding to the tag of the given
     constructor.  *)
 let tag_of_constructor env k = int32_literal (index_of_constructor env k)
 
-let located  f x = f (Position.value x)
-let located' f x = Position.map f x
+let tag_of_constructor' env k = located (tag_of_constructor env) k
 
 (** [program env p] turns an Hopix program into an equivalent
     Hobix program. *)
@@ -173,8 +181,12 @@ and pattern_as_identifier = function
   | HopixAST.PVariable x -> located identifier x
   | _ -> assert false (* By syntax. *)
 
+and identifier' id = located identifier id
+
 and identifier (HopixAST.Id x) =
   HobixAST.Id x
+
+and expression' env e = located (expression env) e
 
 (** Compilation of Hopix expressions. *)
 and expression env = HobixAST.(function
@@ -184,11 +196,9 @@ and expression env = HobixAST.(function
     | HopixAST.Tagged (k, _, es) ->
       let fill_then_return_block env b k es =
         let tag_block env b k =
-          write_block b 0 (located (tag_of_constructor env) k)
+          write_block b 0 (tag_of_constructor' env k)
         in
-        let fill_cell env b i e =
-          write_block b (i + 1) (located (expression env) e)
-        in
+        let fill_cell env b i e = write_block b (i + 1) (expression' env e) in
         seqs ((tag_block env b k) :: List.mapi (fill_cell env b) es @ [b])
       in
       def
@@ -196,7 +206,10 @@ and expression env = HobixAST.(function
         (fun b -> fill_then_return_block env (Variable b) k es)
 
     | HopixAST.Case (e, bs) ->
-      failwith "Students! This is your job!"
+      def
+        (expression' env e)
+        (fun scrutinee ->
+           case env (Variable scrutinee) (List.map Position.value bs))
 
     | HopixAST.Ref e ->
       let x = fresh_identifier () in
@@ -253,6 +266,17 @@ and expression env = HobixAST.(function
       failwith "Students! This is your job!"
   )
 
+and case env scrutinee = HobixAST.(function
+    (* When the pattern matching is not exhaustive, we make the program
+       crash...  *)
+    | [] -> crash_expression
+
+    | HopixAST.Branch (p, e) :: branches ->
+      let cond, defs = pattern' env scrutinee p in
+      defines
+        defs
+        (IfThenElse (cond, expression' env e, case env scrutinee branches))
+  )
 
 (** [expands_or_patterns branches] returns a sequence of branches
     equivalent to [branches] except that their patterns do not contain
@@ -261,6 +285,7 @@ and expression env = HobixAST.(function
 and expands_or_patterns branches =
   failwith "Students! This is your job!"
 
+and pattern' env scrutinee p = located (pattern env scrutinee) p
 
 (** [pattern env scrutinee p] returns a boolean condition [c]
     and a list of definitions [ds] such that:
@@ -269,9 +294,38 @@ and expands_or_patterns branches =
     - [ds] binds all the variables that appear in [p].
 
 *)
-and pattern env scrutinee p = HobixAST.(
-    failwith "Students! This is your job!"
+and pattern env scrutinee = HobixAST.(function
+    | HopixAST.PTypeAnnotation (p, _) -> located (pattern env scrutinee) p
+
+    | HopixAST.PVariable id -> (htrue, [(identifier' id, scrutinee)])
+
+    | HopixAST.PTaggedValue (k, ps) ->
+      let conds, defs =
+        List.split (
+          List.mapi
+            (fun i p -> pattern' env (read_block scrutinee (i + 1)) p)
+            ps
+        )
+      in
+      let same_tag =
+        is_equal (read_block scrutinee 0) (tag_of_constructor' env k)
+      in
+      (conjs (same_tag :: conds), List.flatten defs)
+
+    | HopixAST.PWildcard -> (htrue, [])
+
+    | HopixAST.PLiteral l ->
+      (* Pb: If scrutinee is not an int, is_equal is undefined...  *)
+      (is_equal scrutinee (Literal (literal' l)), [])
+
+    | HopixAST.POr ps -> assert false
+
+    | HopixAST.PAnd ps ->
+      let conds, defs = List.split (List.map (pattern' env scrutinee) ps) in
+      (conjs conds, List.flatten defs)
   )
+
+and literal' l = located literal l
 
 and literal = HobixAST.(function
     | HopixAST.LInt x -> LInt x
