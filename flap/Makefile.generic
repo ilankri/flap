@@ -100,7 +100,7 @@ endif
 
 # Run flap quickly.
 run: all-debug
-	$(RLWRAP) ./$(TARGET) -s hopix -i true -V true -VV true
+	$(RLWRAP) ./$(TARGET) -i true -T true -V true -VV true -s hopix
 
 #######################
 # Administrative part #

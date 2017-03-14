@@ -6,36 +6,39 @@ open Position
 type program = definition located list
 
 and definition =
-(** A type definition. 
-    e.g : type aTypeCon ( oneTypeVar, twoTypeVar... ) = TypeDefinition(ty)  *)
-  | DefineType of type_constructor located * type_variable located list * type_definition
-(** A toplevel declaration for an external value. 
-    e.g : extern aVarId : aType *)
+  (** A type definition.
+      e.g : type aTypeCon ( oneTypeVar, twoTypeVar... ) = TypeDefinition(ty)  *)
+  | DefineType of type_constructor located * type_variable located list *
+                  type_definition
+  (** A toplevel declaration for an external value.
+      e.g : extern aVarId : aType *)
   | DeclareExtern of identifier located * ty located
-(** A toplevel definition for a value. 
-    e.g : var aVarId = expr *)
+  (** A toplevel definition for a value.
+      e.g : var aVarId = expr *)
   | DefineValue of identifier located * expression located
-(** A toplevel definition for mutually recursive values. 
-    e.g : fun oneVarId ['oneTypeVar, 'twoTypeVar] (pattern1, pattern2) : expr1Type = expr1
-          and twoVarId ['thirdTypeVar] (pattern) : expr2Type = expr2... *)
+  (** A toplevel definition for mutually recursive values.
+      e.g :
+      fun varId1 ['typeVar1, 'typeVar2] (pattern1, pattern2) : expr1Type = expr1
+      and varId2 ['typeVar3] (pattern) : expr2Type = expr2... *)
   | DefineRecFuns of (identifier located * function_definition located) list
 
 and type_definition =
-(** A sum type for tagged values [{ K₁ : ty₁₁ * ... * ty₁n| ... | Km: tym1 * ... * tymn]. 
-    e.g : ATypeCon (ty1) | BTypeCon (ty2 -> ty3) | CTypeCon (int) 
-*)
+  (** A sum type for tagged values
+      [{ K₁ : ty₁₁ * ... * ty₁n| ... | Km: tym1 * ... * tymn].
+      e.g : ATypeCon (ty1) | BTypeCon (ty2 -> ty3) | CTypeCon (int)
+  *)
   | DefineSumType of (constructor located * ty located list) list
   (** A type with no visible definition. *)
   | Abstract
 
 and function_definition =
-(** A function definition [['a₁, ⋯, 'an] (p₁, ⋯, pm) = e]. 
-    e.g : ['oneTypeVar, 'twoTypeVar] (pattern1, pattern2) : expr1Type = expr1
-*)
+  (** A function definition [['a₁, ⋯, 'an] (p₁, ⋯, pm) = e].
+      e.g : ['oneTypeVar, 'twoTypeVar] (pattern1, pattern2) : expr1Type = expr1
+  *)
   | FunctionDefinition of
       type_variable located list
-    * pattern located list
-    * expression located
+      * pattern located list
+      * expression located
 
 and expression =
   (** A literal is a constant written "as is". *)
@@ -45,11 +48,14 @@ and expression =
   (** A local definition e.g : val x₁ = e₁ in e₂ *)
   | Define of identifier located * expression located * expression located
   (** Local mutually recursive values. *)
-  | DefineRec of (identifier located * function_definition located) list * expression located
+  | DefineRec of (identifier located * function_definition located) list *
+                 expression located
   (** A function application e.g : e [ty₁, ⋯, tyn] (e₁, ⋯, em) *)
   | Apply of expression located * ty located list * expression located list
-  (** A conditional expression of the form e.g : if ... then ... elif ... else .... *)
-  | If of (expression located * expression located) list * expression located option
+  (** A conditional expression of the form e.g :
+      if ... then ... elif ... else .... *)
+  | If of (expression located * expression located) list *
+          expression located option
   (** An anonymous function e.g : \ [ty₁, ⋯, tyn] (p₁, ⋯, pm) => e  *)
   | Fun of function_definition
   (** A tagged value e.g : K [ty₁, ⋯, tyn] (e_1, ..., e_n) *)
@@ -116,4 +122,3 @@ and label =
   | LId of string
 
 and t = program
-

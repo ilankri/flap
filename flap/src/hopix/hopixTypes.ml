@@ -143,19 +143,19 @@ let unify_types ty1 ty2 =
       if occurs x ty then raise (UnificationFailed (ty1, ty2));
       let eliminate_x = substitute [(x, ty)] in
       let phi = unify (List.map (fun (a, b) ->
-	(eliminate_x a, eliminate_x b)
+        (eliminate_x a, eliminate_x b)
       ) pbs)
       in
       (x, ty) :: phi
     | (ty, ATyVar x) :: pbs ->
       unify ((ATyVar x, ty) :: pbs)
     | (ATyArrow (ins1, out1), ATyArrow (ins2, out2)) :: pbs ->
-	if List.(length ins1 <> length ins2) then
-	  raise (UnificationFailed (ty1, ty2));
-	unify (List.combine (out1 :: ins1) (out2 :: ins2) @ pbs)
+        if List.(length ins1 <> length ins2) then
+          raise (UnificationFailed (ty1, ty2));
+        unify (List.combine (out1 :: ins1) (out2 :: ins2) @ pbs)
     | (ATyCon (t1, ts1), ATyCon (t2, ts2)) :: pbs ->
       if t1 <> t2 || List.(length ts1 <> length ts2) then
-	raise (UnificationFailed (ty1, ty2));
+        raise (UnificationFailed (ty1, ty2));
       unify (List.combine ts1 ts2 @ pbs)
     | _ ->
       raise (UnificationFailed (ty1, ty2))
@@ -166,11 +166,11 @@ let unify_types ty1 ty2 =
   if (substitute phi ty1 <> substitute phi ty2) then (
     Error.global_error "internal" (
       Printf.sprintf "Unification has a bug on:\n %s\nand\n %s, producing phi:\n%s\n"
-	(print_aty ty1)
-	(print_aty ty2)
-	(String.concat ", " (List.map (fun (TId x, ty) -> Printf.sprintf "%s -> %s" x (print_aty ty))
-			       phi)
-	));
+        (print_aty ty1)
+        (print_aty ty2)
+        (String.concat ", " (List.map (fun (TId x, ty) -> Printf.sprintf "%s -> %s" x (print_aty ty))
+                               phi)
+        ));
   );
   phi
 
@@ -295,11 +295,16 @@ let initial_typing_environment () =
 let print_binding (Id x, Scheme (_, s)) =
   x ^ " : " ^ print_aty s
 
-let print_typing_environment tenv =
-  let excluded = initial_typing_environment () in
-  let values = List.filter (fun (x, _) ->
-    not (List.mem_assoc x excluded.values)
-  ) (List.rev tenv.values)
+let print_new_type_bindings new_tenv old_tenv =
+  let rec print_last_n_bindings acc n bindings =
+    if n = 0 then acc else
+      match bindings with
+      | [] -> assert false
+      | binding :: bindings ->
+        print_last_n_bindings (print_binding binding :: acc) (n - 1) bindings
   in
-  String.concat "\n" (List.map print_binding values)
+  let n = List.length new_tenv.values - List.length old_tenv.values in
+  String.concat "\n" (print_last_n_bindings [] n new_tenv.values)
 
+let print_typing_environment tenv =
+  print_new_type_bindings tenv (initial_typing_environment ())
