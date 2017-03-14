@@ -306,8 +306,6 @@ let typecheck tenv ast : typing_environment =
     | PAnd ps ->
       failwith "Students! This is your job!"
 
-
-
     | PWildcard ->
       failwith "Students! This is your job!"
 
