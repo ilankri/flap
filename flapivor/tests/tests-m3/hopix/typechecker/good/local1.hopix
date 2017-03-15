@@ -1,0 +1,7 @@
+val test : int =
+  val x : int = (
+    val z : int -> int = \(x : int) => x + 1;
+    val u : int = z (3);
+    u
+  );
+  x

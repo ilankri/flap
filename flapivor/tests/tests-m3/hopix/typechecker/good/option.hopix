@@ -1,0 +1,13 @@
+type option ('a) =
+| None
+| Some ('a)
+
+val none = None [int]
+
+fun some (x : int) : option (int) = Some[int] (x)
+
+fun unSome (o : option (int), default: int) : int =
+  o ? {
+  | (None : option (int)) => default
+  | Some (x : int) => x
+  }

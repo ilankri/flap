@@ -973,4 +973,231 @@
          colorize (remove preference between a b in G) colors
      - otherwise, there is some node n and try optimistic simplification.
 *** Design de l'interface du module de Graph
+* Cours 17 <2017-03-13>
+** Travaux dirigés
+   - Compilation manuelle de Hopix vers MIPS de:
 
+     type list = { Nil | Cons (int, list) }
+
+     fun uniq (l : list) : list = l ? {
+     | Nil => Nil ()
+     | Cons (x, Nil) => l
+     | Cons (x, Cons (y, _) & l') =>
+       if (x == y) then
+         uniq (l')
+       else
+         Cons (x, uniq (l'))
+     }
+
+     val l = uniq (Cons (1, Cons (1, Nil)))
+
+**** Hopix vers Hobix
+***** Version obligatoire
+     /* La déclaration de type n'est pas interprétée par
+     du code Hobix mais on décide du "tag" à associer à
+     chaque constructeur. Ici: Nil -> 0, Cons -> 1
+     (par exemple). */
+
+    fun uniq (l) =
+       {- Est-ce que l = Nil? -}
+       if l[0] == 0 then
+         {- Oui! On met ici le code compilé de la branche
+	    Nil de uniq -}
+	 val b = new_block 1;
+	 b[0] = 0
+	 b
+       else (if l[0] == 1 && l[2][0] == 0 then
+         val x = l[1];
+	 l
+       else (if l[0] == 1 && l[2][0] == 1 then
+         val x = l[1];
+	 val y = l[2][1];
+	 val l' = l[2];
+	 if (x == y) then
+	   uniq (l')
+	 else
+	   val b = new_block 3;
+	   b[0] = 1;
+	   b[1] = x;
+	   b[2] = uniq (l');
+	   b
+       else
+           1/0
+
+     val l =
+       val b = new_block 3;
+       b[0] = 1;
+       b[1] = 1;
+       b[2] = (val b = new_block 3;
+               b[0] = 1;
+	       b[1] = 1;
+	       b[2] = (val b = new_block 1; b[0] = 0; b));
+       uniq (b)
+
+**** Version optimisée
+
+    http://moscova.inria.fr/~maranget/papers/ml05e-maranget.pdf
+
+    fun uniq (l) =
+       {- Est-ce que l = Nil? -}
+       switch l[0] {
+         case 0:
+	   {- Oui! On met ici le code compilé de la branche
+	      Nil de uniq -}
+	   val b = new_block 1;
+	   b[0] = 0
+	   b
+         case 1:
+	    switch l[2][0]:
+              case 0:
+		val x = l[1];
+		l
+              case 1:
+                val x = l[1];
+		val y = l[2][1];
+		val l' = l[2];
+		if (x == y) then
+		uniq (l')
+		else
+		val b = new_block 3;
+		b[0] = 1;
+		b[1] = x;
+		b[2] = uniq (l');
+		b
+	  default:
+            1/0
+*** Hobix vers Fopix
+    fun uniq (l) =
+       {- Est-ce que l = Nil? -}
+       if l[0] == 0 then
+         {- Oui! On met ici le code compilé de la branche
+	    Nil de uniq -}
+	 val b = new_block 1;
+	 b[0] = 0
+	 b
+       else (if l[0] == 1 && l[2][0] == 0 then
+         val x = l[1];
+	 l
+       else (if l[0] == 1 && l[2][0] == 1 then
+         val x = l[1];
+	 val y = l[2][1];
+	 val l' = l[2];
+	 if (x == y) then
+	   uniq (l')
+	 else
+	   val b = new_block 3;
+	   b[0] = 1;
+	   b[1] = x;
+	   b[2] = uniq (l');
+	   b
+       else
+           1/0
+
+     val l =
+       val b = new_block 3;
+       b[0] = 1;
+       b[1] = 1;
+       b[2] = (val b = new_block 3;
+               b[0] = 1;
+	       b[1] = 1;
+	       b[2] = (val b = new_block 1; b[0] = 0; b));
+       uniq (b)
+
+*** Fopix -> Retrolix
+
+    routine uniq (x5) =
+    locals:
+       X1, X2, ..., X17, R, b, x, b1, TMP0, ..., TMP7
+
+       l <- $a0
+       TMP0 <- $s0
+       ...
+       TMP7 <- $s7
+       RTMP <- $ra
+       X1 <- readblock l 0
+       X2 <- X1 == 0
+       X2 == 1? -> l1, l2
+    l1:
+       b <- new_block 1;
+       writeblock b 0 0
+       R <- b
+       jmp lr
+    l2:
+       X3 <- readblock l 0
+       X4 <- X3 == 1
+       X5 <- readblock l 2
+       X6 <- readblock X5 0
+       X7 <- X6 == 0
+       X8 <- AND X4 X7
+       X8 == 1? -> l3, l4
+     l3:
+         x < readblock l 1;
+	 R <- l
+	 jmp lr0
+     l4:
+         X9 <- readblock l 0
+	 X10 <- X9 == 1
+	 X11 <- readblock l 2
+	 X12 <- readblock X11 0
+	 X13 <- X12 == 1
+	 X14 <- AND X10 X13
+	 X14 == 1 ? l5, l6
+
+     l5:
+         x1 <- readblock l 1
+         X15 <- readblock l 2
+	 y <- readblock X15 1
+	 l' <- readblock l 2
+	 X16 <- x1 == y
+	 X16 == 1 ? l6, l7 
+     l6:
+         TTMP0 <- $t0
+	 ...
+	 TTMP8 <- $t8
+	 call uniq l'
+         R <- $v0
+	 $t0 <- TTMP0
+	 ...
+	 $t8 <- TTMP8
+	 jmp lr1
+     l7:
+	 b1 <- new_block 3;
+	 writeblock b1 0 1;
+	 writeblock b1 1  x1;
+         XTMP0 <- $t0
+	 ...
+	 XTMP8 <- $t8
+	 X17 <- call uniq (l')
+	 $t0 <- XTMP0
+	 ...
+	 $t8 <- XTMP8
+	 writeblock b1 2 X17;
+	 R <- b1
+	 jmp lr1
+     lr1:
+         jmp lr0
+     lr0:
+         jmp lr
+     lr:
+         $s0 <- TMP0
+	 ...
+	 $s7 <- TMP7
+	 $ra <- RTMP
+         ret R
+
+     val l =
+       locals: b, b1, b2, R 
+       {
+       b <- new_block 3;
+       writeblock b 0 1
+       writeblock b 1 1
+       b1 <- new_block 3
+       writeblock b1 0 1
+       writeblock b1 1 1
+       b2 <- new_block 1
+       writeblock b2 0 0
+       writeblock b1 2 b2
+       writeblock b 2 b1
+       R <- call uniq (b)
+       ret R
+       }

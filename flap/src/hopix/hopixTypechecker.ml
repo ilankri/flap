@@ -127,7 +127,7 @@ let typecheck tenv ast : typing_environment =
   and check_expected_type pos xty ity =
     if xty <> ity then
       type_error pos (
-        Printf.sprintf "Type error:\nExpected:%s\nGiven:%s\n"
+        Printf.sprintf "Type error:\nExpected:\n  %s\nGiven:\n  %s\n"
           (print_aty xty) (print_aty ity)
       )
 
@@ -371,6 +371,7 @@ let typecheck tenv ast : typing_environment =
   and branch tenv sty oty pos = function
     | Branch (p, e) ->
       failwith "Students! This is your job!"
+
 
   in
   program ast

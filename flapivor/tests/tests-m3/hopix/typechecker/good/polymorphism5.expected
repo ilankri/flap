@@ -1,0 +1,4 @@
+compose : t('a, 'b) * ('b -> 'c) -> t('a, 'c)
+tid : t(int, int)
+tsucc : t(int, int)
+tdble : t(int, int)

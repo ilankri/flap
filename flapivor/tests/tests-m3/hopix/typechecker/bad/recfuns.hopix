@@ -1,0 +1,2 @@
+fun f (x : int) : int =
+  g (x + 1) + 1

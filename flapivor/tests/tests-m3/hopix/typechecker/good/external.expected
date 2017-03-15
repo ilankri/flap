@@ -1,0 +1,2 @@
+p : int * int -> int
+x : int

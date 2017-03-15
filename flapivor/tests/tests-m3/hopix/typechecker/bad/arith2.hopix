@@ -1,0 +1,1 @@
+val x : string = 1 + 1 * 3

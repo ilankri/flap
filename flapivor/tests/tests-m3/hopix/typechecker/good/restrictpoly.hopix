@@ -1,0 +1,6 @@
+fun id['a] (x: 'a) : 'a = x
+
+fun twice (f : int -> int) : int -> int =
+    \(x : int) => f (f (x))
+
+val zero = twice (\(x : int) => id[int] (x)) (0)

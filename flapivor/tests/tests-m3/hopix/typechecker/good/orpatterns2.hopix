@@ -1,0 +1,7 @@
+type u () = A (int, int) | B (int) | C
+
+val test1 : int = A (0, 0) ? {
+| A (x : int, (_ : int)) | B (x : int) => x
+| C => 0
+}
+
