@@ -63,6 +63,7 @@ clean-good-counters:
 	@ rm --force good-counter good-ok-counter
 
 bad: clean-bad-counters $(BAD_OUTPUTS)
+	@ echo $(BAD_INPUTS)
 	@ touch bad-ok-counter
 	@ touch bad-counter
 	@ echo "BAD:  "`wc -l bad-ok-counter | cut -f1 -d' '` \
