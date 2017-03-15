@@ -210,7 +210,14 @@ let translate (p : S.t) env =
     | S.DefineRec (rdefs, a) ->
 	 failwith "Students! This is your job!"
     | S.Apply (a, bs) ->
-	 failwith "Students! This is your job!"
+      let idfs, id = expression env a in
+      let fsWithExprs =  List.map (expression env) bs in
+      let (fs, es) = List.fold_left (fun (la, lb) (a,b) -> (a@la, b::lb)) ([],[]) fsWithExprs in
+      begin
+        match id with
+        | T.Variable (T.Id x) -> idfs@fs, T.FunCall(T.FunId x, es)
+        | _ -> failwith "Apply should only have a string id as its first expression"
+      end
     | S.IfThenElse (a, b, c) ->
       let afs, a = expression env a in
       let bfs, b = expression env b in
