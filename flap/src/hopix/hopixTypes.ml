@@ -201,6 +201,11 @@ let empty_typing_environment = {
   type_variables = []
 }
 
+let print_tenv env =
+  Printf.sprintf "tvs: %s\n" (
+    String.concat ", " (List.map (fun (TId x) -> x) env.type_variables)
+  )
+
 exception AlreadyBoundTypeVariable of Position.position * type_variable
 
 let bind_type_variable pos env tv =
@@ -230,16 +235,20 @@ let lookup_type_scheme_of_value pos x env =
 
 let bind_type_definition x ts tdef env =
   let arity = List.length ts in
-  let env = bind_type_variables Position.dummy env ts in
   let data_constructors = match tdef with
     | Abstract -> []
     | DefineSumType ds -> List.map (fun (k, _) -> Position.value k) ds
   in
-  let constructor_definition (k, tys) =
-    let atys = List.map (internalize_ty env) tys in
-    let scheme =
-      mk_type_scheme (atys --> ATyCon (x, List.map (fun v -> ATyVar v) ts))
+  let pre_env =
+    let env = bind_type_variables Position.dummy env ts in
+    let type_constructors =
+      (x, { arity; data_constructors }) :: env.type_constructors
     in
+    { env with type_constructors; constructors = [] }
+  in
+  let constructor_definition (k, tys) =
+    let atys = List.map (internalize_ty pre_env) tys in
+    let scheme = mk_type_scheme (atys --> ATyCon (x, List.map (fun v -> ATyVar v) ts)) in
     (Position.value k, scheme)
   in
   let constructors = match tdef with
