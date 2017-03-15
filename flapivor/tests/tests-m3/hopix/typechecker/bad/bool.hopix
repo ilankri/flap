@@ -1,0 +1,2 @@
+val t : bool = true
+val f : bool = 0

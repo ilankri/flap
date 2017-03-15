@@ -1,0 +1,86 @@
+type list ('a) =
+| Nil
+| Cons ('a, list ('a))
+
+fun nil['a] () : list ('a) = Nil['a]
+
+fun cons['a] (x : 'a, xs : list('a)) : list ('a) = Cons['a] (x, xs)
+
+fun map['a, 'b] (f : 'a -> 'b, l : list ('a)) : list ('b) =
+  l ? {
+  | (Nil : list ('a)) =>
+    nil['b] ()
+  | Cons (x : 'a, xs : list ('a)) =>
+    cons['b] (f (x), map['a, 'b] (f, xs))
+ }
+
+fun append['a] (l1 : list ('a), l2 : list ('a)) : list ('a) =
+  l1 ? {
+  | (Nil : list ('a)) =>
+    l2
+  | Cons (x : 'a, xs : list ('a)) =>
+    cons['a] (x, append['a] (xs, l2))
+  }
+
+fun flatten['a] (l : list (list ('a))) : list ('a) =
+  l ? {
+  | (Nil : list (list ('a))) =>
+    nil['a] ()
+  | Cons (l : list ('a), ls : list (list ('a))) =>
+    append['a] (l, flatten['a] (ls))
+  }
+
+fun return['a] (x : 'a) : list ('a)  = cons['a] (x, nil['a] ())
+fun bind['a, 'b] (m : list ('a), f : 'a -> list ('b)) : list ('b) = 
+  flatten['b] (map['a, list ('b)] (f, m))
+
+fun choice['a] (a : 'a, b : 'a) : list ('a) = cons['a] (a, cons['a] (b, nil['a] ()))
+
+fun bits (n : int) : list (list (int)) =
+  if n = 0 then return[list (int)] (nil[int] ()) else
+    bind[int, list (int)] (choice[int] (0, 1), \(b : int) =>
+      bind[list (int), list (int)] (bits (n - 1), \(bs : list (int)) =>
+	return[list (int)] (cons[int] (b, bs))
+     )
+    )
+
+val all_bytes : list (list (int)) = bits (8)
+
+fun iter['a] (f : 'a -> unit, l : list ('a)) : unit =
+  l ? {
+  | (Nil : list ('a)) =>
+    nothing
+  | Cons (x : 'a, xs : list ('a)) => (
+     f (x);
+     iter['a] (f, xs)
+    )
+  }
+
+fun print_bits (bs : list (int)) : unit =
+  print_string ("[");
+  fun aux (bs : list (int)) : unit =
+    bs ? {
+    | (Nil : list (int)) => print_string ("")
+    | Cons (b : int, bs : list (int)) => (print_int (b); print_string (";"); aux (bs))
+    };
+  aux (bs);
+  print_string ("]")
+
+val main1 =
+  iter[list (int)] (\(b : list (int)) => (print_bits (b); print_string ("\n")),
+	all_bytes)
+
+val all_word12 : list (list (int)) = bits (12)
+
+fun fold['a, 'b] (f : 'b * 'a -> 'b, accu : 'b, l : list ('a)) : 'b = l? {
+  | (Nil : list ('a)) => accu
+  | Cons (x : 'a, xs : list ('a)) => fold['a, 'b] (f, f (accu, x), xs)
+}
+
+fun ones (b : list (int)) : int =
+  fold[int, int] ((\(a : int, b : int) => a + b), 0, b)
+
+val main2 =
+    val count = ref (0);
+    iter[list (int)] (\(b : list (int)) => count := !count + ones (b), all_word12);
+    print_int (!count)

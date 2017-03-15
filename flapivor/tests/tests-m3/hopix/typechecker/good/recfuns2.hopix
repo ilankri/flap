@@ -1,0 +1,4 @@
+fun f (x : int) : int =
+  f (x + 1) + g (x)
+and g (x : int) : int =
+  g (f (0))

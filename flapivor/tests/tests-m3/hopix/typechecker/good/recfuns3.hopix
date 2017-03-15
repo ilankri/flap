@@ -1,0 +1,4 @@
+fun f (x : int, s : string) : int =
+  f (x + 1, s) + g (x)
+and g (x : int) : int =
+  g (f (0, "yo"))

@@ -1,0 +1,3 @@
+extern p : int * int -> int
+
+val x : int = p (0, 1)

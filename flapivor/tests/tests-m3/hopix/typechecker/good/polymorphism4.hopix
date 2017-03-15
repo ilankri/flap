@@ -1,0 +1,9 @@
+type t ('a) = K ('a)
+
+fun map ['a, 'b] (x : t ('a), f : 'a -> 'b) : t('b) =
+  x ? K (y : 'a) => K ['b] (f (y))
+
+fun id ['a] (x : t ('a)) : t ('a) =
+  map['a, 'a] (x, \(y : 'a) => y)
+
+val test = id[int] (K[int] (33))

@@ -1,0 +1,4 @@
+val r : cell (int) = ref (0)
+
+val write : unit =
+  r := 42

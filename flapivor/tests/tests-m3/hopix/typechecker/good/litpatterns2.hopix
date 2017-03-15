@@ -1,0 +1,1 @@
+val x : int = "Darth" ? { "Yoda" => 0 | "Luke" => 1 | (_ : string) => 2 }

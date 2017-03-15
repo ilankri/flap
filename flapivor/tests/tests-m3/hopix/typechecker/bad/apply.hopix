@@ -1,0 +1,6 @@
+fun apply['a, 'b] (f : 'a -> 'b, x : 'a) : 'b =
+  f (x)
+
+fun succ (x : int) : int = x + 1
+
+val one = apply[int, bool] (succ, 0)

@@ -1,0 +1,2 @@
+val test : string =
+  if true then "string" else "gnirst"

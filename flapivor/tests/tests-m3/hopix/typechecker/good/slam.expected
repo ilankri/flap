@@ -1,0 +1,17 @@
+nil :  -> list('a)
+cons : 'a * list('a) -> list('a)
+map : ('a -> 'b) * list('a) -> list('b)
+append : list('a) * list('a) -> list('a)
+flatten : list(list('a)) -> list('a)
+return : 'a -> list('a)
+bind : list('a) * ('a -> list('b)) -> list('b)
+choice : 'a * 'a -> list('a)
+bits : int -> list(list(int))
+all_bytes : list(list(int))
+iter : ('a -> unit) * list('a) -> unit
+print_bits : list(int) -> unit
+main1 : unit
+all_word12 : list(list(int))
+fold : ('b * 'a -> 'b) * 'b * list('a) -> 'b
+ones : list(int) -> int
+main2 : unit

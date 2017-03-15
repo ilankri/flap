@@ -1,0 +1,3 @@
+id : 'a -> 'a
+twice : (int -> int) -> (int -> int)
+zero : int
