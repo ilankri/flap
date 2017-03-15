@@ -131,7 +131,7 @@ let read_block hobixe i = HobixAST.ReadBlock (hobixe, int_literal i)
 let write_block b i e = HobixAST.WriteBlock (b, int_literal i, e)
 
 (** Typical expression whose evaluation lead the program to crash.  *)
-let crash_expression =
+let crash =
   (* We just build an expression that does a division by zero.  *)
   let zero = int_literal 0 in
   HobixAST.(Apply (Variable (Id "`/"), [zero; zero]))
@@ -205,11 +205,15 @@ and expression env = HobixAST.(function
         (AllocateBlock (int_literal (List.length es + 1)))
         (fun b -> fill_then_return_block env (Variable b) k es)
 
+    (* When the pattern matching is not exhaustive, we make the program
+       crash...  *)
     | HopixAST.Case (e, bs) ->
+      let branch scrutinee b next =
+        located (branch env (Variable scrutinee) next) b
+      in
       def
         (expression' env e)
-        (fun scrutinee ->
-           case env (Variable scrutinee) (List.map Position.value bs))
+        (fun scrutinee -> List.fold_right (branch scrutinee) bs crash)
 
     | HopixAST.Ref e ->
       let x = fresh_identifier () in
@@ -266,17 +270,9 @@ and expression env = HobixAST.(function
       failwith "Students! This is your job!"
   )
 
-and case env scrutinee = HobixAST.(function
-    (* When the pattern matching is not exhaustive, we make the program
-       crash...  *)
-    | [] -> crash_expression
-
-    | HopixAST.Branch (p, e) :: branches ->
-      let cond, defs = pattern' env scrutinee p in
-      defines
-        defs
-        (IfThenElse (cond, expression' env e, case env scrutinee branches))
-  )
+and branch env scrutinee next (HopixAST.Branch (p, e)) =
+  let cond, defs = pattern' env scrutinee p in
+  defines defs (HobixAST.IfThenElse (cond, expression' env e, next))
 
 (** [expands_or_patterns branches] returns a sequence of branches
     equivalent to [branches] except that their patterns do not contain
