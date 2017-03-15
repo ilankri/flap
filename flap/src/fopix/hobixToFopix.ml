@@ -180,6 +180,7 @@ let initial_environment () =
 let translate (p : S.t) env =
   let rec program env defs =
     List.(flatten (map definition defs)), env
+
   and definition = function
     | S.DeclareExtern id ->
       [T.ExternalFunction (function_identifier id)]
@@ -189,26 +190,34 @@ let translate (p : S.t) env =
     | S.DefineRecFuns rdefs ->
       let fs, defs = define_recursive_functions rdefs in
       fs @ List.map (fun (x, e) -> T.DefineValue (x, e)) defs
+
   and define_recursive_functions rdefs =
-       failwith "Students! This is your job!"
+    let expression (_, e) = expression (initial_environment ()) e in
+    let fs, es = List.split (List.map expression rdefs) in
+    let defs =
+      List.combine (List.map (fun (id, _) -> identifier id) rdefs) es
+    in
+    (List.flatten fs, defs)
+
+
   and expression env = function
     | S.Literal l ->
       [], T.Literal (literal l)
     | S.While (cond, e) ->
-       let cfs, cond = expression env cond in
-       let efs, e = expression env e in
-       cfs @ efs, T.While (cond, e)
+      let cfs, cond = expression env cond in
+      let efs, e = expression env e in
+      cfs @ efs, T.While (cond, e)
     | S.Variable x ->
       let xc =
-	match Dict.lookup x env with
-	  | None -> T.Variable (identifier x)
-	  | Some e -> e
+        match Dict.lookup x env with
+        | None -> T.Variable (identifier x)
+        | Some e -> e
       in
       ([], xc)
     | S.Define (x, a, b) ->
-	 failwith "Students! This is your job!"
+      failwith "Students! This is your job!"
     | S.DefineRec (rdefs, a) ->
-	 failwith "Students! This is your job!"
+      failwith "Students! This is your job!"
     | S.Apply (a, bs) ->
       let idfs, id = expression env a in
       let fsWithExprs =  List.map (expression env) bs in
@@ -225,7 +234,7 @@ let translate (p : S.t) env =
       afs @ bfs @ cfs, T.IfThenElse (a, b, c)
 
     | S.Fun (x, e) ->
-	 failwith "Students! This is your job!"
+      failwith "Students! This is your job!"
     | S.AllocateBlock a ->
       let afs, a = expression env a in
       (afs, allocate_block a)
@@ -244,19 +253,19 @@ let translate (p : S.t) env =
       let afs, a = expression env a in
       let bsfs, bs = List.(split (map (expression env) (Array.to_list bs))) in
       let dfs, default = match default with
-	| None -> [], None
-	| Some e -> let bs, e = expression env e in bs, Some e
+        | None -> [], None
+        | Some e -> let bs, e = expression env e in bs, Some e
       in
       afs @ List.flatten bsfs @ dfs,
       T.Switch (a, Array.of_list bs, default)
 
   and expressions env = function
     | [] ->
-       [], []
+      [], []
     | e :: es ->
-       let efs, es = expressions env es in
-       let fs, e = expression env e in
-       fs @ efs, e :: es
+      let efs, es = expressions env es in
+      let fs, e = expression env e in
+      fs @ efs, e :: es
 
   and literal = function
     | S.LInt x -> T.LInt x
