@@ -168,10 +168,9 @@ let typecheck tenv ast : typing_environment =
     | DefineRec (recdefs, e) ->
       failwith "Students! This is your job!"
 
-    (* Γ ⊢ e : ∀α₁ … αₖ.τ₁'⋆ … ⋆τₙ' → τ
-       ∀i Γ ⊢ eᵢ : τᵢ'[α₁ ↦ τ₁] … [αₖ ↦ τₖ]
-       ————————————————————————————————————————————————————
-       Γ ⊢ e[τ₁, …, τₖ](e₁, …, eₙ) : τ[α₁ ↦ τ₁] … [αₖ ↦ τₖ] *)
+    (* Γ ⊢ e : ∀α₁ … αn τ'₁⋆ … ⋆τ'm → τ     ∀i Γ ⊢ ei: τ'i[αi ↦ τi] … [αn↦ τn]
+       ———————————————————————————————————————----------------------—————————————
+       Γ ⊢ e[τ₁, …, τn] (e₁, …, em) : τ[α₁ ↦ τ₁] … [αn ↦ τn] *)
     | Apply (a, types, args) ->
       failwith "Students! This is your job!"
 
@@ -261,7 +260,7 @@ let typecheck tenv ast : typing_environment =
       let expectBool = type_of_monotype(located (type_scheme_of_expression tenv) e) in
       let expectUnit = type_of_monotype(located (type_scheme_of_expression tenv) e') in
       check_expected_type (Position.position e) expectBool hbool;
-      check_expected_type (Position.position e) expectUnit hunit;
+      check_expected_type (Position.position e') expectUnit hunit;
       monotype hunit
 
     | Literal l ->
@@ -270,8 +269,8 @@ let typecheck tenv ast : typing_environment =
     (* (x : σ) ∈ Γ
        ———————————
        Γ ⊢ x : σ   *)
-    | Variable ({ Position.value = (Id s) as x }) ->
-      failwith "Students! This is your job!"
+    | Variable x -> 
+      located lookup_type_scheme_of_value x tenv
 
   (** [apply pos tenv s types args] computes the instanciation of the
       type scheme [s] with [types] and checks that the resulting type
