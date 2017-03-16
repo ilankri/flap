@@ -63,3 +63,6 @@ tests-m3 [ Wed Mar 15 20:13:16 CET 2017 ] [ e01a82548eec4c5cf8625e7904f89ec6f49c
 tests-m1 [ Wed Mar 15 20:21:48 CET 2017 ] [ fb36b307a6aecc1cadf27faad6146f7efc2b29bc ] BAD:   7 / 7 GOOD:  135 / 135  | 
 tests-m2 [ Wed Mar 15 20:21:52 CET 2017 ] [ fb36b307a6aecc1cadf27faad6146f7efc2b29bc ] BAD:   0 / 0 GOOD:  71 / 71  | 
 tests-m3 [ Wed Mar 15 20:21:52 CET 2017 ] [ fb36b307a6aecc1cadf27faad6146f7efc2b29bc ] make: Entering directory '/home/opam/source/flap/tests-m3' make: Leaving directory '/home/opam/source/flap/tests-m3'  | 
+tests-m1 [ Thu Mar 16 09:58:36 CET 2017 ] [ 87c89d729c8b8a13ffc811aded15dc46adca9514 ] BAD:   7 / 7 GOOD:  135 / 135  | 
+tests-m2 [ Thu Mar 16 09:58:40 CET 2017 ] [ 87c89d729c8b8a13ffc811aded15dc46adca9514 ] BAD:   0 / 0 GOOD:  71 / 71  | 
+tests-m3 [ Thu Mar 16 09:58:42 CET 2017 ] [ 87c89d729c8b8a13ffc811aded15dc46adca9514 ] BAD:   52 / 52 GOOD:  3 / 42  | 
