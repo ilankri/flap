@@ -258,7 +258,11 @@ let typecheck tenv ast : typing_environment =
        —————————————————————————————
        Γ ⊢ while e { e' } : unit     *)
     | While (e, e') ->
-      failwith "Students! This is your job!"
+      let expectBool = type_of_monotype(located (type_scheme_of_expression tenv) e) in
+      let expectUnit = type_of_monotype(located (type_scheme_of_expression tenv) e') in
+      check_expected_type (Position.position e) expectBool hbool;
+      check_expected_type (Position.position e) expectUnit hunit;
+      monotype hunit
 
     | Literal l ->
       mk_type_scheme(located type_of_literal l)
