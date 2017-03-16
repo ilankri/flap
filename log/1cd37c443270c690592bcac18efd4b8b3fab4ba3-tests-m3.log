@@ -1,0 +1,1746 @@
+make: Entering directory '/home/opam/source/flap/tests-m3'
+make -C ..
+make[1]: Entering directory '/home/opam/source/flap'
+Source configuration ...
+ * Ledit is not present: use default UserInput.
+rm -f flap.native
+make[1]: Leaving directory '/home/opam/source/flap'
+make[1]: Entering directory '/home/opam/source/flap/tests-m3/hopix/typechecker/bad'
+========================================================
+In typechecker/bad
+GOOD: 0 / 0
+[XFAIL]  andpatterns.hopix
+
+INPUT: 
+type t () = A | B (int)
+
+val test1 = A ? { A & B (x : bool) => 0 | B (_ : int) => 1 }
+OUTPUT: 
+Global Error (during parsing)
+  Syntax error.
+--------------------------------------------------------
+[XFAIL]  andpatterns2.hopix
+
+INPUT: 
+type t () = A (int) | B
+
+val test1 = A (0) ? { A (x : bool) & (y : t ()) => x | B => 1 }
+
+val test2 = A (0) ? { A (_ : int) & (y : t ()) => y | B => A (0) }
+OUTPUT: 
+Global Error (during parsing)
+  Syntax error.
+--------------------------------------------------------
+[XFAIL]  apply.hopix
+
+INPUT: 
+fun apply['a, 'b] (f : 'a -> 'b, x : 'a) : 'b =
+  f (x)
+
+fun succ (x : int) : int = x + 1
+
+val one = apply[int, bool] (succ, 0)
+OUTPUT: 
+Fatal error: exception Failure("Students! This is your job!")
+--------------------------------------------------------
+[XFAIL]  arith.hopix
+
+INPUT: 
+val x : string = 1 + 1
+OUTPUT: 
+Fatal error: exception Failure("Students! This is your job!")
+--------------------------------------------------------
+[XFAIL]  arith2.hopix
+
+INPUT: 
+val x : string = 1 + 1 * 3
+OUTPUT: 
+Fatal error: exception Failure("Students! This is your job!")
+--------------------------------------------------------
+[XFAIL]  arith3.hopix
+
+INPUT: 
+val x : int = 1 + 1 * 3
+val y : int = z / 2 - 3
+OUTPUT: 
+Fatal error: exception Failure("Students! This is your job!")
+--------------------------------------------------------
+[XFAIL]  bool.hopix
+
+INPUT: 
+val t : bool = true
+val f : bool = 0
+OUTPUT: 
+Fatal error: exception Failure("Students! This is your job!")
+--------------------------------------------------------
+[XFAIL]  case.hopix
+
+INPUT: 
+type t () = A | B
+
+val test1 : int = A ? { A => 0 | B => 1 }
+
+fun f (x : t (int)) : int = x ? { A => 0 | B => 1 }
+
+val test2 : int = f (A)
+OUTPUT: 
+Global Error (during parsing)
+  Syntax error.
+--------------------------------------------------------
+[XFAIL]  external.hopix
+
+INPUT: 
+extern p : int * bool -> int
+
+val x : int = p (0, 1)
+OUTPUT: 
+Global Error (during parsing)
+  Syntax error.
+--------------------------------------------------------
+[XFAIL]  id.hopix
+
+INPUT: 
+val id = (x : 'a) => (x : 'a)
+OUTPUT: 
+Global Error (during parsing)
+  Syntax error.
+--------------------------------------------------------
+[XFAIL]  idapp.hopix
+
+INPUT: 
+val zero = (\['a](x : 'a) => (x : 'a))[bool](0)
+
+OUTPUT: 
+Fatal error: exception Failure("Students! This is your job!")
+--------------------------------------------------------
+[XFAIL]  if.hopix
+
+INPUT: 
+val test : int =
+  if true then 0 else true
+OUTPUT: 
+Fatal error: exception Failure("Students! This is your job!")
+--------------------------------------------------------
+[XFAIL]  if1.hopix
+
+INPUT: 
+val test : string =
+  if true then "string" else 0
+OUTPUT: 
+Fatal error: exception Failure("Students! This is your job!")
+--------------------------------------------------------
+[XFAIL]  if2.hopix
+
+INPUT: 
+val test : int =
+  if true then 0 else if false then 1 else 'a'
+OUTPUT: 
+Fatal error: exception Failure("Students! This is your job!")
+--------------------------------------------------------
+[XFAIL]  if3.hopix
+
+INPUT: 
+val x = 1
+
+val test : int =
+  if x = 0 then 0
+  else if x = 1 then 1
+  else if x > 'a' then 2
+  else if x < 0 then 3
+  else if x <= 0 then 4
+  else if x >= 0 then 5
+  else if x = 0 && x > 0 then 6
+  else 33
+OUTPUT: 
+Fatal error: exception Failure("Students! This is your job!")
+--------------------------------------------------------
+[XFAIL]  if4.hopix
+
+INPUT: 
+val x = 3
+val test : unit =
+  if x = 0 then 0
+
+OUTPUT: 
+Fatal error: exception Failure("Students! This is your job!")
+--------------------------------------------------------
+[XFAIL]  int.hopix
+
+INPUT: 
+val x : bool = 42
+OUTPUT: 
+Line 1, characters 8-12: Error (typechecking)
+  Type error:
+Expected:
+  int
+Given:
+  bool
+
+--------------------------------------------------------
+[XFAIL]  litpatterns.hopix
+
+INPUT: 
+val x : int = 3 ? { 3 => 0 | (_ : int) => "yo" }
+OUTPUT: 
+Fatal error: exception Failure("Students! This is your job!")
+--------------------------------------------------------
+[XFAIL]  litpatterns2.hopix
+
+INPUT: 
+val x : int = "Darth" ? { "Yoda" => 0 | 0 => 1 | (_ : string) => 2 }
+OUTPUT: 
+Fatal error: exception Failure("Students! This is your job!")
+--------------------------------------------------------
+[XFAIL]  litpatterns3.hopix
+
+INPUT: 
+val x : int = 'a' ? { 'b' => 0 | 'c' => 1 | (_ : int) => 2 }
+OUTPUT: 
+Fatal error: exception Failure("Students! This is your job!")
+--------------------------------------------------------
+[XFAIL]  local.hopix
+
+INPUT: 
+val test : int =
+  val x : int = 'a';
+  val z : int -> int = \(x : int) => x + 1;
+  val u : int = z (x);
+  u
+OUTPUT: 
+Line 3, characters 23-42: Error (typechecking)
+  A type annotation is missing.
+--------------------------------------------------------
+[XFAIL]  local1.hopix
+
+INPUT: 
+val test : int =
+  val x : int = (
+    val z : int -> int = \(x : int) => x + 1;
+    val u : int = z (true);
+    u
+  );
+  x
+OUTPUT: 
+Line 3, characters 25-44: Error (typechecking)
+  A type annotation is missing.
+--------------------------------------------------------
+[XFAIL]  memory.hopix
+
+INPUT: 
+val r : cell (int) = ref ("not me!")
+OUTPUT: 
+Line 1, characters 8-18: Error (typechecking)
+  Type error:
+Expected:
+  cell(string)
+Given:
+  cell(int)
+
+--------------------------------------------------------
+[XFAIL]  memory1.hopix
+
+INPUT: 
+val r : cell (int) = ref (0)
+
+val write : unit =
+  r := "not me!"
+OUTPUT: 
+Fatal error: exception Failure("Students! This is your job!")
+--------------------------------------------------------
+[XFAIL]  memory2.hopix
+
+INPUT: 
+val r : cell (int) = ref (0)
+
+val write : unit =
+  r := 42
+
+val read : string =
+  !r
+OUTPUT: 
+Fatal error: exception Failure("Students! This is your job!")
+--------------------------------------------------------
+[XFAIL]  multipatterns.hopix
+
+INPUT: 
+type t () = A
+type u () = S (u ()) | T (int)
+
+val x : int = S (A) ? {
+| S (A | B)  => 0
+| (_ : u ()) => 1
+}
+OUTPUT: 
+Global Error (during parsing)
+  Syntax error.
+--------------------------------------------------------
+[XFAIL]  noarg.hopix
+
+INPUT: 
+fun f () : unit = f (0)
+
+val test : unit = f ()
+OUTPUT: 
+Global Error (during parsing)
+  Syntax error.
+--------------------------------------------------------
+[XFAIL]  nonlinearpatterns.hopix
+
+INPUT: 
+type t () = A (int, int)
+
+val test = A (0, 0) ? { A (x: int, x : int) => 0 }
+OUTPUT: 
+Global Error (during parsing)
+  Syntax error.
+--------------------------------------------------------
+[XFAIL]  option.hopix
+
+INPUT: 
+type option ('a) =
+| None
+| Some ('a)
+
+fun unSome (o : option (int), default: int) : bool =
+  o ? {
+  | (None : option (int)) => default
+  | Some (x : int) => x
+  }
+OUTPUT: 
+Fatal error: exception Failure("Students! This is your job!")
+--------------------------------------------------------
+[XFAIL]  orpatterns.hopix
+
+INPUT: 
+type t () = A (int) | B (int) | C
+
+val test1 : int = A (0) ? {
+| A (x : int) | B (x : int) => x
+| D => 0
+}
+
+
+OUTPUT: 
+Global Error (during parsing)
+  Syntax error.
+--------------------------------------------------------
+[XFAIL]  orpatterns2.hopix
+
+INPUT: 
+type u () = A (int) | B (int) | C
+
+val test1 : int = A (0, 0) ? {
+| A (x : int, (_ : int)) | B (x : int) => x
+| C => 0
+}
+
+
+OUTPUT: 
+Global Error (during parsing)
+  Syntax error.
+--------------------------------------------------------
+[XFAIL]  orpatterns3.hopix
+
+INPUT: 
+type t = A (int) | B (int)
+
+val x = A (3) ? A (x : int) | B (y : int) => x
+OUTPUT: 
+Fatal error: exception Failure("Students! This is your job!")
+--------------------------------------------------------
+[XFAIL]  polymorphism.hopix
+
+INPUT: 
+fun id ['a] (x : 'a) : 'b = x
+
+val y : int = id [int] (42)
+OUTPUT: 
+Fatal error: exception Failure("Students! This is your job!")
+--------------------------------------------------------
+[XFAIL]  polymorphism2.hopix
+
+INPUT: 
+fun apply ['a, 'b] (f : 'a -> 'b, x : 'b) : 'a = f (x)
+
+val y : int = apply [int, int](\(x : int) => x, 0)
+OUTPUT: 
+Line 3, characters 31-46: Error (typechecking)
+  A type annotation is missing.
+--------------------------------------------------------
+[XFAIL]  polymorphism3.hopix
+
+INPUT: 
+type t ('a) = K ('a)
+
+fun open ['a] (x : t ()) : 'a =
+  x ? K (y : 'a) => y
+
+val y : int = open[int] (K[int] (1))
+OUTPUT: 
+Global Error (during parsing)
+  Syntax error.
+--------------------------------------------------------
+[XFAIL]  polymorphism4.hopix
+
+INPUT: 
+type t ('a) = K ('a)
+
+fun map ['a, 'b] (x : t ('a, 'b), f : 'a -> 'b) : t('b) =
+  x ? K (y : 'a) => K ['b] (f (y))
+
+fun id ['a] (x : t ('a)) : t ('a) =
+  map['a, 'a] (x, \(y : 'a) => y)
+
+val test = id[int] (K[int] (33))
+OUTPUT: 
+Line 7, characters 18-32: Error (typechecking)
+  A type annotation is missing.
+--------------------------------------------------------
+[XFAIL]  polymorphism5.hopix
+
+INPUT: 
+type t ('a) = K ('a -> 'b)
+
+fun compose ['a, 'b, 'c] (x : t ('a, 'b), f : 'b -> 'c) : t('a, 'c) =
+  x ? K (g : 'a -> 'b) => K ['a, 'c] (\(x : 'a) => f (g (x)))
+
+val tid : t (int, int)   = K[int, int] (\(x : int) => x)
+
+val tsucc : t (int, int) = compose[int, int, int] (tid, \(x : int) => x + 1)
+
+val tdble : t (int, int) = compose[int, int, int] (tsucc, \(x : int) => x * 2)
+
+
+
+OUTPUT: 
+Line 4, characters 38-60: Error (typechecking)
+  A type annotation is missing.
+--------------------------------------------------------
+[XFAIL]  recfuns.hopix
+
+INPUT: 
+fun f (x : int) : int =
+  g (x + 1) + 1
+OUTPUT: 
+Fatal error: exception Failure("Students! This is your job!")
+--------------------------------------------------------
+[XFAIL]  recfuns2.hopix
+
+INPUT: 
+fun f (x : int) : int =
+  f (x + 1) + h (x)
+and g (x : int) : int =
+  g (f (0))
+OUTPUT: 
+Fatal error: exception Failure("Students! This is your job!")
+--------------------------------------------------------
+[XFAIL]  recfuns3.hopix
+
+INPUT: 
+fun f (x : int, s : string) : int =
+  f (x + 1, s) + g (x, s)
+and g (x : int) : int =
+  g (f (0, "yo"))
+OUTPUT: 
+Fatal error: exception Failure("Students! This is your job!")
+--------------------------------------------------------
+[XFAIL]  restrictpoly.hopix
+
+INPUT: 
+fun id['a] (x: 'a) : 'a = x
+
+fun twice (f : int -> int) : int -> int =
+    \(x : int) => f (f (x))
+
+val zero = twice (\(x : int) => id[bool] (x)) (0)
+OUTPUT: 
+Line 4, characters 4-27: Error (typechecking)
+  A type annotation is missing.
+--------------------------------------------------------
+[XFAIL]  slam.hopix
+
+INPUT: 
+type list ('a) =
+| Nil
+| Cons ('a, list ('a))
+
+fun nil['a] () : list ('a) = Nil['a]
+
+fun cons['a] (x : 'a, xs : list('a)) : list ('a) = Cons['a] (x, xs)
+
+fun map['a, 'b] (f : 'a -> 'b, l : list ('a)) : list ('b) =
+  l ? {
+  | (Nil : list ('a)) =>
+    nil['a] ()
+  | Cons (x : 'a, xs : list ('a)) =>
+    cons['b] (f (x), map['a, 'b] (f, xs))
+ }
+
+fun append['a] (l1 : list ('a), l2 : list ('a)) : list ('a) =
+  l1 ? {
+  | (Nil : list ('a)) =>
+    l2
+  | Cons (x : 'a, xs : list ('a)) =>
+    cons['a] (x, append['a] (xs, l2))
+  }
+
+fun flatten['a] (l : list (list ('a))) : list ('a) =
+  l ? {
+  | (Nil : list (list ('a))) =>
+    nil['a] ()
+  | Cons (l : list ('a), ls : list (list ('a))) =>
+    append['a] (l, flatten['a] (ls))
+  }
+
+fun return['a] (x : 'a) : list ('a)  = cons['a] (x, nil['a] ())
+fun bind['a, 'b] (m : list ('a), f : 'a -> list ('b)) : list ('b) = 
+  flatten['b] (map['a, list ('b)] (f, m))
+
+fun choice['a] (a : 'a, b : 'a) : list ('a) = cons['a] (a, cons['a] (b, nil['a] ()))
+
+fun bits (n : int) : list (list (int)) =
+  if n = 0 then return[list (int)] (nil[int] ()) else
+    bind[int, list (int)] (choice[int] (0, 1), \(b : int) =>
+      bind[list (int), list (int)] (bits (n - 1), \(bs : list (int)) =>
+	return[list (int)] (cons[int] (b, bs))
+     )
+    )
+
+val all_bytes : list (list (int)) = bits (8)
+
+fun iter['a] (f : 'a -> unit, l : list ('a)) : unit =
+  l ? {
+  | (Nil : list ('a)) =>
+    nothing
+  | Cons (x : 'a, xs : list ('a)) => (
+     f (x);
+     iter['a] (f, xs)
+    )
+  }
+
+fun print_bits (bs : list (int)) : unit =
+  print_string ("[");
+  fun aux (bs : list (int)) : unit =
+    bs ? {
+    | (Nil : list (int)) => print_string ("")
+    | Cons (b : int, bs : list (int)) => (print_int (b); print_string (";"); aux (bs))
+    };
+  aux (bs);
+  print_string ("]")
+
+val main1 =
+  iter[list (int)] (\(b : list (int)) => (print_bits (b); print_string ("\n")),
+	all_bytes)
+
+val all_word12 : list (list (int)) = bits (12)
+
+fun fold['a, 'b] (f : 'b * 'a -> 'b, accu : 'b, l : list ('a)) : 'b = l? {
+  | (Nil : list ('a)) => accu
+  | Cons (x : 'a, xs : list ('a)) => fold['a, 'b] (f, f (accu, x), xs)
+}
+
+fun ones (b : list (int)) : int =
+  fold[int, int] ((\(a : int, b : int) => a + b), 0, b)
+
+val main2 =
+    val count = ref (0);
+    iter[list (int)] (\(b : list (int)) => count := !count + ones (b), all_word12);
+    print_int (!count)
+
+OUTPUT: 
+Global Error (during parsing)
+  Syntax error.
+--------------------------------------------------------
+[XFAIL]  slam1.hopix
+
+INPUT: 
+type list ('a) =
+| Nil
+| Cons ('a, list ('a))
+
+fun nil['a] () : list ('a) = Nil['a]
+
+fun cons['a] (x : 'a, xs : list('a)) : list ('a) = Cons['a] (x, xs)
+
+fun map['a, 'b] (f : 'a -> 'b, l : list ('a)) : list ('b) =
+  l ? {
+  | (Nil : list ('a)) =>
+    nil['b] ()
+  | Cons (x : 'a, xs : list ('a)) =>
+    cons['a] (f (x), map['a, 'b] (f, xs))
+ }
+
+fun append['a] (l1 : list ('a), l2 : list ('a)) : list ('a) =
+  l1 ? {
+  | (Nil : list ('a)) =>
+    l2
+  | Cons (x : 'a, xs : list ('a)) =>
+    cons['a] (x, append['a] (xs, l2))
+  }
+
+fun flatten['a] (l : list (list ('a))) : list ('a) =
+  l ? {
+  | (Nil : list (list ('a))) =>
+    nil['a] ()
+  | Cons (l : list ('a), ls : list (list ('a))) =>
+    append['a] (l, flatten['a] (ls))
+  }
+
+fun return['a] (x : 'a) : list ('a)  = cons['a] (x, nil['a] ())
+fun bind['a, 'b] (m : list ('a), f : 'a -> list ('b)) : list ('b) = 
+  flatten['b] (map['a, list ('b)] (f, m))
+
+fun choice['a] (a : 'a, b : 'a) : list ('a) = cons['a] (a, cons['a] (b, nil['a] ()))
+
+fun bits (n : int) : list (list (int)) =
+  if n = 0 then return[list (int)] (nil[int] ()) else
+    bind[int, list (int)] (choice[int] (0, 1), \(b : int) =>
+      bind[list (int), list (int)] (bits (n - 1), \(bs : list (int)) =>
+	return[list (int)] (cons[int] (b, bs))
+     )
+    )
+
+val all_bytes : list (list (int)) = bits (8)
+
+fun iter['a] (f : 'a -> unit, l : list ('a)) : unit =
+  l ? {
+  | (Nil : list ('a)) =>
+    nothing
+  | Cons (x : 'a, xs : list ('a)) => (
+     f (x);
+     iter['a] (f, xs)
+    )
+  }
+
+fun print_bits (bs : list (int)) : unit =
+  print_string ("[");
+  fun aux (bs : list (int)) : unit =
+    bs ? {
+    | (Nil : list (int)) => print_string ("")
+    | Cons (b : int, bs : list (int)) => (print_int (b); print_string (";"); aux (bs))
+    };
+  aux (bs);
+  print_string ("]")
+
+val main1 =
+  iter[list (int)] (\(b : list (int)) => (print_bits (b); print_string ("\n")),
+	all_bytes)
+
+val all_word12 : list (list (int)) = bits (12)
+
+fun fold['a, 'b] (f : 'b * 'a -> 'b, accu : 'b, l : list ('a)) : 'b = l? {
+  | (Nil : list ('a)) => accu
+  | Cons (x : 'a, xs : list ('a)) => fold['a, 'b] (f, f (accu, x), xs)
+}
+
+fun ones (b : list (int)) : int =
+  fold[int, int] ((\(a : int, b : int) => a + b), 0, b)
+
+val main2 =
+    val count = ref (0);
+    iter[list (int)] (\(b : list (int)) => count := !count + ones (b), all_word12);
+    print_int (!count)
+
+OUTPUT: 
+Global Error (during parsing)
+  Syntax error.
+--------------------------------------------------------
+[XFAIL]  slam2.hopix
+
+INPUT: 
+type list ('a) =
+| Nil
+| Cons ('a, list ('a))
+
+fun nil['a] () : list ('a) = Nil['a]
+
+fun cons['a] (x : 'a, xs : list('a)) : list ('a) = Cons['a] (x, xs)
+
+fun map['a, 'b] (f : 'a -> 'b, l : list ('a)) : list ('b) =
+  l ? {
+  | (Nil : list ('a)) =>
+    nil['b] ()
+  | Cons (x : 'a, xs : list ('a)) =>
+    cons['b] (map['a, 'b] (f, xs))
+ }
+
+fun append['a] (l1 : list ('a), l2 : list ('a)) : list ('a) =
+  l1 ? {
+  | (Nil : list ('a)) =>
+    l2
+  | Cons (x : 'a, xs : list ('a)) =>
+    cons['a] (x, append['a] (xs, l2))
+  }
+
+fun flatten['a] (l : list (list ('a))) : list ('a) =
+  l ? {
+  | (Nil : list (list ('a))) =>
+    nil['a] ()
+  | Cons (l : list ('a), ls : list (list ('a))) =>
+    append['a] (l, flatten['a] (ls))
+  }
+
+fun return['a] (x : 'a) : list ('a)  = cons['a] (x, nil['a] ())
+fun bind['a, 'b] (m : list ('a), f : 'a -> list ('b)) : list ('b) = 
+  flatten['b] (map['a, list ('b)] (f, m))
+
+fun choice['a] (a : 'a, b : 'a) : list ('a) = cons['a] (a, cons['a] (b, nil['a] ()))
+
+fun bits (n : int) : list (list (int)) =
+  if n = 0 then return[list (int)] (nil[int] ()) else
+    bind[int, list (int)] (choice[int] (0, 1), \(b : int) =>
+      bind[list (int), list (int)] (bits (n - 1), \(bs : list (int)) =>
+	return[list (int)] (cons[int] (b, bs))
+     )
+    )
+
+val all_bytes : list (list (int)) = bits (8)
+
+fun iter['a] (f : 'a -> unit, l : list ('a)) : unit =
+  l ? {
+  | (Nil : list ('a)) =>
+    nothing
+  | Cons (x : 'a, xs : list ('a)) => (
+     f (x);
+     iter['a] (f, xs)
+    )
+  }
+
+fun print_bits (bs : list (int)) : unit =
+  print_string ("[");
+  fun aux (bs : list (int)) : unit =
+    bs ? {
+    | (Nil : list (int)) => print_string ("")
+    | Cons (b : int, bs : list (int)) => (print_int (b); print_string (";"); aux (bs))
+    };
+  aux (bs);
+  print_string ("]")
+
+val main1 =
+  iter[list (int)] (\(b : list (int)) => (print_bits (b); print_string ("\n")),
+	all_bytes)
+
+val all_word12 : list (list (int)) = bits (12)
+
+fun fold['a, 'b] (f : 'b * 'a -> 'b, accu : 'b, l : list ('a)) : 'b = l? {
+  | (Nil : list ('a)) => accu
+  | Cons (x : 'a, xs : list ('a)) => fold['a, 'b] (f, f (accu, x), xs)
+}
+
+fun ones (b : list (int)) : int =
+  fold[int, int] ((\(a : int, b : int) => a + b), 0, b)
+
+val main2 =
+    val count = ref (0);
+    iter[list (int)] (\(b : list (int)) => count := !count + ones (b), all_word12);
+    print_int (!count)
+
+OUTPUT: 
+Global Error (during parsing)
+  Syntax error.
+--------------------------------------------------------
+[XFAIL]  slam4.hopix
+
+INPUT: 
+type list ('a) =
+| Nil
+| Cons ('a, list ('a))
+
+fun nil['a] () : list ('a) = Nil['a]
+
+fun cons['a] (x : 'a, xs : list('a)) : list ('a) = Cons['a] (x, xs)
+
+fun map['a, 'b] (f : 'a -> 'b, l : list ('a)) : list ('b) =
+  l ? {
+  | (Nil : list ('a)) =>
+    nil['b] ()
+  | Cons (x : 'a, xs : list ('a)) =>
+    cons['b] (f (x), map['a] (f, xs))
+ }
+
+fun append['a] (l1 : list ('a), l2 : list ('a)) : list ('a) =
+  l1 ? {
+  | (Nil : list ('a)) =>
+    l2
+  | Cons (x : 'a, xs : list ('a)) =>
+    cons['a] (x, append['a] (xs, l2))
+  }
+
+fun flatten['a] (l : list (list ('a))) : list ('a) =
+  l ? {
+  | (Nil : list (list ('a))) =>
+    nil['a] ()
+  | Cons (l : list ('a), ls : list (list ('a))) =>
+    append['a] (l, flatten['a] (ls))
+  }
+
+fun return['a] (x : 'a) : list ('a)  = cons['a] (x, nil['a] ())
+fun bind['a, 'b] (m : list ('a), f : 'a -> list ('b)) : list ('b) = 
+  flatten['b] (map['a, list ('b)] (f, m))
+
+fun choice['a] (a : 'a, b : 'a) : list ('a) = cons['a] (a, cons['a] (b, nil['a] ()))
+
+fun bits (n : int) : list (list (int)) =
+  if n = 0 then return[list (int)] (nil[int] ()) else
+    bind[int, list (int)] (choice[int] (0, 1), \(b : int) =>
+      bind[list (int), list (int)] (bits (n - 1), \(bs : list (int)) =>
+	return[list (int)] (cons[int] (b, bs))
+     )
+    )
+
+val all_bytes : list (list (int)) = bits (8)
+
+fun iter['a] (f : 'a -> unit, l : list ('a)) : unit =
+  l ? {
+  | (Nil : list ('a)) =>
+    nothing
+  | Cons (x : 'a, xs : list ('a)) => (
+     f (x);
+     iter['a] (f, xs)
+    )
+  }
+
+fun print_bits (bs : list (int)) : unit =
+  print_string ("[");
+  fun aux (bs : list (int)) : unit =
+    bs ? {
+    | (Nil : list (int)) => print_string ("")
+    | Cons (b : int, bs : list (int)) => (print_int (b); print_string (";"); aux (bs))
+    };
+  aux (bs);
+  print_string ("]")
+
+val main1 =
+  iter[list (int)] (\(b : list (int)) => (print_bits (b); print_string ("\n")),
+	all_bytes)
+
+val all_word12 : list (list (int)) = bits (12)
+
+fun fold['a, 'b] (f : 'b * 'a -> 'b, accu : 'b, l : list ('a)) : 'b = l? {
+  | (Nil : list ('a)) => accu
+  | Cons (x : 'a, xs : list ('a)) => fold['a, 'b] (f, f (accu, x), xs)
+}
+
+fun ones (b : list (int)) : int =
+  fold[int, int] ((\(a : int, b : int) => a + b), 0, b)
+
+val main2 =
+    val count = ref (0);
+    iter[list (int)] (\(b : list (int)) => count := !count + ones (b), all_word12);
+    print_int (!count)
+
+OUTPUT: 
+Global Error (during parsing)
+  Syntax error.
+--------------------------------------------------------
+[XFAIL]  slam5.hopix
+
+INPUT: 
+type list ('a) =
+| Nil
+| Cons ('a, list ())
+
+fun nil['a] () : list ('a) = Nil['a]
+
+fun cons['a] (x : 'a, xs : list('a)) : list ('a) = Cons['a] (x, xs)
+
+fun map['a, 'b] (f : 'a -> 'b, l : list ('a)) : list ('b) =
+  l ? {
+  | (Nil : list ('a)) =>
+    nil['b] ()
+  | Cons (x : 'a, xs : list ('a)) =>
+    cons['b] (f (x), map['a, 'b] (f, xs))
+ }
+
+fun append['a] (l1 : list ('a), l2 : list ('a)) : list ('a) =
+  l1 ? {
+  | (Nil : list ('a)) =>
+    l2
+  | Cons (x : 'a, xs : list ('a)) =>
+    cons['a] (x, append['a] (xs, l2))
+  }
+
+fun flatten['a] (l : list (list ('a))) : list ('a) =
+  l ? {
+  | (Nil : list (list ('a))) =>
+    nil['a] ()
+  | Cons (l : list ('a), ls : list (list ('a))) =>
+    append['a] (l, flatten['a] (ls))
+  }
+
+fun return['a] (x : 'a) : list ('a)  = cons['a] (x, nil['a] ())
+fun bind['a, 'b] (m : list ('a), f : 'a -> list ('b)) : list ('b) = 
+  flatten['b] (map['a, list ('b)] (f, m))
+
+fun choice['a] (a : 'a, b : 'a) : list ('a) = cons['a] (a, cons['a] (b, nil['a] ()))
+
+fun bits (n : int) : list (list (int)) =
+  if n = 0 then return[list (int)] (nil[int] ()) else
+    bind[int, list (int)] (choice[int] (0, 1), \(b : int) =>
+      bind[list (int), list (int)] (bits (n - 1), \(bs : list (int)) =>
+	return[list (int)] (cons[int] (b, bs))
+     )
+    )
+
+val all_bytes : list (list (int)) = bits (8)
+
+fun iter['a] (f : 'a -> unit, l : list ('a)) : unit =
+  l ? {
+  | (Nil : list ('a)) =>
+    nothing
+  | Cons (x : 'a, xs : list ('a)) => (
+     f (x);
+     iter['a] (f, xs)
+    )
+  }
+
+fun print_bits (bs : list (int)) : unit =
+  print_string ("[");
+  fun aux (bs : list (int)) : unit =
+    bs ? {
+    | (Nil : list (int)) => print_string ("")
+    | Cons (b : int, bs : list (int)) => (print_int (b); print_string (";"); aux (bs))
+    };
+  aux (bs);
+  print_string ("]")
+
+val main1 =
+  iter[list (int)] (\(b : list (int)) => (print_bits (b); print_string ("\n")),
+	all_bytes)
+
+val all_word12 : list (list (int)) = bits (12)
+
+fun fold['a, 'b] (f : 'b * 'a -> 'b, accu : 'b, l : list ('a)) : 'b = l? {
+  | (Nil : list ('a)) => accu
+  | Cons (x : 'a, xs : list ('a)) => fold['a, 'b] (f, f (accu, x), xs)
+}
+
+fun ones (b : list (int)) : int =
+  fold[int, int] ((\(a : int, b : int) => a + b), 0, b)
+
+val main2 =
+    val count = ref (0);
+    iter[list (int)] (\(b : list (int)) => count := !count + ones (b), all_word12);
+    print_int (!count)
+
+OUTPUT: 
+Global Error (during parsing)
+  Syntax error.
+--------------------------------------------------------
+[XFAIL]  slam6.hopix
+
+INPUT: 
+type list ('a) =
+| Nil
+| Cons ('a, list ('a, 'b))
+
+fun nil['a] () : list ('a) = Nil['a]
+
+fun cons['a] (x : 'a, xs : list('a)) : list ('a) = Cons['a] (x, xs)
+
+fun map['a, 'b] (f : 'a -> 'b, l : list ('a)) : list ('b) =
+  l ? {
+  | (Nil : list ('a)) =>
+    nil['b] ()
+  | Cons (x : 'a, xs : list ('a)) =>
+    cons['b] (f (x), map['a, 'b] (f, xs))
+ }
+
+fun append['a] (l1 : list ('a), l2 : list ('a)) : list ('a) =
+  l1 ? {
+  | (Nil : list ('a)) =>
+    l2
+  | Cons (x : 'a, xs : list ('a)) =>
+    cons['a] (x, append['a] (xs, l2))
+  }
+
+fun flatten['a] (l : list (list ('a))) : list ('a) =
+  l ? {
+  | (Nil : list (list ('a))) =>
+    nil['a] ()
+  | Cons (l : list ('a), ls : list (list ('a))) =>
+    append['a] (l, flatten['a] (ls))
+  }
+
+fun return['a] (x : 'a) : list ('a)  = cons['a] (x, nil['a] ())
+fun bind['a, 'b] (m : list ('a), f : 'a -> list ('b)) : list ('b) = 
+  flatten['b] (map['a, list ('b)] (f, m))
+
+fun choice['a] (a : 'a, b : 'a) : list ('a) = cons['a] (a, cons['a] (b, nil['a] ()))
+
+fun bits (n : int) : list (list (int)) =
+  if n = 0 then return[list (int)] (nil[int] ()) else
+    bind[int, list (int)] (choice[int] (0, 1), \(b : int) =>
+      bind[list (int), list (int)] (bits (n - 1), \(bs : list (int)) =>
+	return[list (int)] (cons[int] (b, bs))
+     )
+    )
+
+val all_bytes : list (list (int)) = bits (8)
+
+fun iter['a] (f : 'a -> unit, l : list ('a)) : unit =
+  l ? {
+  | (Nil : list ('a)) =>
+    nothing
+  | Cons (x : 'a, xs : list ('a)) => (
+     f (x);
+     iter['a] (f, xs)
+    )
+  }
+
+fun print_bits (bs : list (int)) : unit =
+  print_string ("[");
+  fun aux (bs : list (int)) : unit =
+    bs ? {
+    | (Nil : list (int)) => print_string ("")
+    | Cons (b : int, bs : list (int)) => (print_int (b); print_string (";"); aux (bs))
+    };
+  aux (bs);
+  print_string ("]")
+
+val main1 =
+  iter[list (int)] (\(b : list (int)) => (print_bits (b); print_string ("\n")),
+	all_bytes)
+
+val all_word12 : list (list (int)) = bits (12)
+
+fun fold['a, 'b] (f : 'b * 'a -> 'b, accu : 'b, l : list ('a)) : 'b = l? {
+  | (Nil : list ('a)) => accu
+  | Cons (x : 'a, xs : list ('a)) => fold['a, 'b] (f, f (accu, x), xs)
+}
+
+fun ones (b : list (int)) : int =
+  fold[int, int] ((\(a : int, b : int) => a + b), 0, b)
+
+val main2 =
+    val count = ref (0);
+    iter[list (int)] (\(b : list (int)) => count := !count + ones (b), all_word12);
+    print_int (!count)
+
+OUTPUT: 
+Global Error (during parsing)
+  Syntax error.
+--------------------------------------------------------
+[XFAIL]  string.hopix
+
+INPUT: 
+val s : int = "foobar"
+OUTPUT: 
+Line 1, characters 8-11: Error (typechecking)
+  Type error:
+Expected:
+  string
+Given:
+  int
+
+--------------------------------------------------------
+[XFAIL]  val.hopix
+
+INPUT: 
+val x : bool = 1
+
+OUTPUT: 
+Line 1, characters 8-12: Error (typechecking)
+  Type error:
+Expected:
+  int
+Given:
+  bool
+
+--------------------------------------------------------
+[XFAIL]  while.hopix
+
+INPUT: 
+fun f (x : unit) : unit =
+ while (0) { f (nothing) }
+OUTPUT: 
+Fatal error: exception Failure("Students! This is your job!")
+--------------------------------------------------------
+[XFAIL]  while2.hopix
+
+INPUT: 
+fun f (x : unit) : int =
+ while (true) { f (nothing) }
+OUTPUT: 
+Fatal error: exception Failure("Students! This is your job!")
+--------------------------------------------------------
+[XFAIL]  while3.hopix
+
+INPUT: 
+fun f (x : unit) : unit =
+ while (true) { 1 }
+OUTPUT: 
+Fatal error: exception Failure("Students! This is your job!")
+--------------------------------------------------------
+./andpatterns.hopix ./andpatterns2.hopix ./apply.hopix ./arith.hopix ./arith2.hopix ./arith3.hopix ./bool.hopix ./case.hopix ./external.hopix ./id.hopix ./idapp.hopix ./if.hopix ./if1.hopix ./if2.hopix ./if3.hopix ./if4.hopix ./int.hopix ./litpatterns.hopix ./litpatterns2.hopix ./litpatterns3.hopix ./local.hopix ./local1.hopix ./memory.hopix ./memory1.hopix ./memory2.hopix ./multipatterns.hopix ./noarg.hopix ./nonlinearpatterns.hopix ./option.hopix ./orpatterns.hopix ./orpatterns2.hopix ./orpatterns3.hopix ./polymorphism.hopix ./polymorphism2.hopix ./polymorphism3.hopix ./polymorphism4.hopix ./polymorphism5.hopix ./recfuns.hopix ./recfuns2.hopix ./recfuns3.hopix ./restrictpoly.hopix ./slam.hopix ./slam1.hopix ./slam2.hopix ./slam4.hopix ./slam5.hopix ./slam6.hopix ./string.hopix ./val.hopix ./while.hopix ./while2.hopix ./while3.hopix
+BAD:  52 / 52
+make[1]: Leaving directory '/home/opam/source/flap/tests-m3/hopix/typechecker/bad'
+make[1]: Entering directory '/home/opam/source/flap/tests-m3/hopix/typechecker/good'
+========================================================
+In typechecker/good
+[ KO ]   -->  andpatterns.hopix
+
+INPUT:
+type t () = A | B
+
+val test1 = A ? { A & A => 0 | B => 1 }
+OUTPUT: 
+Global Error (during parsing)
+  Syntax error.
+EXPECTED: 
+test1 : int
+--------------------------------------------------------
+[ KO ]   -->  andpatterns2.hopix
+
+INPUT:
+type t () = A (int) | B
+
+val test1 = A (0) ? { A (x : int) & (y : t ()) => x | B => 1 }
+
+val test2 = A (0) ? { A (_ : int) & (y : t ()) => y | B => A (0) }
+OUTPUT: 
+Global Error (during parsing)
+  Syntax error.
+EXPECTED: 
+test1 : int
+test2 : t
+--------------------------------------------------------
+[ KO ]   -->  apply.hopix
+
+INPUT:
+fun apply['a, 'b] (f : 'a -> 'b, x : 'a) : 'b =
+  f (x)
+
+fun succ (x : int) : int = x + 1
+
+val one = apply[int, int] (succ, 0)
+OUTPUT: 
+Fatal error: exception Failure("Students! This is your job!")
+EXPECTED: 
+apply : ('a -> 'b) * 'a -> 'b
+succ : int -> int
+one : int
+--------------------------------------------------------
+[ KO ]   -->  arith.hopix
+
+INPUT:
+val x = 1 + 1
+OUTPUT: 
+Fatal error: exception Failure("Students! This is your job!")
+EXPECTED: 
+x : int
+--------------------------------------------------------
+[ KO ]   -->  arith2.hopix
+
+INPUT:
+val x = 1 + 1 * 3
+OUTPUT: 
+Fatal error: exception Failure("Students! This is your job!")
+EXPECTED: 
+x : int
+--------------------------------------------------------
+[ KO ]   -->  arith3.hopix
+
+INPUT:
+val x = 1 + 1 * 3
+val y = x / 2 - 3
+OUTPUT: 
+Fatal error: exception Failure("Students! This is your job!")
+EXPECTED: 
+x : int
+y : int
+--------------------------------------------------------
+[ KO ]   -->  bool.hopix
+
+INPUT:
+val t = true
+val f = false
+OUTPUT: 
+Fatal error: exception Failure("Students! This is your job!")
+EXPECTED: 
+t : bool
+f : bool
+--------------------------------------------------------
+[ KO ]   -->  case.hopix
+
+INPUT:
+type t () = A | B
+
+val test1 : int = A ? { A => 0 | B => 1 }
+
+fun f (x : t ()) : int = x ? { A => 0 | B => 1 }
+
+val test2 : int = f (A)
+OUTPUT: 
+Global Error (during parsing)
+  Syntax error.
+EXPECTED: 
+test1 : int
+f : t -> int
+test2 : int
+--------------------------------------------------------
+[ KO ]   -->  external.hopix
+
+INPUT:
+extern p : int * int -> int
+
+val x : int = p (0, 1)
+OUTPUT: 
+Global Error (during parsing)
+  Syntax error.
+EXPECTED: 
+p : int * int -> int
+x : int
+--------------------------------------------------------
+[ KO ]   -->  id.hopix
+
+INPUT:
+val id = \['a](x : 'a) => (x : 'a)
+OUTPUT: 
+Fatal error: exception Failure("Students! This is your job!")
+EXPECTED: 
+id : 'a -> 'a
+--------------------------------------------------------
+[ KO ]   -->  idapp.hopix
+
+INPUT:
+val zero = (\['a](x : 'a) => (x : 'a))[int](0)
+
+OUTPUT: 
+Fatal error: exception Failure("Students! This is your job!")
+EXPECTED: 
+zero : int
+--------------------------------------------------------
+[ KO ]   -->  if.hopix
+
+INPUT:
+val test : int =
+  if true then 0 else 1
+OUTPUT: 
+Fatal error: exception Failure("Students! This is your job!")
+EXPECTED: 
+test : int
+--------------------------------------------------------
+[ KO ]   -->  if1.hopix
+
+INPUT:
+val test : string =
+  if true then "string" else "gnirst"
+OUTPUT: 
+Fatal error: exception Failure("Students! This is your job!")
+EXPECTED: 
+test : string
+--------------------------------------------------------
+[ KO ]   -->  if2.hopix
+
+INPUT:
+val test : int =
+  if true then 0 else if false then 1 else 2
+OUTPUT: 
+Fatal error: exception Failure("Students! This is your job!")
+EXPECTED: 
+test : int
+--------------------------------------------------------
+[ KO ]   -->  if3.hopix
+
+INPUT:
+val x = 1
+
+val test : int =
+  if x = 0 then 0
+  else if x = 1 then 1
+  else if x > 0 then 2
+  else if x < 0 then 3
+  else if x <= 0 then 4
+  else if x >= 0 then 5
+  else if x = 0 && x > 0 then 6
+  else 33
+OUTPUT: 
+Fatal error: exception Failure("Students! This is your job!")
+EXPECTED: 
+x : int
+test : int
+--------------------------------------------------------
+[ KO ]   -->  if4.hopix
+
+INPUT:
+val x = 3
+val test : unit =
+  if x = 0 then nothing
+
+OUTPUT: 
+Fatal error: exception Failure("Students! This is your job!")
+EXPECTED: 
+x : int
+test : unit
+--------------------------------------------------------
+[ OK ]   int.hopix
+
+INPUT:
+val x = 42
+OUTPUT: 
+x : int
+EXPECTED: 
+x : int
+--------------------------------------------------------
+[ KO ]   -->  litpatterns.hopix
+
+INPUT:
+val x : int = 3 ? { 3 => 0 | (_ : int) => 1 }
+OUTPUT: 
+Fatal error: exception Failure("Students! This is your job!")
+EXPECTED: 
+x : int
+--------------------------------------------------------
+[ KO ]   -->  litpatterns2.hopix
+
+INPUT:
+val x : int = "Darth" ? { "Yoda" => 0 | "Luke" => 1 | (_ : string) => 2 }
+OUTPUT: 
+Fatal error: exception Failure("Students! This is your job!")
+EXPECTED: 
+x : int
+--------------------------------------------------------
+[ KO ]   -->  litpatterns3.hopix
+
+INPUT:
+val x : int = 'a' ? { 'b' => 0 | 'c' => 1 | (_ : char) => 2 }
+OUTPUT: 
+Fatal error: exception Failure("Students! This is your job!")
+EXPECTED: 
+x : int
+--------------------------------------------------------
+[ KO ]   -->  local.hopix
+
+INPUT:
+val test : int =
+  val x : int = 3;
+  val z : int -> int = \(x : int) => x + 1;
+  val u : int = z (x);
+  u
+OUTPUT: 
+Line 3, characters 23-42: Error (typechecking)
+  A type annotation is missing.
+EXPECTED: 
+test : int
+--------------------------------------------------------
+[ KO ]   -->  local1.hopix
+
+INPUT:
+val test : int =
+  val x : int = (
+    val z : int -> int = \(x : int) => x + 1;
+    val u : int = z (3);
+    u
+  );
+  x
+OUTPUT: 
+Line 3, characters 25-44: Error (typechecking)
+  A type annotation is missing.
+EXPECTED: 
+test : int
+--------------------------------------------------------
+[ OK ]   memory.hopix
+
+INPUT:
+val r : cell (int) = ref (0)
+OUTPUT: 
+r : cell(int)
+EXPECTED: 
+r : cell(int)
+--------------------------------------------------------
+[ KO ]   -->  memory1.hopix
+
+INPUT:
+val r : cell (int) = ref (0)
+
+val write : unit =
+  r := 42
+OUTPUT: 
+Fatal error: exception Failure("Students! This is your job!")
+EXPECTED: 
+r : cell(int)
+write : unit
+--------------------------------------------------------
+[ KO ]   -->  memory2.hopix
+
+INPUT:
+val r : cell (int) = ref (0)
+
+val write : unit =
+  r := 42
+
+val read : int =
+  !r
+OUTPUT: 
+Fatal error: exception Failure("Students! This is your job!")
+EXPECTED: 
+r : cell(int)
+write : unit
+read : int
+--------------------------------------------------------
+[ KO ]   -->  multipatterns.hopix
+
+INPUT:
+type t () = A | B
+type u () = S (t ()) | T (int)
+
+val x : int = S (A) ? {
+| S (A | B)  => 0
+| (_ : u ()) => 1
+}
+OUTPUT: 
+Global Error (during parsing)
+  Syntax error.
+EXPECTED: 
+x : int
+--------------------------------------------------------
+[ KO ]   -->  noarg.hopix
+
+INPUT:
+fun f () : unit = f ()
+
+val test : unit = f ()
+OUTPUT: 
+Global Error (during parsing)
+  Syntax error.
+EXPECTED: 
+f :  -> unit
+test : unit
+--------------------------------------------------------
+[ KO ]   -->  option.hopix
+
+INPUT:
+type option ('a) =
+| None
+| Some ('a)
+
+val none = None [int]
+
+fun some (x : int) : option (int) = Some[int] (x)
+
+fun unSome (o : option (int), default: int) : int =
+  o ? {
+  | (None : option (int)) => default
+  | Some (x : int) => x
+  }
+OUTPUT: 
+Fatal error: exception Failure("Students! This is your job!")
+EXPECTED: 
+none : option(int)
+some : int -> option(int)
+unSome : option(int) * int -> int
+--------------------------------------------------------
+[ KO ]   -->  orpatterns.hopix
+
+INPUT:
+type t () = A (int) | B (int) | C
+
+val test1 : int = A (0) ? {
+| A (x : int) | B (x : int) => x
+| C => 0
+}
+
+
+OUTPUT: 
+Global Error (during parsing)
+  Syntax error.
+EXPECTED: 
+test1 : int
+--------------------------------------------------------
+[ KO ]   -->  orpatterns2.hopix
+
+INPUT:
+type u () = A (int, int) | B (int) | C
+
+val test1 : int = A (0, 0) ? {
+| A (x : int, (_ : int)) | B (x : int) => x
+| C => 0
+}
+
+
+OUTPUT: 
+Global Error (during parsing)
+  Syntax error.
+EXPECTED: 
+test1 : int
+--------------------------------------------------------
+[ KO ]   -->  polymorphism.hopix
+
+INPUT:
+fun id ['a] (x : 'a) : 'a = x
+
+val y : int = id [int] (42)
+OUTPUT: 
+Fatal error: exception Failure("Students! This is your job!")
+EXPECTED: 
+id : 'a -> 'a
+y : int
+--------------------------------------------------------
+[ KO ]   -->  polymorphism2.hopix
+
+INPUT:
+fun apply ['a, 'b] (f : 'a -> 'b, x : 'a) : 'b = f (x)
+
+val y : int = apply [int, int](\(x : int) => x, 0)
+OUTPUT: 
+Line 3, characters 31-46: Error (typechecking)
+  A type annotation is missing.
+EXPECTED: 
+apply : ('a -> 'b) * 'a -> 'b
+y : int
+--------------------------------------------------------
+[ KO ]   -->  polymorphism3.hopix
+
+INPUT:
+type t ('a) = K ('a)
+
+fun open ['a] (x : t ('a)) : 'a =
+  x ? K (y : 'a) => y
+
+val y : int = open[int] (K[int] (1))
+OUTPUT: 
+Fatal error: exception Failure("Students! This is your job!")
+EXPECTED: 
+open : t('a) -> 'a
+y : int
+--------------------------------------------------------
+[ KO ]   -->  polymorphism4.hopix
+
+INPUT:
+type t ('a) = K ('a)
+
+fun map ['a, 'b] (x : t ('a), f : 'a -> 'b) : t('b) =
+  x ? K (y : 'a) => K ['b] (f (y))
+
+fun id ['a] (x : t ('a)) : t ('a) =
+  map['a, 'a] (x, \(y : 'a) => y)
+
+val test = id[int] (K[int] (33))
+OUTPUT: 
+Line 7, characters 18-32: Error (typechecking)
+  A type annotation is missing.
+EXPECTED: 
+map : t('a) * ('a -> 'b) -> t('b)
+id : t('a) -> t('a)
+test : t(int)
+--------------------------------------------------------
+[ KO ]   -->  polymorphism5.hopix
+
+INPUT:
+type t ('a, 'b) = K ('a -> 'b)
+
+fun compose ['a, 'b, 'c] (x : t ('a, 'b), f : 'b -> 'c) : t('a, 'c) =
+  x ? K (g : 'a -> 'b) => K ['a, 'c] (\(x : 'a) => f (g (x)))
+
+val tid : t (int, int)   = K[int, int] (\(x : int) => x)
+
+val tsucc : t (int, int) = compose[int, int, int] (tid, \(x : int) => x + 1)
+
+val tdble : t (int, int) = compose[int, int, int] (tsucc, \(x : int) => x * 2)
+
+
+
+OUTPUT: 
+Line 4, characters 38-60: Error (typechecking)
+  A type annotation is missing.
+EXPECTED: 
+compose : t('a, 'b) * ('b -> 'c) -> t('a, 'c)
+tid : t(int, int)
+tsucc : t(int, int)
+tdble : t(int, int)
+--------------------------------------------------------
+[ KO ]   -->  recfuns.hopix
+
+INPUT:
+fun f (x : int) : int =
+  f (x + 1) + 1
+OUTPUT: 
+Fatal error: exception Failure("Students! This is your job!")
+EXPECTED: 
+f : int -> int
+--------------------------------------------------------
+[ KO ]   -->  recfuns2.hopix
+
+INPUT:
+fun f (x : int) : int =
+  f (x + 1) + g (x)
+and g (x : int) : int =
+  g (f (0))
+OUTPUT: 
+Fatal error: exception Failure("Students! This is your job!")
+EXPECTED: 
+f : int -> int
+g : int -> int
+--------------------------------------------------------
+[ KO ]   -->  recfuns3.hopix
+
+INPUT:
+fun f (x : int, s : string) : int =
+  f (x + 1, s) + g (x)
+and g (x : int) : int =
+  g (f (0, "yo"))
+OUTPUT: 
+Fatal error: exception Failure("Students! This is your job!")
+EXPECTED: 
+f : int * string -> int
+g : int -> int
+--------------------------------------------------------
+[ KO ]   -->  restrictpoly.hopix
+
+INPUT:
+fun id['a] (x: 'a) : 'a = x
+
+fun twice (f : int -> int) : int -> int =
+    \(x : int) => f (f (x))
+
+val zero = twice (\(x : int) => id[int] (x)) (0)
+OUTPUT: 
+Line 4, characters 4-27: Error (typechecking)
+  A type annotation is missing.
+EXPECTED: 
+id : 'a -> 'a
+twice : (int -> int) -> (int -> int)
+zero : int
+--------------------------------------------------------
+[ KO ]   -->  slam.hopix
+
+INPUT:
+type list ('a) =
+| Nil
+| Cons ('a, list ('a))
+
+fun nil['a] () : list ('a) = Nil['a]
+
+fun cons['a] (x : 'a, xs : list('a)) : list ('a) = Cons['a] (x, xs)
+
+fun map['a, 'b] (f : 'a -> 'b, l : list ('a)) : list ('b) =
+  l ? {
+  | (Nil : list ('a)) =>
+    nil['b] ()
+  | Cons (x : 'a, xs : list ('a)) =>
+    cons['b] (f (x), map['a, 'b] (f, xs))
+ }
+
+fun append['a] (l1 : list ('a), l2 : list ('a)) : list ('a) =
+  l1 ? {
+  | (Nil : list ('a)) =>
+    l2
+  | Cons (x : 'a, xs : list ('a)) =>
+    cons['a] (x, append['a] (xs, l2))
+  }
+
+fun flatten['a] (l : list (list ('a))) : list ('a) =
+  l ? {
+  | (Nil : list (list ('a))) =>
+    nil['a] ()
+  | Cons (l : list ('a), ls : list (list ('a))) =>
+    append['a] (l, flatten['a] (ls))
+  }
+
+fun return['a] (x : 'a) : list ('a)  = cons['a] (x, nil['a] ())
+fun bind['a, 'b] (m : list ('a), f : 'a -> list ('b)) : list ('b) = 
+  flatten['b] (map['a, list ('b)] (f, m))
+
+fun choice['a] (a : 'a, b : 'a) : list ('a) = cons['a] (a, cons['a] (b, nil['a] ()))
+
+fun bits (n : int) : list (list (int)) =
+  if n = 0 then return[list (int)] (nil[int] ()) else
+    bind[int, list (int)] (choice[int] (0, 1), \(b : int) =>
+      bind[list (int), list (int)] (bits (n - 1), \(bs : list (int)) =>
+	return[list (int)] (cons[int] (b, bs))
+     )
+    )
+
+val all_bytes : list (list (int)) = bits (8)
+
+fun iter['a] (f : 'a -> unit, l : list ('a)) : unit =
+  l ? {
+  | (Nil : list ('a)) =>
+    nothing
+  | Cons (x : 'a, xs : list ('a)) => (
+     f (x);
+     iter['a] (f, xs)
+    )
+  }
+
+fun print_bits (bs : list (int)) : unit =
+  print_string ("[");
+  fun aux (bs : list (int)) : unit =
+    bs ? {
+    | (Nil : list (int)) => print_string ("")
+    | Cons (b : int, bs : list (int)) => (print_int (b); print_string (";"); aux (bs))
+    };
+  aux (bs);
+  print_string ("]")
+
+val main1 =
+  iter[list (int)] (\(b : list (int)) => (print_bits (b); print_string ("\n")),
+	all_bytes)
+
+val all_word12 : list (list (int)) = bits (12)
+
+fun fold['a, 'b] (f : 'b * 'a -> 'b, accu : 'b, l : list ('a)) : 'b = l? {
+  | (Nil : list ('a)) => accu
+  | Cons (x : 'a, xs : list ('a)) => fold['a, 'b] (f, f (accu, x), xs)
+}
+
+fun ones (b : list (int)) : int =
+  fold[int, int] ((\(a : int, b : int) => a + b), 0, b)
+
+val main2 =
+    val count = ref (0);
+    iter[list (int)] (\(b : list (int)) => count := !count + ones (b), all_word12);
+    print_int (!count)
+
+OUTPUT: 
+Global Error (during parsing)
+  Syntax error.
+EXPECTED: 
+nil :  -> list('a)
+cons : 'a * list('a) -> list('a)
+map : ('a -> 'b) * list('a) -> list('b)
+append : list('a) * list('a) -> list('a)
+flatten : list(list('a)) -> list('a)
+return : 'a -> list('a)
+bind : list('a) * ('a -> list('b)) -> list('b)
+choice : 'a * 'a -> list('a)
+bits : int -> list(list(int))
+all_bytes : list(list(int))
+iter : ('a -> unit) * list('a) -> unit
+print_bits : list(int) -> unit
+main1 : unit
+all_word12 : list(list(int))
+fold : ('b * 'a -> 'b) * 'b * list('a) -> 'b
+ones : list(int) -> int
+main2 : unit
+--------------------------------------------------------
+[ OK ]   string.hopix
+
+INPUT:
+val s = "foobar"
+OUTPUT: 
+s : string
+EXPECTED: 
+s : string
+--------------------------------------------------------
+[ KO ]   -->  while.hopix
+
+INPUT:
+fun f (x : unit) : unit =
+ while (true) { f (nothing) }
+OUTPUT: 
+Fatal error: exception Failure("Students! This is your job!")
+EXPECTED: 
+f : unit -> unit
+--------------------------------------------------------
+GOOD: 3 / 42
+
+BAD:  0 / 0
+make[1]: Leaving directory '/home/opam/source/flap/tests-m3/hopix/typechecker/good'
+--------------------------------------------------------
+Global results:
+BAD:   52 / 52
+GOOD:  3 / 42
+--------------------------------------------------------
+make: Leaving directory '/home/opam/source/flap/tests-m3'
