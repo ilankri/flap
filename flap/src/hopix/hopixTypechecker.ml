@@ -312,9 +312,11 @@ let typecheck tenv ast : typing_environment =
   and pattern tenv pos = function
     (*
        ———————————————————————
-       Γ ⊢ x : σ ⇒ Γ(x : σ), σ *)
+       Γ ⊢ x : σ ⇒ Γ'(x : σ), σ *)
     | PTypeAnnotation ({ Position.value = PVariable x }, ty) ->
-      failwith "Students! This is your job!"
+      let aty = monotype (aty_of_ty (Position.value ty)) in
+      let tenv' = bind_value (Position.value x) aty tenv in
+      tenv', aty
 
     | PVariable _ ->
       assert false (* by check_program_is_fully_annotated. *)
@@ -351,7 +353,7 @@ let typecheck tenv ast : typing_environment =
        ————————————————————————
        Γ ⊢ p : σ ⇒ Γ', σ        *)
     | PTypeAnnotation (p, ty) ->
-      let tenv', tau' = pattern (Position.position p) tenv (Position.value p) in
+      let tenv', tau' = located (pattern tenv) p in
       let ty' = type_of_monotype tau' in
       let aty = aty_of_ty (Position.value ty) in
       check_expected_type (Position.position ty) ty' aty;
