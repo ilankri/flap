@@ -344,19 +344,23 @@ let typecheck tenv ast : typing_environment =
        ———————————————
        Γ ⊢ _ ⇒ Γ, ∀α.α *)
     | PWildcard ->
-      failwith "Students! This is your job!"
+      let newAlpha = ATyVar(fresh ()) in
+      tenv, (monotype newAlpha )
 
     (* Γ ⊢ p ⇒ Γ', σ'    σ' = σ
        ————————————————————————
        Γ ⊢ p : σ ⇒ Γ', σ        *)
     | PTypeAnnotation (p, ty) ->
-      failwith "Students! This is your job!"
-
+      let tenv', tau' = pattern (Position.position p) tenv (Position.value p) in
+      let ty' = type_of_monotype tau' in
+      let aty = aty_of_ty (Position.value ty) in
+      check_expected_type (Position.position ty) ty' aty;
+      tenv', monotype aty
+      
     (*
        ——————————————    ———————————————    —————————————————
        Γ ⊢ n ⇒ Γ, int    Γ ⊢ n ⇒ Γ, char    Γ ⊢ n ⇒ Γ, string *)
-    | PLiteral l ->
-      failwith "Students! This is your job!"
+    | PLiteral l -> tenv, monotype (located type_of_literal l)
 
   (** [branches tenv sty oty bs] checks that the patterns of the
       branches [bs] have type [sty] and that the bodies of these
@@ -374,7 +378,6 @@ let typecheck tenv ast : typing_environment =
   and branch tenv sty oty pos = function
     | Branch (p, e) ->
       failwith "Students! This is your job!"
-
 
   in
   program ast
