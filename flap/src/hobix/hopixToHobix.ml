@@ -137,7 +137,8 @@ let crash =
   HobixAST.(Apply (Variable (Id "`/"), [zero; zero]))
 
 let located  f x = f (Position.value x)
-let located' f x = Position.map f x
+
+let located' f l = f (List.map Position.value l)
 
 (** Build the Hobix expression corresponding to the tag of the given
     constructor.  *)
@@ -152,8 +153,7 @@ let rec program env p =
   (List.flatten defs, env)
 
 (** Compilation of Hopix toplevel definitions. *)
-and definition' env p =
-  definition env (Position.value p)
+and definition' env p = located (definition env) p
 
 and definition env = HobixAST.(function
     | HopixAST.DeclareExtern (x, _) ->
@@ -172,10 +172,13 @@ and definition env = HobixAST.(function
 and value_definition env (x, e) =
   (located identifier x, located (expression env) e)
 
-and function_definition
-    env (f, { Position.value = HopixAST.FunctionDefinition (_, ps, e) }) =
+(* TODO: Handle all patterns, not only PVariable.  *)
+and function_definition' env (HopixAST.FunctionDefinition(_, ps, e)) =
   let xs = List.map (located pattern_as_identifier) ps in
-  (located identifier f, HobixAST.Fun (xs, located (expression env) e))
+  HobixAST.Fun (xs, located (expression env) e)
+
+and function_definition env (f, { Position.value = fdef }) =
+  (located identifier f, function_definition' env fdef)
 
 and pattern_as_identifier = function
   | HopixAST.PVariable x -> located identifier x
@@ -199,21 +202,19 @@ and expression env = HobixAST.(function
           write_block b 0 (tag_of_constructor' env k)
         in
         let fill_cell env b i e = write_block b (i + 1) (expression' env e) in
-        seqs ((tag_block env b k) :: List.mapi (fill_cell env b) es @ [b])
+        seqs (tag_block env b k :: List.mapi (fill_cell env b) es @ [b])
       in
       def
         (AllocateBlock (int_literal (List.length es + 1)))
         (fun b -> fill_then_return_block env (Variable b) k es)
 
-    (* When the pattern matching is not exhaustive, we make the program
-       crash...  *)
-    | HopixAST.Case (e, bs) ->
-      let branch scrutinee b next =
-        located (branch env (Variable scrutinee) next) b
-      in
+    (* If the pattern matching fails, we make the program crash...  *)
+    | HopixAST.Case (e, branches) ->
+      let branch scrutinee b next = branch env (Variable scrutinee) next b in
+      let branches = located' expands_or_patterns branches in
       def
         (expression' env e)
-        (fun scrutinee -> List.fold_right (branch scrutinee) bs crash)
+        (fun scrutinee -> List.fold_right (branch scrutinee) branches crash)
 
     | HopixAST.Ref e ->
       let x = fresh_identifier () in
@@ -266,20 +267,47 @@ and expression env = HobixAST.(function
                                t)
         ) final (List.rev conditions)
 
-    | HopixAST.Fun (HopixAST.FunctionDefinition (_, ps, e)) ->
-      failwith "Students! This is your job!"
+    | HopixAST.Fun fdef -> function_definition' env fdef
   )
 
 and branch env scrutinee next (HopixAST.Branch (p, e)) =
   let cond, defs = pattern' env scrutinee p in
   defines defs (HobixAST.IfThenElse (cond, expression' env e, next))
 
+and expand_pattern = HopixAST.(ListMonad.(function
+    | PTypeAnnotation (p, _) -> located expand_pattern p
+    | PWildcard | PLiteral _ | PVariable _ as p -> return p
+    | PTaggedValue (k, ps) ->
+      expand_patterns' ps (fun ps -> PTaggedValue (k, ps))
+    | PAnd ps -> expand_patterns' ps (fun ps -> PAnd ps)
+    | POr ps ->
+      located' pick ps >>= fun p ->
+      return p
+  ))
+
+and expand_patterns' ps wrap = ListMonad.(
+    located' expand_patterns ps >>= fun ps ->
+    return (wrap (List.map Position.unknown_pos ps))
+  )
+
+and expand_patterns = ListMonad.(function
+    | [] -> return []
+    | p :: ps ->
+      expand_pattern p >>= fun p ->
+      expand_patterns ps >>= fun ps ->
+      return (p :: ps)
+  )
+
 (** [expands_or_patterns branches] returns a sequence of branches
     equivalent to [branches] except that their patterns do not contain
     any disjunction. {ListMonad} can be useful to implement this
     transformation. *)
 and expands_or_patterns branches =
-  failwith "Students! This is your job!"
+  let expand_branch (HopixAST.Branch (p, e)) =
+    let ps = ListMonad.run (located expand_pattern p) in
+    List.map (fun p -> HopixAST.Branch (Position.unknown_pos p, e)) ps
+  in
+  List.flatten (List.map expand_branch branches)
 
 and pattern' env scrutinee p = located (pattern env scrutinee) p
 
