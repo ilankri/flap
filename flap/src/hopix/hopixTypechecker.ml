@@ -99,7 +99,8 @@ let typecheck tenv ast : typing_environment =
       failwith "Students! This is your job!"
 
     | DefineType (t, ts, tdef) ->
-      failwith "Students! This is your job!"
+      let tyListNoPosition = List.map Position.value ts in
+      bind_type_definition (Position.value t) tyListNoPosition tdef tenv
 
     | DeclareExtern (x, ty) ->
       failwith "Students! This is your job!"
@@ -324,8 +325,14 @@ let typecheck tenv ast : typing_environment =
     (* (K : ∀α₁ … αₖ.τ₁⋆ … ⋆τₙ → τ) ∈ Γ    ∀i Γᵢ₋₁ ⊢ pᵢ ⇒ Γᵢ, τᵢ
        ——————————————————————————————————————————————————————————
        Γ₀ ⊢ K (p₁, …, pₙ) ⇒ Γₙ, τ                                 *)
-    | PTaggedValue (k, ps) ->
-      failwith "Students! This is your job!"
+    | PTaggedValue (k, ps) -> (** To verify with Idir *)
+      let aty = lookup_type_scheme_of_constructor (Position.value k) tenv in
+      let funFold accu p = 
+      ( let e, _ = located (pattern accu) p in
+        e 
+      ) in
+      let tenv' = List.fold_left funFold tenv ps in
+      tenv', aty
 
     (* | PTypeAnnotation ({ Position.value = PTaggedValue (k, ps) }, ty) -> *)
     (*   failwith "Students! This is your job!" *)

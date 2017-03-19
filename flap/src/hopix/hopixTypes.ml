@@ -240,6 +240,14 @@ let lookup_type_scheme_of_value pos x env =
   with Not_found ->
     raise (UnboundIdentifier (pos, x))
 
+(** Not sure if useful or not...
+let lookup_type_scheme_of_type_constructors pos k env =
+  try 
+    List.assoc k env.type_constructors
+  with Not_found ->
+    raise (UnboundIdentifier (pos, k))
+*)
+
 let bind_type_definition x ts tdef env =
   let arity = List.length ts in
   let data_constructors = match tdef with
