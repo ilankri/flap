@@ -6,6 +6,8 @@ open FopixAST
 let error positions msg =
   errorN "execution" positions msg
 
+let error' msg = error [] msg
+
 (** Every expression of fopi evaluates into a [value]. *)
 type value =
   | VUnit
@@ -35,24 +37,24 @@ let print_value m v =
   let rec print_value d v =
     if d >= max_depth then "..." else
       match v with
-        | VInt x ->
-          Int32.to_string x
-        | VBool true ->
-          "true"
-        | VBool false ->
-          "false"
-	| VChar c ->
-	  "'" ^ Char.escaped c ^ "'"
-	| VString s ->
-	  "\"" ^ String.escaped s ^ "\""
-	| VUnit ->
-	  "()"
-	| VAddress a ->
-	  print_block m d a
-	| VFun _ ->
-	  "<fun>"
-        | VPrimitive (s, _) ->
-          Printf.sprintf "<primitive: %s>" s
+      | VInt x ->
+        Int32.to_string x
+      | VBool true ->
+        "true"
+      | VBool false ->
+        "false"
+      | VChar c ->
+        "'" ^ Char.escaped c ^ "'"
+      | VString s ->
+        "\"" ^ String.escaped s ^ "\""
+      | VUnit ->
+        "()"
+      | VAddress a ->
+        print_block m d a
+      | VFun _ ->
+        "<fun>"
+      | VPrimitive (s, _) ->
+        Printf.sprintf "<primitive: %s>" s
   and print_block m d a =
     let b = Memory.dereference m a in
     let vs = Array.to_list (Memory.array_of_block b) in
@@ -103,14 +105,14 @@ end = struct
 end
 
 type runtime = {
-    memory : value Memory.t;
-    environment : Environment.t;
-    functions   : (function_identifier * (formals * expression)) list;
+  memory : value Memory.t;
+  environment : Environment.t;
+  functions   : (function_identifier * (formals * expression)) list;
 }
 
 type observable = {
-    new_environment : Environment.t;
-  }
+  new_environment : Environment.t;
+}
 
 let initial_runtime () =
   let bind_bool s b env = Environment.bind env (Id s) (VBool b) in
@@ -174,7 +176,7 @@ and evaluation_of_binary_symbol environment = function
     arith_binop environment (arith_operator_of_symbol s)
   | ("`<" | "`>" | "`<=" | "`>=" | "`=") as s ->
     arith_cmpop environment (cmp_operator_of_symbol s)
-  | ("||" | "&&") as s ->
+  | ("`||" | "`&&") as s ->
     boolean_binop environment (boolean_operator_of_symbol s)
   | _ -> assert false
 
@@ -206,19 +208,19 @@ and expression runtime = function
 
   | Switch (e, bs, default) ->
     begin match value_as_int (expression runtime e) with
-      | None -> error [] "Switch on integers only."
+      | None -> error' "Switch on integers only."
       | Some i ->
-	let i = Int32.to_int i in
-	if i < Array.length bs then
-	  expression runtime bs.(i)
-	else match default with
-	  | Some t -> expression runtime t
-	  | None -> error [] "No default case in switch."
+        let i = Int32.to_int i in
+        if i < Array.length bs then
+          expression runtime bs.(i)
+        else match default with
+          | Some t -> expression runtime t
+          | None -> error' "No default case in switch."
     end
 
   | IfThenElse (c, t, f) ->
     begin match value_as_bool (expression runtime c) with
-      | None -> error [] "'If' should have a condition that return boolean"
+      | None -> error' "'If' should have a condition that return boolean"
       | Some b -> if b then expression runtime t else expression runtime f
     end
 
@@ -237,7 +239,7 @@ and expression runtime = function
       | VInt i ->
         let addr = Memory.allocate runtime.memory i VUnit in
         VAddress addr
-      | _ -> error [] "'allocate_block' should have a size in type Literal(int)"
+      | _ -> error' "'allocate_block' should have a size in type Literal(int)"
     end
 
   | FunCall (FunId "read_block", [location; index]) ->
@@ -245,16 +247,21 @@ and expression runtime = function
       | Some addr ->
         begin match value_as_int (expression runtime index) with
           | Some i -> Memory.read (Memory.dereference runtime.memory addr) i
-          | None -> error [] "A block index must be an integer."
+          | None -> error' "A block index must be an integer."
         end
-      | None -> error [] "A block must be an address."
+      | None -> error' "A block must be an address."
     end
 
   | FunCall (FunId "write_block", [location; index; e]) ->
     begin
       match (expression runtime location), (expression runtime index) with
-      | VAddress addr, VInt i -> Memory.(write (dereference runtime.memory addr) i (expression runtime e)); VUnit
-      | _ -> error [] "'write_block' should have 3 parameters as (VAddress, VInt, expression)"
+      | VAddress addr, VInt i ->
+        let e = expression runtime e in
+        Memory.(write (dereference runtime.memory addr) i e);
+        VUnit
+      | _ ->
+        error' "'write_block' should have 3 parameters as \
+                (VAddress, VInt, expression)"
     end
 
   | FunCall (FunId s, [e1; e2]) when is_binary_primitive s ->
@@ -263,30 +270,30 @@ and expression runtime = function
   | FunCall (FunId id as f, es) ->
     let formals, body =
       try List.assoc f runtime.functions with
-      | Not_found -> error [] ("Undefined function " ^ id ^ ".")
+      | Not_found -> error' ("Undefined function " ^ id ^ ".")
     in
-    let bind_arg env formal e =
-      Environment.bind env formal (expression runtime e)
-    in
+    let bind_arg runtime formal e = {
+      runtime with
+      environment =
+        Environment.bind runtime.environment formal (expression runtime e)
+    } in
     let runtime =
-      {runtime with
-       environment =
-         try List.fold_left2 bind_arg runtime.environment formals es with
-         | Invalid_argument _ ->
-           error [] ("Wrong number of arguments given to " ^ id ^ "." )}
+      try List.fold_left2 bind_arg runtime formals es with
+      | Invalid_argument _ ->
+        error' ("Wrong number of arguments given to " ^ id ^ "." )
     in
     expression runtime body
 
 and binop
   : type a b. a coercion -> b wrapper -> _ -> (a -> a -> b) -> _ -> _ -> value
-= fun coerce wrap runtime op l r ->
-  let lv = expression runtime l
-  and rv = expression runtime r in
-  match coerce lv, coerce rv with
+  = fun coerce wrap runtime op l r ->
+    let lv = expression runtime l
+    and rv = expression runtime r in
+    match coerce lv, coerce rv with
     | Some li, Some ri ->
       wrap (op li ri)
     | _, _ ->
-      error [] "Invalid binary operation."
+      error' "Invalid binary operation."
 
 and arith_binop env = binop value_as_int int_as_value env
 and arith_cmpop env = binop value_as_int bool_as_value env
@@ -303,10 +310,10 @@ and extract_observable runtime runtime' =
     if env == env' then new_environment
     else
       match Environment.last env' with
-        | None -> assert false (* Absurd. *)
-        | Some (x, v, env') ->
-          let new_environment = Environment.bind new_environment x v in
-          substract new_environment env env'
+      | None -> assert false (* Absurd. *)
+      | Some (x, v, env') ->
+        let new_environment = Environment.bind new_environment x v in
+        substract new_environment env env'
   in
   {
     new_environment =
