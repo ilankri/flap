@@ -84,10 +84,10 @@ let define e f =
 
 let rec defines ds e =
   match ds with
-    | [] ->
-      e
-    | (x, d) :: ds ->
-      T.Define (x, d, defines ds e)
+  | [] ->
+    e
+  | (x, d) :: ds ->
+    T.Define (x, d, defines ds e)
 
 let seq a b =
   define a (fun _ -> b)
@@ -110,7 +110,9 @@ let lint i =
   T.(Literal (LInt (Int32.of_int i)))
 
 let free_variables =
-  let module M = Set.Make (struct type t = S.identifier let compare = compare end) in
+  let module M =
+    Set.Make (struct type t = S.identifier let compare = compare end)
+  in
   let rec unions f = function
     | [] -> M.empty
     | [s] -> f s
@@ -122,19 +124,19 @@ let free_variables =
     | S.Variable x ->
       M.singleton x
     | S.While (cond, e) ->
-       unions fvs [cond; e]
+      unions fvs [cond; e]
     | S.Define (x, a, b) ->
       let sa = fvs a in
       let sb = fvs b in
       M.(union sa (remove x sb))
     | S.DefineRec (rdefs, a) ->
-       let fs = List.map fst rdefs in
-       let xs = M.(unions fvs (a :: List.map snd rdefs)) in
-       List.fold_left (fun s x -> M.remove x s) xs fs
+      let fs = List.map fst rdefs in
+      let xs = M.(unions fvs (a :: List.map snd rdefs)) in
+      List.fold_left (fun s x -> M.remove x s) xs fs
     | S.ReadBlock (a, b) ->
       unions fvs [a; b]
     | S.Apply (a, b) ->
-       unions fvs (a :: b)
+      unions fvs (a :: b)
     | S.WriteBlock (a, b, c) | S.IfThenElse (a, b, c) ->
       unions fvs [a; b; c]
     | S.AllocateBlock a ->
@@ -170,7 +172,7 @@ let free_variables =
 
 *)
 type environment =
-    (HobixAST.identifier, FopixAST.expression) Dict.t
+  (HobixAST.identifier, FopixAST.expression) Dict.t
 
 let initial_environment () =
   Dict.empty
@@ -189,16 +191,25 @@ let translate (p : S.t) env =
       fs @ [T.DefineValue (identifier x, e)]
     | S.DefineRecFuns rdefs ->
       let fs, defs = define_recursive_functions rdefs in
-      fs @ List.map (fun (x, e) -> T.DefineValue (x, e)) defs
+      let define_function (f, (formals, body)) =
+        T.DefineFunction (f, formals, body)
+      in
+      fs @ List.map define_function defs
 
   and define_recursive_functions rdefs =
-    let expression (_, e) = expression (initial_environment ()) e in
-    let fs, es = List.split (List.map expression rdefs) in
-    let defs =
-      List.combine (List.map (fun (id, _) -> identifier id) rdefs) es
+    let expression (_, e) =
+      match e with
+      | S.Fun (formals, body) ->
+        let fs, body = expression Dict.empty body in
+        (fs, (List.map identifier formals, body))
+      | S.Literal _ | S.Variable _ | S.Define _ | S.DefineRec _ | S.Apply _ |
+        S.IfThenElse _ | S.AllocateBlock _ | S.WriteBlock _ | S.ReadBlock _ |
+        S.Switch _ | S.While _ ->
+        assert false
     in
-    (List.flatten fs, defs)
-
+    let fs, es = List.split (List.map expression rdefs) in
+    let ids = List.map (fun (id, _) -> function_identifier id) rdefs in
+    (List.flatten fs, List.combine ids es)
 
   and expression env = function
     | S.Literal l ->
@@ -215,17 +226,25 @@ let translate (p : S.t) env =
       in
       ([], xc)
     | S.Define (x, a, b) ->
-      failwith "Students! This is your job!"
+      let afs, a = expression env a in
+      let bfs, b = expression env b in
+      (afs @ bfs, T.Define (identifier x, a, b))
     | S.DefineRec (rdefs, a) ->
       failwith "Students! This is your job!"
     | S.Apply (a, bs) ->
       let idfs, id = expression env a in
       let fsWithExprs =  List.map (expression env) bs in
-      let (fs, es) = List.fold_left (fun (la, lb) (a,b) -> (a@la, b::lb)) ([],[]) fsWithExprs in
+      let (fs, es) =
+        List.fold_right
+          (fun (a,b) (la, lb) -> (a@la, b::lb))
+          fsWithExprs
+          ([],[])
+      in
       begin
         match id with
         | T.Variable (T.Id x) -> idfs@fs, T.FunCall(T.FunId x, es)
-        | _ -> failwith "Apply should only have a string id as its first expression"
+        | _ ->
+          failwith "Apply should only have a string id as its first expression"
       end
     | S.IfThenElse (a, b, c) ->
       let afs, a = expression env a in
