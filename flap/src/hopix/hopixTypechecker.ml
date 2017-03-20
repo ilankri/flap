@@ -25,36 +25,40 @@ let check_program_is_fully_annotated ast =
     | DefineValue (x, e) ->
       located expression e
     | DefineRecFuns recdefs ->
-      List.iter (fun (_, fdef) -> located function_definition fdef) recdefs
+      List.iter
+        (fun (_, fdef) -> located (function_definition true) fdef) recdefs;
     | _ -> ()
 
-  and function_definition pos = function
+  and function_definition need_return_type pos = function
     | FunctionDefinition (_, ps, e) ->
       List.iter (located pattern) ps;
-      begin
-        match (Position.value e) with
+      if need_return_type then
+        match Position.value e with
         | TypeAnnotation (e, _) -> located expression e
         | _ -> missing_type_annotation pos
-      end
+      else located expression e
 
   and expression pos = function
     | Define (_, e1, e2) | Write (e1, e2) | While (e1, e2) ->
       located expression e1;
       located expression e2;
     | DefineRec (recdefs, e) ->
-      List.iter (fun (_, fdef) -> located function_definition fdef) recdefs;
+      List.iter
+        (fun (_, fdef) -> located (function_definition true) fdef) recdefs;
       located expression e
     | Apply (e, _, exprlist) ->
       located expression e;
       List.iter (fun expr -> located expression expr) exprlist;
     | If (eelist, optexpr) ->
-      List.iter (fun (e1, e2) -> located expression e1; located expression e2) eelist;
+      List.iter
+        (fun (e1, e2) -> located expression e1; located expression e2)
+        eelist;
       begin
         match optexpr with
         | Some expr -> located expression expr
         | None -> ()
       end
-    | Fun fdef -> function_definition pos fdef
+    | Fun fdef -> function_definition false pos fdef
     | Tagged (_, _, exprlist) ->
       List.iter (fun e -> located expression e) exprlist;
     | Case (e, branchlist) ->
@@ -65,10 +69,10 @@ let check_program_is_fully_annotated ast =
     | Literal _ | Variable _ -> ()
 
   and pattern pos = function
-    | PTypeAnnotation ({ Position.value = (PWildcard | PVariable _) }, _) -> ()
-    | PTypeAnnotation (p, _) ->
-      located pattern p
-    | PVariable _ | PWildcard | PLiteral _ -> ()
+    | PTypeAnnotation ({ Position.value = (PWildcard | PVariable _) }, _) |
+      PLiteral _  -> ()
+    | PTypeAnnotation (p, _) -> located pattern p
+    | PVariable _ | PWildcard -> missing_type_annotation pos
     | PTaggedValue (_, palist) | POr palist | PAnd palist ->
       List.iter (fun p -> located pattern p) palist
 
@@ -163,14 +167,16 @@ let typecheck tenv ast : typing_environment =
     | TypeAnnotation (e, ty) ->
       let sigma = located (type_scheme_of_expression tenv) e in
       let pty = type_of_monotype sigma in
-      check_expected_type (Position.position ty) pty (aty_of_ty (Position.value ty));
+      check_expected_type (Position.position ty) pty
+        (aty_of_ty (Position.value ty));
       sigma
 
     | DefineRec (recdefs, e) ->
       failwith "Students! This is your job!"
 
-    (* Γ ⊢ e : ∀α₁ … αn τ'₁⋆ … ⋆τ'm → τ     ∀i Γ ⊢ ei: τ'i[αi ↦ τi] … [αn↦ τn]
-       ———————————————————————————————————————----------------------—————————————
+    (* Γ ⊢ e : ∀α₁ … αn τ'₁⋆ … ⋆τ'm → τ
+       ∀i Γ ⊢ ei: τ'i[αi ↦ τi] … [αn↦ τn]
+       —————————————————————————————————————————————————————
        Γ ⊢ e[τ₁, …, τn] (e₁, …, em) : τ[α₁ ↦ τ₁] … [αn ↦ τn] *)
     | Apply (a, types, args) ->
       failwith "Students! This is your job!"
@@ -203,9 +209,13 @@ let typecheck tenv ast : typing_environment =
       in
       let f (e1, e2) =
         (
-          let e1ty = type_of_monotype(located (type_scheme_of_expression tenv) e1) in
+          let e1ty =
+            type_of_monotype(located (type_scheme_of_expression tenv) e1)
+          in
           check_expected_type (Position.position e1) e1ty hbool;
-          let e2ty = type_of_monotype(located (type_scheme_of_expression tenv) e2) in
+          let e2ty =
+            type_of_monotype(located (type_scheme_of_expression tenv) e2)
+          in
           check_expected_type (Position.position e2) e2ty elsety;
         )
       in
@@ -251,15 +261,20 @@ let typecheck tenv ast : typing_environment =
       let oneRef = located (type_scheme_of_expression tenv) e in
       let tau = type_of_reference_type (type_of_monotype oneRef) in
       let tyToWrite = located (type_scheme_of_expression tenv) e' in
-      check_expected_type (Position.position e') tau (type_of_monotype tyToWrite);
+      check_expected_type (Position.position e') tau
+        (type_of_monotype tyToWrite);
       monotype hunit
 
     (* Γ ⊢ e : bool    Γ ⊢ e' : unit
        —————————————————————————————
        Γ ⊢ while e { e' } : unit     *)
     | While (e, e') ->
-      let expectBool = type_of_monotype(located (type_scheme_of_expression tenv) e) in
-      let expectUnit = type_of_monotype(located (type_scheme_of_expression tenv) e') in
+      let expectBool =
+        type_of_monotype(located (type_scheme_of_expression tenv) e)
+      in
+      let expectUnit =
+        type_of_monotype(located (type_scheme_of_expression tenv) e')
+      in
       check_expected_type (Position.position e) expectBool hbool;
       check_expected_type (Position.position e') expectUnit hunit;
       monotype hunit
@@ -270,7 +285,7 @@ let typecheck tenv ast : typing_environment =
     (* (x : σ) ∈ Γ
        ———————————
        Γ ⊢ x : σ   *)
-    | Variable x -> 
+    | Variable x ->
       located lookup_type_scheme_of_value x tenv
 
   (** [apply pos tenv s types args] computes the instanciation of the
@@ -327,10 +342,10 @@ let typecheck tenv ast : typing_environment =
        Γ₀ ⊢ K (p₁, …, pₙ) ⇒ Γₙ, τ                                 *)
     | PTaggedValue (k, ps) -> (** To verify with Idir *)
       let aty = lookup_type_scheme_of_constructor (Position.value k) tenv in
-      let funFold accu p = 
-      ( let e, _ = located (pattern accu) p in
-        e 
-      ) in
+      let funFold accu p =
+        ( let e, _ = located (pattern accu) p in
+          e
+        ) in
       let tenv' = List.fold_left funFold tenv ps in
       tenv', aty
 
@@ -365,7 +380,7 @@ let typecheck tenv ast : typing_environment =
       let aty = aty_of_ty (Position.value ty) in
       check_expected_type (Position.position ty) ty' aty;
       tenv', monotype aty
-      
+
     (*
        ——————————————    ———————————————    —————————————————
        Γ ⊢ n ⇒ Γ, int    Γ ⊢ n ⇒ Γ, char    Γ ⊢ n ⇒ Γ, string *)
