@@ -155,9 +155,21 @@ let rec translate (p : S.t) (env : environment) : T.t * environment =
     | _ -> xs
 
   in
+  (**
+     [main] is the entry point of the program. It must initialize
+     global variables and then call the standard "exit" function with
+     0 as an argument.
+
+     To initialize global variables, we simply concatenate the
+     compiled code of each variable code block. 
+   *)
+  let main =
+       failwith "Student! This is your job!"
+  in
   (** [code] is the program code of [p] compiled in MIPS for GCC. *)
   let code =
-       failwith "Student! This is your job!"
+    main
+    @ List.fold_left function_definition [] (List.rev p)
   in
   let globals = List.fold_left extract_global [] p in
   (T.({ globals; code }), ())
