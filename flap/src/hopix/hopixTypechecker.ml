@@ -343,30 +343,35 @@ let typecheck tenv ast : typing_environment =
     | PWildcard | PVariable _ ->
       assert false (* By check_program_is_fully_annotated.  *)
 
-    (* (K : ∀α₁ … αₖ.τ₁⋆ … ⋆τₙ → τ) ∈ Γ    ∀i Γᵢ₋₁ ⊢ pᵢ ⇒ Γᵢ, τᵢ
+    (* (K : ∀α₁ … αm.τ₁⋆ … ⋆τn → τ) ∈ Γ    ∀i Γᵢ₋₁ ⊢ pᵢ ⇒ Γᵢ, τᵢ
        ——————————————————————————————————————————————————————————
-       Γ₀ ⊢ K (p₁, …, pₙ) ⇒ Γₙ, τ                                 *)
-    | PTaggedValue (k, ps) -> (** To verify with Idir *)
-      let aty = lookup_type_scheme_of_constructor (Position.value k) tenv in
-      let funFold accu p =
-        ( let e, _ = located (pattern accu) p in
+       Γ₀ ⊢ K (p₁, …, pn) ⇒ Γn, τ                                 
+
+       Note that 'α₁ … αm' do nothing *)
+      | PTaggedValue (k, ps) -> 
+      let (Scheme (_, tau)) as atyScheme = lookup_type_scheme_of_constructor (Position.value k) tenv in
+      let checkEachPMatch accu p tvInK =
+        ( 
+          let e, pAty = located (pattern accu) p in
+          check_expected_type (Position.position p) (type_of_monotype pAty) tvInK;
           e
         ) in
-      let tenv' = List.fold_left funFold tenv ps in
-      tenv', aty
+      let tausInK = output_ty_list_of_function tau in
+      let tenv' = List.fold_left2 checkEachPMatch tenv ps tausInK in
+      tenv', monotype (output_type_of_function tau)
 
     (* | PTypeAnnotation ({ Position.value = PTaggedValue (k, ps) }, ty) -> *)
     (*   failwith "Students! This is your job!" *)
 
-    (* ∀i Γ ⊢ pᵢ ⇒ Γᵢ, σᵢ    σ₁ = … = σₙ    Γ₁ = … = Γₙ
+    (* ∀i Γ ⊢ pᵢ ⇒ Γᵢ, σᵢ    σ₁ = … = σn    Γ₁ = … = Γn
        ————————————————————————————————————————————————
-       Γ ⊢ p₁ | … | pₙ ⇒ Γ₁, σ₁                         *)
+       Γ ⊢ p₁ | … | pn ⇒ Γ₁, σ₁                         *)
     | POr ps ->
       failwith "Students! This is your job!"
 
     (* ∀i Γᵢ₋₁ ⊢ pᵢ ⇒ Γᵢ, σᵢ   σ₁ = … = σₙ
        ———————————————————————————————————
-       Γ₀ ⊢ p₁ & … & pₙ ⇒ Γₙ, σₙ           *)
+       Γ₀ ⊢ p₁ & … & pn ⇒ Γn, σn           *)
     | PAnd ps ->
       failwith "Students! This is your job!"
 
