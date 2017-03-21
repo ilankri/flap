@@ -2,6 +2,34 @@ open HopixAST
 
 let type_error = Error.error "typechecking"
 
+exception UnboundTypeConstructor of Position.position * type_constructor
+
+exception UnboundTypeVariable of Position.position * type_variable
+
+exception UnboundIdentifier of Position.position * identifier
+
+let ty_cons_err error pos (TCon s) = error pos "type constructor" s
+
+let ty_var_err error pos (TId s) = error pos "type variable" s
+
+let id_err error pos (Id s) = error pos "identifier" s
+
+let unbound_err pos what which =
+  type_error pos (Printf.sprintf "Unbound %s %s." what which)
+
+let data_cons_err error pos (KId s) = error pos "data constructor" s
+
+let wrong_nb_args_err xarity iarity pos what which =
+  type_error pos
+    (Printf.sprintf "The %s %s has arity %d and not %d."
+       what which xarity iarity)
+
+let report_error = function
+  | UnboundTypeConstructor (pos, tc) -> ty_cons_err unbound_err pos tc
+  | UnboundTypeVariable (pos, tv) -> ty_var_err unbound_err pos tv
+  | UnboundIdentifier (pos, id) -> id_err unbound_err pos id
+  | exn -> raise exn
+
 (** Abstract syntax for types.
 
     The following internal syntax for types is isomorphic
@@ -63,22 +91,22 @@ let href ty = ATyCon (tcref, [ty])
 exception NotAReference
 
 let type_of_reference_type = function
-(**
-    | Pattern(p) when conditionP -> return
+  (**
+      | Pattern(p) when conditionP -> return
 
-equals to
+     equals to
 
-    | Pattern(p) -> (match p with | Condition -> return )
-*)
+      | Pattern(p) -> (match p with | Condition -> return )
+  *)
   | ATyCon (t, [ty]) when t = tcref ->
     ty
   | _ ->
     raise NotAReference
 
 module TypeVariableSet = Set.Make (struct
-  type t = type_variable
-  let compare = compare
-end)
+    type t = type_variable
+    let compare = compare
+  end)
 
 let rec occurs x = function
   | ATyVar tv -> x = tv
@@ -143,16 +171,16 @@ let unify_types ty1 ty2 =
       if occurs x ty then raise (UnificationFailed (ty1, ty2));
       let eliminate_x = substitute [(x, ty)] in
       let phi = unify (List.map (fun (a, b) ->
-        (eliminate_x a, eliminate_x b)
-      ) pbs)
+          (eliminate_x a, eliminate_x b)
+        ) pbs)
       in
       (x, ty) :: phi
     | (ty, ATyVar x) :: pbs ->
       unify ((ATyVar x, ty) :: pbs)
     | (ATyArrow (ins1, out1), ATyArrow (ins2, out2)) :: pbs ->
-        if List.(length ins1 <> length ins2) then
-          raise (UnificationFailed (ty1, ty2));
-        unify (List.combine (out1 :: ins1) (out2 :: ins2) @ pbs)
+      if List.(length ins1 <> length ins2) then
+        raise (UnificationFailed (ty1, ty2));
+      unify (List.combine (out1 :: ins1) (out2 :: ins2) @ pbs)
     | (ATyCon (t1, ts1), ATyCon (t2, ts2)) :: pbs ->
       if t1 <> t2 || List.(length ts1 <> length ts2) then
         raise (UnificationFailed (ty1, ty2));
@@ -165,17 +193,20 @@ let unify_types ty1 ty2 =
 
   if (substitute phi ty1 <> substitute phi ty2) then (
     Error.global_error "internal" (
-      Printf.sprintf "Unification has a bug on:\n %s\nand\n %s, producing phi:\n%s\n"
+      Printf.sprintf "Unification has a bug on:\n %s\nand\n %s, \
+                      producing phi:\n%s\n"
         (print_aty ty1)
         (print_aty ty2)
-        (String.concat ", " (List.map (fun (TId x, ty) -> Printf.sprintf "%s -> %s" x (print_aty ty))
-                               phi)
+        (String.concat ", "
+           (List.map
+              (fun (TId x, ty) -> Printf.sprintf "%s -> %s" x (print_aty ty))
+              phi)
         ));
   );
   phi
 
 let guess_instantiation (Scheme (ts1, ty1)) ts2 ty2 =
-     failwith "Students! This is your job!"
+  failwith "Students! This is your job!"
 
 type typing_environment = {
   values            : (identifier * aty_scheme) list;
@@ -188,11 +219,26 @@ and type_information = {
   data_constructors : constructor list
 }
 
+let is_type_variable_defined pos env tv =
+  List.mem tv env.type_variables
 
-exception UnboundTypeConstructor of Position.position * type_constructor
+let lookup_type_info_of_ty_cons pos tc env =
+  try List.assoc tc env.type_constructors with
+  | Not_found -> raise (UnboundTypeConstructor (pos, tc))
 
-let check_well_formed_type pos env ty =
-     failwith "Students! This is your job!"
+let rec check_well_formed_type pos env = function
+  | ATyVar tv ->
+    if not (is_type_variable_defined pos env tv) then
+      raise (UnboundTypeVariable (pos, tv))
+  (* TODO: Check that constructors are all different.  *)
+  | ATyCon (tc, ts) ->
+    let tc_info = lookup_type_info_of_ty_cons pos tc env in
+    let nargs = List.length ts in
+    if nargs <> tc_info.arity then
+      ty_cons_err (wrong_nb_args_err tc_info.arity nargs) pos tc
+  | ATyArrow (ts, t) ->
+    List.iter (check_well_formed_type pos env) ts;
+    check_well_formed_type pos env t
 
 let internalize_ty env ty =
   let pos = Position.position ty in
@@ -225,14 +271,9 @@ let bind_type_variables pos env ts =
       bind_type_variable pos env t
     ) env ts
 
-let is_type_variable_defined pos env tv =
-  List.mem tv env.type_variables
-
 let bind_value x scheme env = {
   env with values = (x, scheme) :: env.values
 }
-
-exception UnboundIdentifier of Position.position * identifier
 
 let lookup_type_scheme_of_value pos x env =
   try
@@ -241,10 +282,10 @@ let lookup_type_scheme_of_value pos x env =
     raise (UnboundIdentifier (pos, x))
 
 (** Not sure if useful or not...
-let lookup_type_scheme_of_type_constructors pos k env =
-  try 
+    let lookup_type_scheme_of_type_constructors pos k env =
+    try
     List.assoc k env.type_constructors
-  with Not_found ->
+    with Not_found ->
     raise (UnboundIdentifier (pos, k))
 *)
 
@@ -263,7 +304,9 @@ let bind_type_definition x ts tdef env =
   in
   let constructor_definition (k, tys) =
     let atys = List.map (internalize_ty pre_env) tys in
-    let scheme = mk_type_scheme (atys --> ATyCon (x, List.map (fun v -> ATyVar v) ts)) in
+    let scheme =
+      mk_type_scheme (atys --> ATyCon (x, List.map (fun v -> ATyVar v) ts))
+    in
     (Position.value k, scheme)
   in
   let constructors = match tdef with
@@ -289,7 +332,8 @@ let initial_typing_environment () =
     tcbool; tcunit; tcstring; tcchar; tcint
   ] |>
   bind_type_definition (TCon "cell") [TId "'a"] Abstract
-  |> List.fold_right (fun (x, s) env -> bind_value (Id x) (mk_type_scheme s) env) [
+  |> List.fold_right
+    (fun (x, s) env -> bind_value (Id x) (mk_type_scheme s) env) [
     "true"     , hbool;
     "false"    , hbool;
     "nothing"  , hunit;
