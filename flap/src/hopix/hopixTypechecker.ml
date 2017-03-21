@@ -22,12 +22,11 @@ let check_program_is_fully_annotated ast =
   let rec program p = List.iter (fun item -> located definition item) p
 
   and definition pos = function
-    | DefineValue (x, e) ->
-      located expression e
+    | DefineValue (x, e) -> located expression e
     | DefineRecFuns recdefs ->
       List.iter
         (fun (_, fdef) -> located (function_definition true) fdef) recdefs;
-    | _ -> ()
+    | DefineType _ | DeclareExtern _ -> ()
 
   and function_definition need_return_type pos = function
     | FunctionDefinition (_, ps, e) ->
@@ -35,7 +34,9 @@ let check_program_is_fully_annotated ast =
       if need_return_type then
         match Position.value e with
         | TypeAnnotation (e, _) -> located expression e
-        | _ -> missing_type_annotation pos
+        | Literal _ | Variable _ | Define _ | DefineRec _ | Apply _ | If _ |
+          Fun _ | Tagged _ | Case _ | Ref _ | Read _ | Write _ | While _ ->
+          missing_type_annotation pos
       else located expression e
 
   and expression pos = function
@@ -70,7 +71,7 @@ let check_program_is_fully_annotated ast =
 
   and pattern pos = function
     | PTypeAnnotation ({ Position.value = (PWildcard | PVariable _) }, _) |
-      PLiteral _  -> ()
+      PLiteral _ -> ()
     | PTypeAnnotation (p, _) -> located pattern p
     | PVariable _ | PWildcard -> missing_type_annotation pos
     | PTaggedValue (_, palist) | POr palist | PAnd palist ->
@@ -80,6 +81,7 @@ let check_program_is_fully_annotated ast =
     | Branch (p, e) ->
       located pattern p;
       located expression e
+
   and missing_type_annotation pos =
     type_error pos "A type annotation is missing."
   in
@@ -92,13 +94,15 @@ let typecheck tenv ast : typing_environment =
   check_program_is_fully_annotated ast;
 
   let rec program p =
-    List.fold_left (fun env x -> located (definition env) x) tenv p
+    try List.fold_left (fun env x -> located (definition env) x) tenv p with
+    | exn -> HopixTypes.report_error exn
 
   and definition tenv pos = function
     | DefineValue (x, e) ->
       bind_value (Position.value x) (
         located (type_scheme_of_expression tenv) e
       ) tenv
+
     | DefineRecFuns recdefs ->
       failwith "Students! This is your job!"
 
@@ -107,7 +111,9 @@ let typecheck tenv ast : typing_environment =
       bind_type_definition (Position.value t) tyListNoPosition tdef tenv
 
     | DeclareExtern (x, ty) ->
-      failwith "Students! This is your job!"
+      let x = Position.value x in
+      let ty = Position.located aty_of_ty ty in
+      bind_value x (mk_type_scheme ty) tenv
 
   (** [extract_function_type_scheme tenv pos fdef] constructs a type
       scheme from the user type annotations found in the function
@@ -334,8 +340,8 @@ let typecheck tenv ast : typing_environment =
       let tenv' = bind_value (Position.value x) aty tenv in
       tenv', aty
 
-    | PVariable _ ->
-      assert false (* by check_program_is_fully_annotated. *)
+    | PWildcard | PVariable _ ->
+      assert false (* By check_program_is_fully_annotated.  *)
 
     (* (K : ∀α₁ … αₖ.τ₁⋆ … ⋆τₙ → τ) ∈ Γ    ∀i Γᵢ₋₁ ⊢ pᵢ ⇒ Γᵢ, τᵢ
        ——————————————————————————————————————————————————————————
@@ -367,9 +373,9 @@ let typecheck tenv ast : typing_environment =
     (*
        ———————————————
        Γ ⊢ _ ⇒ Γ, ∀α.α *)
-    | PWildcard ->
-      let newAlpha = ATyVar(fresh ()) in
-      tenv, (monotype newAlpha )
+    (* | PWildcard -> *)
+    (*   let newAlpha = ATyVar(fresh ()) in *)
+    (*   tenv, (monotype newAlpha ) *)
 
     (* Γ ⊢ p ⇒ Γ', σ'    σ' = σ
        ————————————————————————
