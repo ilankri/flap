@@ -182,6 +182,7 @@ and function_definition env (f, { Position.value = fdef }) =
 
 and pattern_as_identifier = function
   | HopixAST.PVariable x -> located identifier x
+  | HopixAST.PTypeAnnotation (p, _) -> pattern_as_identifier (Position.value p)
   | _ -> assert false (* By syntax. *)
 
 and identifier' id = located identifier id

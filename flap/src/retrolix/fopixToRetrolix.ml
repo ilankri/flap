@@ -62,6 +62,9 @@ let rec translate' p env =
 
 and identifier (S.Id x) = T.Id x
 
+and register r =
+  T.((`Register (RId (MipsArch.string_of_register r)) : lvalue))
+
 and get_globals env = function
   | S.DefineValue (x, _) ->
     push env x
@@ -85,7 +88,6 @@ and declaration env = T.(function
                List.map identifier xs,
                (locals env ec,
                 ec @ [labelled (Ret (`Variable x))]))
-
   | S.ExternalFunction (S.FunId f) ->
     DExternalFunction (FId f)
 )
@@ -196,6 +198,5 @@ let preprocess p env =
 let translate p env =
   let p, env = preprocess p env in
   let p, env = translate' p env in
-  let p = RetrolixRegisterAllocation.translate p in
   (p, env)
 
