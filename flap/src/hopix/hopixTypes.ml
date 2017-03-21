@@ -78,6 +78,10 @@ let output_type_of_function = function
   | ATyArrow (_, ty) -> ty
   | _ -> raise NotAFunction
 
+let output_ty_list_of_function = function
+  | ATyArrow (tyl, _) -> tyl
+  | _ -> raise NotAFunction
+
 let constant x = TCon x, ATyCon (TCon x, [])
 let tcunit,   hunit    = constant "unit"
 let tcbool,   hbool    = constant "bool"
