@@ -45,16 +45,18 @@ let fresh_variable =
 
 let local globals instr = T.(
     let local = function
-      | `Variable id -> if IdSet.mem id globals then [] else [id]
-      | `Register _ | `Immediate _ -> []
+      | `Variable id ->
+        if IdSet.mem id globals then IdSet.empty else IdSet.singleton id
+      | `Register _ | `Immediate _ -> IdSet.empty
     in
-    let locals xs = List.flatten (List.map local xs) in
+    let ( ++ ) = IdSet.union in
+    let locals xs = List.fold_left ( ++ ) IdSet.empty (List.map local xs) in
     match instr with
-    | Call (l, r, rs) -> local l @ local r @ locals rs
-    | TailCall (r, rs) -> local r @ locals rs
+    | Call (l, r, rs) -> local l ++ local r ++ locals rs
+    | TailCall (r, rs) -> local r ++ locals rs
     | Ret r -> local r
-    | Assign (l, _, rs) -> local l @ locals rs
-    | Jump _ | Comment _ | Exit -> []
+    | Assign (l, _, rs) -> local l ++ locals rs
+    | Jump _ | Comment _ | Exit -> IdSet.empty
     | ConditionalJump (_, rs, _, _) -> locals rs
     | Switch (r, _, _) -> local r
   )
@@ -63,7 +65,12 @@ let local globals instr = T.(
     the variables use in the list of instructions [b] which are not
     in [globals]. *)
 let locals globals b =
-  List.flatten (List.map (fun (_, instr) -> local globals instr) b)
+  IdSet.elements (
+    List.fold_left
+      IdSet.union
+      IdSet.empty
+      (List.map (fun (_, instr) -> local globals instr) b)
+  )
 
 (** [translate' p env] turns a Fopix program [p] into a Retrolix
     program using [env] to retrieve contextual information. *)
