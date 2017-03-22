@@ -40,14 +40,30 @@ let fresh_variable =
    Every function in Retrolix starts with a declaration
    of local variables. So we need a way to compute the
    local variables of some generated code. This is the
-   purpose of the next function:
+   purpose of the next functions:
 *)
+
+let local globals instr = RetrolixAST.(
+    let local = function
+      | `Variable id -> if IdSet.mem id globals then [] else [id]
+      | `Register _ | `Immediate _ -> []
+    in
+    let locals xs = List.flatten (List.map local xs) in
+    match instr with
+    | Call (l, r, rs) -> local l @ local r @ locals rs
+    | TailCall (r, rs) -> local r @ locals rs
+    | Ret r -> local r
+    | Assign (l, _, rs) -> local l @ locals rs
+    | Jump _ | Comment _ | Exit -> []
+    | ConditionalJump (_, rs, _, _) -> locals rs
+    | Switch (r, _, _) -> local r
+  )
 
 (** [locals globals b] takes a set of variables [globals] and returns
     the variables use in the list of instructions [b] which are not
     in [globals]. *)
 let locals globals b =
-   failwith "Students! This is your job!"
+  List.flatten (List.map (fun (_, instr) -> local globals instr) b)
 
 (** [translate' p env] turns a Fopix program [p] into a Retrolix
     program using [env] to retrieve contextual information. *)
@@ -102,8 +118,8 @@ and expression out = T.(function
 
   | S.Define (S.Id x, e1, e2) ->
     (** Hey student! The following code is wrong in general,
-	hopefully, you will implement [preprocess] in such a way that
-	it will work, right? *)
+        hopefully, you will implement [preprocess] in such a way that
+        it will work, right? *)
     expression (`Variable (Id x)) e1 @ expression out e2
 
   | S.While (c, e) ->
@@ -209,4 +225,3 @@ let translate p env =
   let p, env = preprocess p env in
   let p, env = translate' p env in
   (p, env)
-
