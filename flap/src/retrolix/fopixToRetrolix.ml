@@ -108,8 +108,13 @@ and expression out = T.(function
 
   | S.While (c, e) ->
        failwith "Students! This is your job!"
+
   | S.IfThenElse (c, t, f) ->
-       failwith "Students! This is your job!"
+    let closeLabel = [labelled (Comment (string_of_label (fresh_label ())))] in  
+    let jumpToClose = [labelled (Jump (label_of_instructions closeLabel))] in
+    let insTrue = (expression out t) @ jumpToClose in
+    let insFalse = (expression out f) @ jumpToClose in
+    (condition (label_of_instructions insTrue) (label_of_instructions insFalse) c) @ insTrue @ insFalse @ closeLabel
 
   | S.FunCall (S.FunId f, es) when is_binop f ->
     assign out (binop f) es
@@ -123,6 +128,10 @@ and expression out = T.(function
        failwith "Students! This is your job!"
 )
 
+(** This method will extract the label of the first instruction in the labelOfInsList *)
+and label_of_instructions labelOfInsList = fst (List.hd labelOfInsList)
+
+and string_of_label (T.Label x) = x
 
 and as_rvalue e =
   let x = `Variable (fresh_variable ()) in
@@ -136,6 +145,7 @@ and assign out op rs =
   as_rvalues rs (fun xs ->
     [labelled (T.Assign (out, op, xs))]
   )
+
 
 and condition lt lf c = T.(
   let x = fresh_variable () in
