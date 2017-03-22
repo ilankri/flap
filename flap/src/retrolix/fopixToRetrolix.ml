@@ -123,7 +123,7 @@ and expression out = T.(function
       expression (`Variable (Id x)) e1 @ expression out e2
 
     | S.While (c, e) ->
-      let closeLabel = [labelled (Comment (string_of_label (fresh_label ())))] in
+      let closeLabel = [labelled (Comment "Exit While")] in
       let condReg = `Variable (fresh_variable ()) in
       let condIns = expression condReg c in
       let eIns = ( expression out e ) in 
@@ -132,7 +132,7 @@ and expression out = T.(function
       condIns @ condJump @ eIns @ condJump @ closeLabel
 
     | S.IfThenElse (c, t, f) ->
-      let closeLabel = [labelled (Comment (string_of_label (fresh_label ())))] in
+      let closeLabel = [labelled (Comment "Exit If")] in
       let jumpToClose = [labelled (Jump (label_of_instructions closeLabel))] in
       let insTrue = (expression out t) @ jumpToClose in
       let insFalse = (expression out f) @ jumpToClose in
@@ -159,8 +159,6 @@ and call_function f =
 
 (** This method will extract the label of the first instruction in the labelOfInsList *)
 and label_of_instructions labelOfInsList = fst (List.hd labelOfInsList)
-
-and string_of_label (T.Label x) = x
 
 and inst_jump_to_label l =
     [labelled (T.Jump (label_of_instructions l))]
