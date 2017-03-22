@@ -107,13 +107,18 @@ and expression out = T.(function
     expression (`Variable (Id x)) e1 @ expression out e2
 
   | S.While (c, e) ->
-       failwith "Students! This is your job!"
+    let closeLabel = [labelled (Comment (string_of_label (fresh_label ())))] in
+    let condReg = `Variable (fresh_variable ()) in
+    let condIns = expression condReg c in
+    let eIns = ( expression out e ) in 
+    let condJump = [ labelled (ConditionalJump (EQ, [ condReg; `Immediate (LInt (Int32.of_int 0)) ],
+                                                      label_of_instructions closeLabel, label_of_instructions condIns))] in
+    condIns @ condJump @ eIns @ condJump @ closeLabel
 
   | S.IfThenElse (c, t, f) ->
     let closeLabel = [labelled (Comment (string_of_label (fresh_label ())))] in  
-    let jumpToClose = [labelled (Jump (label_of_instructions closeLabel))] in
-    let insTrue = (expression out t) @ jumpToClose in
-    let insFalse = (expression out f) @ jumpToClose in
+    let insTrue = (expression out t) @ (inst_jump_to_label closeLabel) in
+    let insFalse = (expression out f) @ (inst_jump_to_label closeLabel) in
     (condition (label_of_instructions insTrue) (label_of_instructions insFalse) c) @ insTrue @ insFalse @ closeLabel
 
   | S.FunCall (S.FunId f, es) when is_binop f ->
@@ -132,6 +137,9 @@ and expression out = T.(function
 and label_of_instructions labelOfInsList = fst (List.hd labelOfInsList)
 
 and string_of_label (T.Label x) = x
+
+and inst_jump_to_label l =
+    [labelled (T.Jump (label_of_instructions l))]
 
 and as_rvalue e =
   let x = `Variable (fresh_variable ()) in
