@@ -105,7 +105,7 @@ let rec translate (p : S.t) (env : environment) : T.t * environment =
       of the variable [x]. If [x] is local, this address is
       located inside the stack frame. If [x] is global, this
       address is represented by a label. *)
-  and variable_address stacksize env ((S.Id s) as x) : address =
+  and variable_address stacksize env ((S.Id s) as x) =
        failwith "Student! This is your job!"
 
   (** [load_variable stacksize env r x] emits the instructions
@@ -136,7 +136,7 @@ let rec translate (p : S.t) (env : environment) : T.t * environment =
   (** [function_definition bs df] inserts the compiled code of [df]
       in the block list [bs]. *)
   and function_definition bs =
-    failwith "Student! This is your job!"
+       failwith "Student! This is your job!"
 
   (** [allocate_stack_frame locals] modifies the stack
       pointer to introduce a fresh stack frame large
@@ -148,7 +148,6 @@ let rec translate (p : S.t) (env : environment) : T.t * environment =
       stack frame given the [size] of this stack frame. *)
   and free_stack_frame size =
        failwith "Student! This is your job!"
-
   (** [extract_global xs d] extracts a global variable definition from [d]
       and inserts it in the list [xs]. *)
   and extract_global xs = function
@@ -162,7 +161,7 @@ let rec translate (p : S.t) (env : environment) : T.t * environment =
      0 as an argument.
 
      To initialize global variables, we simply concatenate the
-     compiled code of each variable code block.
+     compiled code of each variable code block. 
    *)
   let main =
        failwith "Student! This is your job!"
