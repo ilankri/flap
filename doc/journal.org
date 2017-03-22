@@ -632,16 +632,31 @@
    |-----+--------------+--------------|
 
 ** Un premier algorithme (naif) de coloriage de graphe
+
    let rec colorize : graph -> coloring = fun g ->
      match pick_simplifiable_node g with
      | Some n ->
        let coloring = colorize (g \\ { n }) in
        assign_remaining_color coloring n g
      | None ->
+       let n = pick_some_node g in
        let coloring = colorize (g \\ { n }) in
        try
         assign_remaining_color coloring n g
        with NoMoreColor -> give_up coloring n
+
+   let rec colorize : graph -> coloring = fun g ->
+     let n =
+         match pick_simplifiable_node g with
+        | Some n -> n
+        | None -> pick_some_node g
+     in
+       try
+        let coloring = colorize (g \\ { n }) in
+        assign_remaining_color coloring n g
+       with NoMoreColor -> give_up coloring n
+
+
 * Cours 16 <2017-03-06>
 ** Présentation du prochain TD : Hobix vers Fopix, Fopix vers Retrolix
 *** Hobix -> Fopix
@@ -1201,3 +1216,97 @@
        R <- call uniq (b)
        ret R
        }
+* Cours 18 <2017-03-20>
+** Retrolix vers MIPS
+*** Scripts d'utilisation de la VM Qemu MIPS
+*** Structure de la pile
+    - sp : stack pointer, représente le sommet de la pile
+
+      Par exemple:
+
+      Le code Retrolix suivant:
+
+      code (x2)
+      local X19, X20:
+      l36: X19 <- load 1;
+      l37: X20 <- load 2;
+      l38: x2 <- add X19, X20;
+      end
+
+      est compilé en MIPS comme suit:
+
+      x2:            li v1, -8          ;;
+		     add sp, sp, v1     ;; alloue 2 mots au sommet de la pile
+      l36:           li v1, 1
+		     sw v1, 8(sp)       ;; stocke "1" dans la pile
+      l37:           li v1, 2
+		     sw v1, 4(sp)       ;; stocke "2" au sommet
+      l38:           lw v1, 8(sp)       ;; charge "1" dans v1
+		     lw fp, 4(sp)       ;; charge "2" dans fp
+		     add fp, v1, fp     ;; fp <- 1 + 2
+		     lui v1, %hi(__global__x2)
+		     sw fp,  %lo(__global__x2)(v1)
+
+** Coloriage d'un graphe avec relation de préférence
+*** Fusion de deux nœuds
+*** Deux heuristiques
+**** Briggs
+
+     - Si en fusionnant a et b dans G, le nombre de noeuds voisins du
+       nouveau noeud qui ne sont pas simplifiables est strictement
+       inferieur au nombre de couleurs disponibles alors OK.
+
+**** George
+
+     - Si les noeuds non simplifiables et en conflit avec a sont des
+       noeuds qui etaient aussi en conflit avec b (ou inversement)
+       alors OK.
+
+**** Justifications informelles
+
+     Pourquoi si G était k-coloriable alors après fusion G est encore
+     k-coloriable?
+
+***** Briggs
+
+      Après avoir simplifié tous les noeuds adjacents du noeud fusionné,
+      il va en rester un nombre strictement inférieur à k donc le noeud
+      fusionné sera simplifiable et donc si le graphe sans ce noeud était
+      k-coloriable, il sera encore k-coloriable.
+
+***** George
+
+      Soit S l'ensemble des noeuds simplifiables adjacents à "a".
+
+      Si on simplifie S dans G - sans faire la fusion - on obtient
+      un graphe G₁.
+
+      Si on simplifie S dans G après fusion, on obtient un graphe
+      G₂ qui est un sous-graphe de G₁.
+
+      G₂ est au moins aussi facile à colorier que G₁.
+
+*** Nouvel algorithme
+   colorize G colors =
+     Pick a node in G which degree < |colors| and with no preference relation.
+     There are four cases:
+
+     - G is empty => an empty coloring is fine.
+
+     - there is a node n which degree < |colors|
+       let coloring = colorize (G \ { n }) colors in
+       let remaining_colors = colors \ colors_of (neighbours(n)) in coloring in
+       if remaining_colors = ∅ then
+         mark n as spilled
+       else
+         return (coloring ∪ { n ↦ pick_color in remaining_colors })
+
+     - there are two nodes a and b that love each other.
+       if briggs or georges give their blessing then
+         colorize (coalesce a b in G) colors
+       else
+         colorize (remove preference between a b in G) colors
+
+     - otherwise, there is some node n and try optimistic simplification.
+*** Design de l'interface du module de Graph
+    
