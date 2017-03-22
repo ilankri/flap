@@ -43,7 +43,7 @@ let fresh_variable =
    purpose of the next functions:
 *)
 
-let local globals instr = RetrolixAST.(
+let local globals instr = T.(
     let local = function
       | `Variable id -> if IdSet.mem id globals then [] else [id]
       | `Register _ | `Immediate _ -> []
@@ -91,63 +91,78 @@ and push env x =
   IdSet.add (identifier x) env
 
 and declaration env = T.(function
-  | S.DefineValue (S.Id x, e) ->
-    let x = Id x in
-    let ec = expression (`Variable x) e in
-    let locals = locals env ec in
-    DValue (x, (locals, ec))
+    | S.DefineValue (S.Id x, e) ->
+      let x = Id x in
+      let ec = expression (`Variable x) e in
+      let locals = locals env ec in
+      DValue (x, (locals, ec))
 
-  | S.DefineFunction (S.FunId f, xs, e) ->
-    let x = fresh_variable () in
-    let ec = expression (`Variable x) e in
-    DFunction (FId f,
-               List.map identifier xs,
-               (locals env ec,
-                ec @ [labelled (Ret (`Variable x))]))
-  | S.ExternalFunction (S.FunId f) ->
-    DExternalFunction (FId f)
-)
+    | S.DefineFunction (S.FunId f, xs, e) ->
+      let x = fresh_variable () in
+      let ec = expression (`Variable x) e in
+      DFunction (FId f,
+                 List.map identifier xs,
+                 (locals env ec,
+                  ec @ [labelled (Ret (`Variable x))]))
+    | S.ExternalFunction (S.FunId f) ->
+      DExternalFunction (FId f)
+  )
 (** [expression out e] compiles [e] into a block of Retrolix
     instructions that stores the evaluation of [e] into [out]. *)
 and expression out = T.(function
-  | S.Literal l ->
-    [labelled (Assign (out, Load, [ `Immediate (literal l) ]))]
+    | S.Literal l ->
+      [labelled (Assign (out, Load, [ `Immediate (literal l) ]))]
 
-  | S.Variable (S.Id x) ->
-    [labelled (Assign (out, Load, [ `Variable (Id x) ]))]
+    | S.Variable (S.Id x) ->
+      [labelled (Assign (out, Load, [ `Variable (Id x) ]))]
 
-  | S.Define (S.Id x, e1, e2) ->
-    (** Hey student! The following code is wrong in general,
-        hopefully, you will implement [preprocess] in such a way that
-        it will work, right? *)
-    expression (`Variable (Id x)) e1 @ expression out e2
+    | S.Define (S.Id x, e1, e2) ->
+      (** Hey student! The following code is wrong in general,
+          hopefully, you will implement [preprocess] in such a way that
+          it will work, right? *)
+      expression (`Variable (Id x)) e1 @ expression out e2
 
-  | S.While (c, e) ->
-       failwith "Students! This is your job!"
+    | S.While (c, e) ->
+      failwith "Students! This is your job!"
 
   | S.IfThenElse (c, t, f) ->
-    let closeLabel = [labelled (Comment (string_of_label (fresh_label ())))] in  
+    let closeLabel = [labelled (Comment (string_of_label (fresh_label ())))] in
     let jumpToClose = [labelled (Jump (label_of_instructions closeLabel))] in
     let insTrue = (expression out t) @ jumpToClose in
     let insFalse = (expression out f) @ jumpToClose in
     (condition (label_of_instructions insTrue) (label_of_instructions insFalse) c) @ insTrue @ insFalse @ closeLabel
 
-  | S.FunCall (S.FunId f, es) when is_binop f ->
-    assign out (binop f) es
+    | S.FunCall (S.FunId f, es) when is_binop f ->
+      assign out (binop f) es
 
-  | S.FunCall (S.FunId f, actuals) ->
-       failwith "Students! This is your job!"
+    | S.FunCall (f, actuals) ->
+      if List.length actuals > 5 then
+        failwith "Students! This is your job!"
+      else
+        pass_actuals actuals @ [labelled (call_function f)]
 
-  | S.UnknownFunCall (ef, actuals) ->
-       failwith "Students! This is your job!"
-  | S.Switch (e, cases, default) ->
-       failwith "Students! This is your job!"
-)
+    | S.UnknownFunCall (ef, actuals) ->
+      failwith "Students! This is your job!"
+    | S.Switch (e, cases, default) ->
+      failwith "Students! This is your job!"
+  )
+
+and call_function f =
+  T.Call (register MipsArch.return_register, `Immediate (literal (S.LFun f)), [])
 
 (** This method will extract the label of the first instruction in the labelOfInsList *)
 and label_of_instructions labelOfInsList = fst (List.hd labelOfInsList)
 
 and string_of_label (T.Label x) = x
+
+and pass_actuals actuals =
+  List.flatten (
+    List.map2
+      (fun arg_passing_register actual ->
+         expression (register arg_passing_register) actual)
+      MipsArch.argument_passing_registers
+      actuals
+  )
 
 and as_rvalue e =
   let x = `Variable (fresh_variable ()) in
@@ -159,18 +174,18 @@ and as_rvalues rs f =
 
 and assign out op rs =
   as_rvalues rs (fun xs ->
-    [labelled (T.Assign (out, op, xs))]
-  )
+      [labelled (T.Assign (out, op, xs))]
+    )
 
 
 and condition lt lf c = T.(
-  let x = fresh_variable () in
-  expression (`Variable x) c
-  @ [ labelled (ConditionalJump (EQ, [ `Variable x;
-                                       `Immediate (LInt (Int32.of_int 0)) ],
-                                 lf,
-                                 lt))]
-)
+    let x = fresh_variable () in
+    expression (`Variable x) c
+    @ [ labelled (ConditionalJump (EQ, [ `Variable x;
+                                         `Immediate (LInt (Int32.of_int 0)) ],
+                                   lf,
+                                   lt))]
+  )
 
 and first_label = function
   | [] -> assert false
@@ -180,15 +195,15 @@ and labelled i =
   (fresh_label (), i)
 
 and literal = T.(function
-  | S.LInt x ->
-    LInt x
-  | S.LFun (S.FunId f) ->
-    LFun (FId f)
-  | S.LChar c ->
-    LChar c
-  | S.LString s ->
-    LString s
-)
+    | S.LInt x ->
+      LInt x
+    | S.LFun (S.FunId f) ->
+      LFun (FId f)
+    | S.LChar c ->
+      LChar c
+    | S.LString s ->
+      LString s
+  )
 
 and is_binop = function
   | "`+" | "`-" | "`*" | "`/" -> true
@@ -199,21 +214,21 @@ and is_condition = function
   | _ -> false
 
 and binop = T.(function
-  | "`+" -> Add
-  | "`-" -> Sub
-  | "`*" -> Mul
-  | "`/" -> Div
-  | c -> Bool (condition_op c)
-)
+    | "`+" -> Add
+    | "`-" -> Sub
+    | "`*" -> Mul
+    | "`/" -> Div
+    | c -> Bool (condition_op c)
+  )
 
 and condition_op = T.(function
-  | "`<" -> LT
-  | "`>" -> GT
-  | "`<=" -> LTE
-  | "`>=" -> GTE
-  | "`=" -> EQ
-  | _ -> assert false
-)
+    | "`<" -> LT
+    | "`>" -> GT
+    | "`<=" -> LTE
+    | "`>=" -> GTE
+    | "`=" -> EQ
+    | _ -> assert false
+  )
 
 let preprocess p env =
   (p, env)
