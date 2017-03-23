@@ -135,15 +135,15 @@ and expression out = T.(function
       let condIns = expression condReg c in
       let eIns = ( expression out e ) in 
       let condJump = [ labelled (ConditionalJump (EQ, [ condReg; `Immediate (LInt (Int32.of_int 0)) ],
-                                                      label_of_instructions closeLabel, label_of_instructions condIns))] in
+                                                      first_label closeLabel, first_label condIns))] in
       condIns @ condJump @ eIns @ condJump @ closeLabel
 
     | S.IfThenElse (c, t, f) ->
       let closeLabel = [labelled (Comment "Exit If")] in
-      let jumpToClose = [labelled (Jump (label_of_instructions closeLabel))] in
+      let jumpToClose = [labelled (Jump (first_label closeLabel))] in
       let insTrue = (expression out t) @ jumpToClose in
       let insFalse = (expression out f) @ jumpToClose in
-      (condition (label_of_instructions insTrue) (label_of_instructions insFalse) c) @ insTrue @ insFalse @ closeLabel
+      (condition (first_label insTrue) (first_label insFalse) c) @ insTrue @ insFalse @ closeLabel
 
     | S.FunCall (S.FunId f, es) when is_binop f ->
       assign out (binop f) es
@@ -158,17 +158,24 @@ and expression out = T.(function
       failwith "Students! This is your job!"
 
     | S.Switch (e, cases, default) ->
-      failwith "Students! This is your job!"
+      let closeLabel = [labelled (Comment "Exit Switch")] in
+      let jumpToClose = [labelled (Jump (first_label closeLabel))] in
+      let condVar, condIns = as_rvalue e in
+      let lsOfCases = Array.map (fun c -> ((expression out c) @ jumpToClose)) cases in
+      let labelsOfLsOfCases = Array.map (fun l -> first_label l) lsOfCases in
+      let casesIns = Array.fold_left (fun acc i -> i @ acc ) [] lsOfCases in
+      match default with
+      | Some expr -> (
+          let defaultIns = (expression out expr) @ jumpToClose in
+          condIns @ [labelled (Switch(condVar, labelsOfLsOfCases, Some(first_label defaultIns)) )] @ casesIns @ defaultIns @ closeLabel)
+      | None -> condIns @ [labelled (Switch(condVar, labelsOfLsOfCases, None))] @ casesIns @ closeLabel
   )
 
 and call_function f =
   T.Call (register MipsArch.return_register, `Immediate (literal (S.LFun f)), [])
 
-(** This method will extract the label of the first instruction in the labelOfInsList *)
-and label_of_instructions labelOfInsList = fst (List.hd labelOfInsList)
-
 and inst_jump_to_label l =
-    [labelled (T.Jump (label_of_instructions l))]
+    [labelled (T.Jump (first_label l))]
 
 and pass_actuals actuals =
   List.flatten (
