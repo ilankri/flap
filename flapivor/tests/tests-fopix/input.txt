@@ -1,0 +1,24 @@
+val x = 3 + 3
+val y = 3 * x
+
+def fact (n) = if n = 0 then 1 else n * fact (n - 1) end
+
+def f (x, y) = 
+  val x = x + 1 in
+  val x = y * x in
+  x + y end end
+
+def g (x, y) =
+  val y =
+    val x = x + 1 in
+    x end in
+  x + y end
+
+val x =
+  val x = 5 in
+  val y = 2 * x + x * x +1 in
+  val x = 3 in
+  x + y end end end
+
+val z =
+  if 1 <= 0 then 1 else 0 end
