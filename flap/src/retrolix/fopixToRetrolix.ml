@@ -36,6 +36,9 @@ let fresh_variable =
   let c = ref 0 in
   fun () -> incr c; T.(Id ("X" ^ string_of_int !c))
 
+let idset_of_idlist ids =
+  List.fold_left (fun acc id -> IdSet.add id acc) IdSet.empty ids
+
 (**
    Every function in Retrolix starts with a declaration
    of local variables. So we need a way to compute the
@@ -61,16 +64,20 @@ let local globals instr = T.(
     | Switch (r, _, _) -> local r
   )
 
-(** [locals globals b] takes a set of variables [globals] and returns
-    the variables use in the list of instructions [b] which are not
-    in [globals]. *)
-let locals globals b =
+(** [locals globals formals b] takes a set of variables [globals] and
+    a set of variables [formals] and returns the variables use in the
+    list of instructions [b] which are not in [globals] or [formals]. *)
+let locals globals formals b =
   IdSet.elements (
-    List.fold_left
-      IdSet.union
-      IdSet.empty
-      (List.map (fun (_, instr) -> local globals instr) b)
+    IdSet.diff
+      (List.fold_left
+         IdSet.union
+         IdSet.empty
+         (List.map (fun (_, instr) -> local globals instr) b))
+      formals
   )
+
+let register r = T.(`Register (RId (MipsArch.string_of_register r)))
 
 (** [translate' p env] turns a Fopix program [p] into a Retrolix
     program using [env] to retrieve contextual information. *)
@@ -85,8 +92,8 @@ let rec translate' p env =
 
 and identifier (S.Id x) = T.Id x
 
-and register r =
-  T.((`Register (RId (MipsArch.string_of_register r)) : lvalue))
+(* and register r = *)
+(*   T.((`Register (RId (MipsArch.string_of_register r)) : lvalue)) *)
 
 and get_globals env = function
   | S.DefineValue (x, _) ->
@@ -101,15 +108,16 @@ and declaration env = T.(function
     | S.DefineValue (S.Id x, e) ->
       let x = Id x in
       let ec = expression (`Variable x) e in
-      let locals = locals env ec in
+      let locals = locals env IdSet.empty ec in
       DValue (x, (locals, ec))
 
     | S.DefineFunction (S.FunId f, xs, e) ->
       let x = fresh_variable () in
       let ec = expression (`Variable x) e in
+      let formals = List.map identifier xs in
       DFunction (FId f,
-                 List.map identifier xs,
-                 (locals env ec,
+                 formals,
+                 (locals env (idset_of_idlist formals) ec,
                   ec @ [labelled (Ret (`Variable x))]))
     | S.ExternalFunction (S.FunId f) ->
       DExternalFunction (FId f)
@@ -133,7 +141,7 @@ and expression out = T.(function
       let closeLabel = [labelled (Comment "Exit While")] in
       let condReg = `Variable (fresh_variable ()) in
       let condIns = expression condReg c in
-      let eIns = ( expression out e ) in 
+      let eIns = ( expression out e ) in
       let condJump = [ labelled (ConditionalJump (EQ, [ condReg; `Immediate (LInt (Int32.of_int 0)) ],
                                                       first_label closeLabel, first_label condIns))] in
       condIns @ condJump @ eIns @ condJump @ closeLabel
@@ -149,10 +157,12 @@ and expression out = T.(function
       assign out (binop f) es
 
     | S.FunCall (f, actuals) ->
-      if List.length actuals > 5 then
-        failwith "Students! This is your job!"
-      else
-        pass_actuals actuals @ [labelled (call_function f)]
+      let fst_four_actuals, extra_actuals = split_actuals actuals in
+      let ais, instrs = pass_fst_four_actuals fst_four_actuals in
+      instrs @
+      as_rvalues extra_actuals
+        (fun rs -> [labelled (T.Call (out, `Immediate (literal (S.LFun f)),
+                                      ais @ rs))])
 
     | S.UnknownFunCall (ef, actuals) ->
       failwith "Students! This is your job!"
@@ -171,20 +181,19 @@ and expression out = T.(function
       | None -> condIns @ [labelled (Switch(condVar, labelsOfLsOfCases, None))] @ casesIns @ closeLabel
   )
 
-and call_function f =
-  T.Call (register MipsArch.return_register, `Immediate (literal (S.LFun f)), [])
+and split_actuals = function
+  | a0 :: a1 :: a2 :: a3 :: extra_actuals -> ([a0; a1; a2; a3], extra_actuals)
+  | actuals -> (actuals, [])
 
 and inst_jump_to_label l =
     [labelled (T.Jump (first_label l))]
 
-and pass_actuals actuals =
-  List.flatten (
-    List.map2
-      (fun arg_passing_register actual ->
-         expression (register arg_passing_register) actual)
-      MipsArch.argument_passing_registers
-      actuals
-  )
+and pass_fst_four_actuals fst_four_actuals =
+  let ais = List.mapi (fun i _ -> register (MipsArch.a i)) fst_four_actuals in
+  (ais,
+   List.flatten (
+     List.map2 (fun ai actual -> expression ai actual) ais fst_four_actuals
+   ))
 
 and as_rvalue e =
   let x = `Variable (fresh_variable ()) in
@@ -198,7 +207,6 @@ and assign out op rs =
   as_rvalues rs (fun xs ->
       [labelled (T.Assign (out, op, xs))]
     )
-
 
 and condition lt lf c = T.(
     let x = fresh_variable () in
