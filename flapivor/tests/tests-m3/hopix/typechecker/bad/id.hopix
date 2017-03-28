@@ -1,1 +1,1 @@
-val id = (x : 'a) => (x : 'a)
+val id = \(x : 'a) => (x : 'a)

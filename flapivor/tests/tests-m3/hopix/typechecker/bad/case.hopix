@@ -1,4 +1,4 @@
-type t () = A | B
+type t = A | B
 
 val test1 : int = A ? { A => 0 | B => 1 }
 
