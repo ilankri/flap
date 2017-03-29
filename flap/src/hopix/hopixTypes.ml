@@ -128,11 +128,21 @@ let free_type_variables ty =
   in
   TypeVariableSet.elements (aux TypeVariableSet.empty ty)
 
+(** Ensemble de types. Ex :
+    g: pour tous 'a, 'b ('a->'b)*'a->'b
+      [-------------------------------]
+       Type scheme
+*)
 type aty_scheme = Scheme of type_variable list * aty
 
 let mk_type_scheme ty =
   Scheme (free_type_variables ty, ty)
 
+(** Monomophic type. Ex :
+    fun g['a,'b] ( f: 'a->'b, x:'a) : 'b = f(x)
+                      [----]
+                       Monotype
+*)
 let monotype ty =
   Scheme ([], ty)
 
