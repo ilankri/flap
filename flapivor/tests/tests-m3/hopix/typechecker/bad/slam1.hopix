@@ -2,14 +2,14 @@ type list ('a) =
 | Nil
 | Cons ('a, list ('a))
 
-fun nil['a] () : list ('a) = Nil['a]
+fun nil['a] (x : unit) : list ('a) = Nil['a]
 
 fun cons['a] (x : 'a, xs : list('a)) : list ('a) = Cons['a] (x, xs)
 
 fun map['a, 'b] (f : 'a -> 'b, l : list ('a)) : list ('b) =
   l ? {
   | (Nil : list ('a)) =>
-    nil['b] ()
+    nil['b] (nothing)
   | Cons (x : 'a, xs : list ('a)) =>
     cons['a] (f (x), map['a, 'b] (f, xs))
  }
@@ -25,19 +25,19 @@ fun append['a] (l1 : list ('a), l2 : list ('a)) : list ('a) =
 fun flatten['a] (l : list (list ('a))) : list ('a) =
   l ? {
   | (Nil : list (list ('a))) =>
-    nil['a] ()
+    nil['a] (nothing)
   | Cons (l : list ('a), ls : list (list ('a))) =>
     append['a] (l, flatten['a] (ls))
   }
 
-fun return['a] (x : 'a) : list ('a)  = cons['a] (x, nil['a] ())
+fun return['a] (x : 'a) : list ('a)  = cons['a] (x, nil['a] (nothing))
 fun bind['a, 'b] (m : list ('a), f : 'a -> list ('b)) : list ('b) = 
   flatten['b] (map['a, list ('b)] (f, m))
 
-fun choice['a] (a : 'a, b : 'a) : list ('a) = cons['a] (a, cons['a] (b, nil['a] ()))
+fun choice['a] (a : 'a, b : 'a) : list ('a) = cons['a] (a, cons['a] (b, nil['a] (nothing)))
 
 fun bits (n : int) : list (list (int)) =
-  if n = 0 then return[list (int)] (nil[int] ()) else
+  if n = 0 then return[list (int)] (nil[int] (nothing)) else
     bind[int, list (int)] (choice[int] (0, 1), \(b : int) =>
       bind[list (int), list (int)] (bits (n - 1), \(bs : list (int)) =>
 	return[list (int)] (cons[int] (b, bs))

@@ -1,3 +1,3 @@
-type t () = A | B (int)
+type t = A | B (int)
 
 val test1 = A ? { A & B (x : bool) => 0 | B (_ : int) => 1 }
