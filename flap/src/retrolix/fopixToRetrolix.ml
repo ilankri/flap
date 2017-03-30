@@ -36,6 +36,12 @@ let fresh_variable =
   let c = ref 0 in
   fun () -> incr c; T.(Id ("X" ^ string_of_int !c))
 
+let fresh_id =
+  let c = ref 0 in
+  fun () -> incr c; string_of_int !c
+
+let identifier (S.Id x) = T.Id x
+
 let idset_of_idlist ids =
   List.fold_left (fun acc id -> IdSet.add id acc) IdSet.empty ids
 
@@ -79,6 +85,57 @@ let locals globals formals b =
 
 let register r = T.(`Register (RId (MipsArch.string_of_register r)))
 
+let rec get_globals env = function
+  | S.DefineValue (x, _) -> push env x
+  | _ -> env 
+
+and push env x = 
+  IdSet.add (identifier x) env 
+
+let rec preprocess defList env =
+  let (globals, renaming) = env in
+  let globals = List.fold_left get_globals globals defList in
+  let env = (globals, renaming) in
+  let defs = List.map (declaration env) defList in
+  (defs, env)
+
+and check_and_generate_new_id env x = 
+  let (globals, renaming) = env in
+  try 
+    let _ = IdSet.find (identifier x) globals in
+    let newX, newRenaming = generate_new_id renaming x in
+    let newEnv = (globals, newRenaming) in
+    newEnv, newX
+  with
+  | Not_found -> env, x 
+
+and generate_new_id renaming (S.Id x) =
+  try 
+    let existId = List.assoc x renaming in
+    generate_new_id renaming existId
+  with
+    | Not_found ->
+      let newId = S.Id(x ^ fresh_id ()) in
+      newId, (x, newId)::renaming
+
+and declaration env p = match p with
+    | S.DefineValue (x, e) ->
+      let env, newE = expression env e in
+      let env, newX = check_and_generate_new_id env x in
+      S.DefineValue (newX, newE)
+
+    | S.DefineFunction (f, xs, e) ->
+      let (g, r) = initial_environment () in
+      let globals = List.fold_left (fun acc e -> (IdSet.add (identifier e) acc)) g xs in
+      let envForFun = (globals, r) in
+      let _, newE = expression envForFun e in
+      S.DefineFunction (f, xs, newE)
+
+    | _ -> p
+
+and expression env e = match e with
+    | _ -> env, e (* TODO *)
+
 (** [translate' p env] turns a Fopix program [p] into a Retrolix
     program using [env] to retrieve contextual information. *)
 let rec translate' p env =
@@ -86,15 +143,14 @@ let rec translate' p env =
   let (globals, renaming) = env in
   let globals = List.fold_left get_globals globals p in
   let env = (globals, renaming) in
+  let p, env = preprocess p env in
   (** Then, we translate Fopix declarations into Retrolix declarations. *)
   let defs = List.map (declaration globals) p in
   (defs, env)
 
-and identifier (S.Id x) = T.Id x
-
 (* and register r = *)
 (*   T.((`Register (RId (MipsArch.string_of_register r)) : lvalue)) *)
-
+(*
 and get_globals env = function
   | S.DefineValue (x, _) ->
     push env x
@@ -103,7 +159,7 @@ and get_globals env = function
 
 and push env x =
   IdSet.add (identifier x) env
-
+*)
 and declaration env = T.(function
     | S.DefineValue (S.Id x, e) ->
       let x = Id x in
@@ -260,13 +316,14 @@ and condition_op = T.(function
     | _ -> assert false
   )
 
+(*
 let preprocess p env =
   (p, env)
-
+*)
 
 (** [translate p env] turns the fopix program [p] into a semantically
     equivalent retrolix program. *)
 let translate p env =
-  let p, env = preprocess p env in
+  (*let p, env = preprocess p env in *)
   let p, env = translate' p env in
   (p, env)
