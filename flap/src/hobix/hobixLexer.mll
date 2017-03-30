@@ -52,14 +52,15 @@ rule token = parse
 
   (** Keywords *)
   | "val"           { VAL  }
-  | "if"	    { IF }
-  | "fi"	    { FI }
-  | "while"	    { WHILE }
-  | "then"	    { THEN }
-  | "else"	    { ELSE }
-  | "and"	    { AND }
+  | "if"            { IF }
+  | "fi"            { FI }
+  | "while"         { WHILE }
+  | "then"          { THEN }
+  | "else"          { ELSE }
+  | "and"           { AND }
   | "extern"        { EXTERN }
   | "newblock"      { NEWBLOCK }
+  | "fun"           { FUN }
 
   (** Identifiers *)
   | identifier as i  { ID i  }
@@ -79,8 +80,8 @@ rule token = parse
   | '\'' ([^ '\\' '\''] as c) '\''        {
     if (Char.code c < 32) then
       error lexbuf (
-	Printf.sprintf
-	  "The ASCII character %d is not printable." (Char.code c)
+        Printf.sprintf
+          "The ASCII character %d is not printable." (Char.code c)
       );
     LCHAR c
   }
@@ -116,14 +117,14 @@ rule token = parse
   | "/"             { SLASH       }
 
   (** Punctuation *)
-  | ":="	    { DEQUAL    }
+  | ":="            { DEQUAL    }
   | ";"             { SEMICOLON }
   | "("             { LPAREN    }
   | ")"             { RPAREN    }
-  | "["		    { LBRACKET  }
-  | "]"		    { RBRACKET  }
-  | "{"		    { LBRACE    }
-  | "}"		    { RBRACE    }
+  | "["             { LBRACKET  }
+  | "]"             { RBRACKET  }
+  | "{"             { LBRACE    }
+  | "}"             { RBRACE    }
   | ","             { COMMA     }
   | "\\"            { BACKSLASH }
   | eof             { EOF       }
