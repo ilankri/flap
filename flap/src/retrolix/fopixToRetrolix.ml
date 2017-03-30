@@ -115,10 +115,16 @@ and declaration env = T.(function
       let return_register = register MipsArch.return_register in
       let ec = expression return_register e in
       let formals = List.map identifier xs in
+      let ls, save_callee_saved =
+        save_registers MipsArch.callee_saved_registers
+      in
       DFunction (FId f,
                  formals,
                  (locals env (idset_of_idlist formals) ec,
-                  ec @ [labelled (Ret return_register)]))
+                  save_callee_saved @ ec @
+                  restore_registers MipsArch.callee_saved_registers ls @
+                  [labelled (Ret return_register)]))
+
     | S.ExternalFunction (S.FunId f) ->
       DExternalFunction (FId f)
   )
@@ -168,13 +174,16 @@ and expression out = T.(function
     | S.FunCall (f, actuals) ->
       let fst_four_actuals, extra_actuals = split_actuals actuals in
       let ais, pass_fst_four_actuals = pass_fst_four_actuals fst_four_actuals in
-      let saved, save_caller_saved = save_caller_saved () in
+      let ls, save_caller_saved =
+        save_registers MipsArch.caller_saved_registers
+      in
       pass_fst_four_actuals @
-      save_caller_saved @
       as_rvalues extra_actuals
-        (fun rs -> [labelled (T.Call (out, `Immediate (literal (S.LFun f)),
-                                      ais @ rs))]) @
-      restore_caller_saved saved
+        (fun rs ->
+           save_caller_saved @
+           [labelled (T.Call (out, `Immediate (literal (S.LFun f)),
+                              ais @ rs))]) @
+      restore_registers MipsArch.caller_saved_registers ls
 
 
     | S.UnknownFunCall (ef, actuals) ->
@@ -202,13 +211,16 @@ and expression out = T.(function
         casesIns @ closeLabel
   )
 
-and save_caller_saved () = ([], [])
+and load l r = T.Assign (l, T.Load, [r])
 
-and restore_caller_saved saved = []
+and save_registers regs =
+  let save_register reg l = labelled (load l (register reg)) in
+  let ls = List.map (fun _ -> `Variable (fresh_variable ())) regs in
+  (ls, List.map2 save_register regs ls)
 
-and save_callee_saved () = ([], [])
-
-and restore_callee_saved saved = []
+and restore_registers regs ls =
+  let restore_register reg l = labelled (load (register reg) l) in
+  List.map2 restore_register regs ls
 
 and split_actuals = function
   | a0 :: a1 :: a2 :: a3 :: extra_actuals -> ([a0; a1; a2; a3], extra_actuals)
