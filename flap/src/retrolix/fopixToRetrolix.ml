@@ -85,12 +85,12 @@ let locals globals formals b =
 
 let register r = T.(`Register (RId (MipsArch.string_of_register r)))
 
-let rec get_globals env = function
-  | S.DefineValue (x, _) -> push env x
-  | _ -> env 
+let rec get_globals set = function
+  | S.DefineValue (x, _) -> push set x
+  | _ -> set 
 
-and push env x = 
-  IdSet.add (identifier x) env 
+and push set x = 
+  IdSet.add (identifier x) set
 
 let rec preprocess defList env =
   let (globals, renaming) = env in
@@ -109,13 +109,14 @@ and check_and_generate_new_id env x =
   with
   | Not_found -> env, x 
 
-and generate_new_id renaming (S.Id x) =
+and generate_new_id renaming x =
   try 
     let existId = List.assoc x renaming in
     generate_new_id renaming existId
   with
     | Not_found ->
-      let newId = S.Id(x ^ fresh_id ()) in
+      let S.Id s = x in
+      let newId = S.Id(s ^ fresh_id ()) in
       newId, (x, newId)::renaming
 
 and declaration env p = match p with
@@ -126,7 +127,7 @@ and declaration env p = match p with
 
     | S.DefineFunction (f, xs, e) ->
       let (g, r) = initial_environment () in
-      let globals = List.fold_left (fun acc e -> (IdSet.add (identifier e) acc)) g xs in
+      let globals = List.fold_left (fun acc s -> (IdSet.add (identifier s) acc)) g xs in
       let envForFun = (globals, r) in
       let _, newE = expression envForFun e in
       S.DefineFunction (f, xs, newE)
@@ -240,7 +241,6 @@ and expression out = T.(function
            [labelled (T.Call (out, `Immediate (literal (S.LFun f)),
                               ais @ rs))]) @
       restore_registers MipsArch.caller_saved_registers ls
-
 
     | S.UnknownFunCall (ef, actuals) ->
       failwith "Students! This is your job!"
