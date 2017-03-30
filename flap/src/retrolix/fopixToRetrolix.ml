@@ -168,13 +168,19 @@ and declaration env = T.(function
       DValue (x, (locals, ec))
 
     | S.DefineFunction (S.FunId f, xs, e) ->
-      let x = fresh_variable () in
-      let ec = expression (`Variable x) e in
+      let return_register = register MipsArch.return_register in
+      let ec = expression return_register e in
       let formals = List.map identifier xs in
+      let ls, save_callee_saved =
+        save_registers MipsArch.callee_saved_registers
+      in
       DFunction (FId f,
                  formals,
                  (locals env (idset_of_idlist formals) ec,
-                  ec @ [labelled (Ret (`Variable x))]))
+                  save_callee_saved @ ec @
+                  restore_registers MipsArch.callee_saved_registers ls @
+                  [labelled (Ret return_register)]))
+
     | S.ExternalFunction (S.FunId f) ->
       DExternalFunction (FId f)
   )
@@ -198,8 +204,16 @@ and expression out = T.(function
       let condReg = `Variable (fresh_variable ()) in
       let condIns = expression condReg c in
       let eIns = ( expression out e ) in
-      let condJump = [ labelled (ConditionalJump (EQ, [ condReg; `Immediate (LInt (Int32.of_int 0)) ],
-                                                      first_label closeLabel, first_label condIns))] in
+      let condJump =
+        [ labelled (
+              ConditionalJump (
+                EQ,
+                [ condReg; `Immediate (LInt (Int32.of_int 0)) ],
+                first_label closeLabel,
+                first_label condIns
+              )
+            )]
+      in
       condIns @ condJump @ eIns @ condJump @ closeLabel
 
     | S.IfThenElse (c, t, f) ->
@@ -207,18 +221,26 @@ and expression out = T.(function
       let jumpToClose = [labelled (Jump (first_label closeLabel))] in
       let insTrue = (expression out t) @ jumpToClose in
       let insFalse = (expression out f) @ jumpToClose in
-      (condition (first_label insTrue) (first_label insFalse) c) @ insTrue @ insFalse @ closeLabel
+      (condition (first_label insTrue) (first_label insFalse) c) @
+      insTrue @ insFalse @ closeLabel
 
     | S.FunCall (S.FunId f, es) when is_binop f ->
       assign out (binop f) es
 
     | S.FunCall (f, actuals) ->
       let fst_four_actuals, extra_actuals = split_actuals actuals in
-      let ais, instrs = pass_fst_four_actuals fst_four_actuals in
-      instrs @
+      let ais, pass_fst_four_actuals = pass_fst_four_actuals fst_four_actuals in
+      let ls, save_caller_saved =
+        save_registers MipsArch.caller_saved_registers
+      in
+      pass_fst_four_actuals @
       as_rvalues extra_actuals
-        (fun rs -> [labelled (T.Call (out, `Immediate (literal (S.LFun f)),
-                                      ais @ rs))])
+        (fun rs ->
+           save_caller_saved @
+           [labelled (T.Call (out, `Immediate (literal (S.LFun f)),
+                              ais @ rs))]) @
+      restore_registers MipsArch.caller_saved_registers ls
+
 
     | S.UnknownFunCall (ef, actuals) ->
       failwith "Students! This is your job!"
@@ -227,22 +249,41 @@ and expression out = T.(function
       let closeLabel = [labelled (Comment "Exit Switch")] in
       let jumpToClose = [labelled (Jump (first_label closeLabel))] in
       let condVar, condIns = as_rvalue e in
-      let lsOfCases = Array.map (fun c -> ((expression out c) @ jumpToClose)) cases in
+      let lsOfCases =
+        Array.map (fun c -> ((expression out c) @ jumpToClose)) cases
+      in
       let labelsOfLsOfCases = Array.map (fun l -> first_label l) lsOfCases in
       let casesIns = Array.fold_left (fun acc i -> i @ acc ) [] lsOfCases in
       match default with
       | Some expr -> (
           let defaultIns = (expression out expr) @ jumpToClose in
-          condIns @ [labelled (Switch(condVar, labelsOfLsOfCases, Some(first_label defaultIns)) )] @ casesIns @ defaultIns @ closeLabel)
-      | None -> condIns @ [labelled (Switch(condVar, labelsOfLsOfCases, None))] @ casesIns @ closeLabel
+          condIns @
+          [labelled (
+              Switch(condVar, labelsOfLsOfCases, Some(first_label defaultIns))
+            )] @
+          casesIns @ defaultIns @ closeLabel)
+      | None ->
+        condIns @ [labelled (Switch(condVar, labelsOfLsOfCases, None))] @
+        casesIns @ closeLabel
   )
+
+and load l r = T.Assign (l, T.Load, [r])
+
+and save_registers regs =
+  let save_register reg l = labelled (load l (register reg)) in
+  let ls = List.map (fun _ -> `Variable (fresh_variable ())) regs in
+  (ls, List.map2 save_register regs ls)
+
+and restore_registers regs ls =
+  let restore_register reg l = labelled (load (register reg) l) in
+  List.map2 restore_register regs ls
 
 and split_actuals = function
   | a0 :: a1 :: a2 :: a3 :: extra_actuals -> ([a0; a1; a2; a3], extra_actuals)
   | actuals -> (actuals, [])
 
 and inst_jump_to_label l =
-    [labelled (T.Jump (first_label l))]
+  [labelled (T.Jump (first_label l))]
 
 and pass_fst_four_actuals fst_four_actuals =
   let ais = List.mapi (fun i _ -> register (MipsArch.a i)) fst_four_actuals in

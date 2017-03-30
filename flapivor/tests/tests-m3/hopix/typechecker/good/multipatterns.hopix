@@ -1,7 +1,7 @@
-type t () = A | B
-type u () = S (t ()) | T (int)
+type t = A | B
+type u = S (t) | T (int)
 
 val x : int = S (A) ? {
 | S (A | B)  => 0
-| (_ : u ()) => 1
+| (_ : u) => 1
 }
