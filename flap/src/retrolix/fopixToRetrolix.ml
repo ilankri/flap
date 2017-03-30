@@ -36,6 +36,7 @@ let fresh_variable =
   let c = ref 0 in
   fun () -> incr c; T.(Id ("X" ^ string_of_int !c))
 
+(** Used by preprocess to generate new id *)
 let fresh_id =
   let c = ref 0 in
   fun () -> incr c; string_of_int !c
@@ -51,7 +52,6 @@ let idset_of_idlist ids =
    local variables of some generated code. This is the
    purpose of the next functions:
 *)
-
 let local globals instr = T.(
     let local = function
       | `Variable id ->
@@ -134,33 +134,74 @@ and declaration env p = match p with
 
     | _ -> p
 
+and fun_expr_list (accSet, accList) elt =
+    let env, newE = expression accSet elt in
+    (env, newE::accList)
+
+and fun_expr_array (accSet, accArray, c) elt =
+    let env, newE = expression accSet elt in
+    accArray.(c) <- newE;
+    (env, accArray, c+1)
+
+and replace_id_if_need renaming i =
+    try
+      let existId = List.assoc i renaming in
+      replace_id_if_need renaming existId
+    with
+    | Not_found -> i
+
 and expression env e = match e with
-    | _ -> env, e (* TODO *)
+    | S.Variable i -> env, S.Variable (replace_id_if_need (snd env) i)
+
+    | S.Define (i, e1, e2) -> 
+      let env, newE1 = expression env e1 in
+      let env, newI = check_and_generate_new_id env i in
+      let env, newE2 = expression env e2 in
+      env, S.Define (newI, newE1, newE2)
+
+    | S.FunCall (f, el) ->
+      let env, newEl = List.fold_left fun_expr_list (env, []) el in
+      env, S.FunCall (f, newEl)
+
+    | S.UnknownFunCall (e, el) ->
+      let env, newE = expression env e in
+      let env, newEl = List.fold_left fun_expr_list (env, []) el in
+      env, S.UnknownFunCall (newE, newEl)
+
+    | S.While (e1, e2) -> 
+      let env, newE1 = expression env e1 in
+      let env, newE2 = expression env e2 in
+      env, S.While (newE1, newE2)
+
+    | S.IfThenElse (e, e1, e2) ->
+      let env, newE = expression env e in
+      let env, newE1 = expression env e1 in
+      let env, newE2 = expression env e2 in
+      env, S.IfThenElse (newE, newE1, newE2)
+
+    | S.Switch (e, el, eOp) ->
+      let env, newE = expression env e in
+      let env, newEl, _ = Array.fold_left fun_expr_array (env, el, 0) el in
+      let env, newEOp = 
+      begin
+      match eOp with
+      | Some x -> let env, e = expression env x in env, Some e
+      | None -> env, eOp
+      end in
+      env, S.Switch (newE, newEl, newEOp)
+
+    | _ -> env, e
 
 (** [translate' p env] turns a Fopix program [p] into a Retrolix
     program using [env] to retrieve contextual information. *)
 let rec translate' p env =
-  (** The global variables are extracted in a first pass. *)
-  let (globals, renaming) = env in
-  let globals = List.fold_left get_globals globals p in
-  let env = (globals, renaming) in
+  (** The global variables are extracted in a the preprocess. *)
   let p, env = preprocess p env in
+  let (globals, renaming) = env in
   (** Then, we translate Fopix declarations into Retrolix declarations. *)
   let defs = List.map (declaration globals) p in
   (defs, env)
 
-(* and register r = *)
-(*   T.((`Register (RId (MipsArch.string_of_register r)) : lvalue)) *)
-(*
-and get_globals env = function
-  | S.DefineValue (x, _) ->
-    push env x
-  | _ ->
-    env
-
-and push env x =
-  IdSet.add (identifier x) env
-*)
 and declaration env = T.(function
     | S.DefineValue (S.Id x, e) ->
       let x = Id x in
@@ -185,6 +226,7 @@ and declaration env = T.(function
     | S.ExternalFunction (S.FunId f) ->
       DExternalFunction (FId f)
   )
+
 (** [expression out e] compiles [e] into a block of Retrolix
     instructions that stores the evaluation of [e] into [out]. *)
 and expression out = T.(function
