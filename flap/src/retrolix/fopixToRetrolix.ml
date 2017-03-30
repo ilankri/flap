@@ -87,9 +87,9 @@ let register r = T.(`Register (RId (MipsArch.string_of_register r)))
 
 let rec get_globals set = function
   | S.DefineValue (x, _) -> push set x
-  | _ -> set 
+  | _ -> set
 
-and push set x = 
+and push set x =
   IdSet.add (identifier x) set
 
 let rec preprocess defList env =
@@ -99,40 +99,42 @@ let rec preprocess defList env =
   let defs = List.map (declaration env) defList in
   (defs, env)
 
-and check_and_generate_new_id env x = 
+and check_and_generate_new_id env x =
   let (globals, renaming) = env in
-  try 
+  try
     let _ = IdSet.find (identifier x) globals in
     let newX, newRenaming = generate_new_id renaming x in
     let newEnv = (globals, newRenaming) in
     newEnv, newX
   with
-  | Not_found -> env, x 
+  | Not_found -> env, x
 
 and generate_new_id renaming x =
-  try 
+  try
     let existId = List.assoc x renaming in
     generate_new_id renaming existId
   with
-    | Not_found ->
-      let S.Id s = x in
-      let newId = S.Id(s ^ fresh_id ()) in
-      newId, (x, newId)::renaming
+  | Not_found ->
+    let S.Id s = x in
+    let newId = S.Id(s ^ fresh_id ()) in
+    newId, (x, newId)::renaming
 
 and declaration env p = match p with
-    | S.DefineValue (x, e) ->
-      let env, newE = expression env e in
-      let env, newX = check_and_generate_new_id env x in
-      S.DefineValue (newX, newE)
+  | S.DefineValue (x, e) ->
+    let env, newE = expression env e in
+    let env, newX = check_and_generate_new_id env x in
+    S.DefineValue (newX, newE)
 
-    | S.DefineFunction (f, xs, e) ->
-      let (g, r) = initial_environment () in
-      let globals = List.fold_left (fun acc s -> (IdSet.add (identifier s) acc)) g xs in
-      let envForFun = (globals, r) in
-      let _, newE = expression envForFun e in
-      S.DefineFunction (f, xs, newE)
+  | S.DefineFunction (f, xs, e) ->
+    let (g, r) = initial_environment () in
+    let globals =
+      List.fold_left (fun acc s -> (IdSet.add (identifier s) acc)) g xs
+    in
+    let envForFun = (globals, r) in
+    let _, newE = expression envForFun e in
+    S.DefineFunction (f, xs, newE)
 
-    | _ -> p
+  | _ -> p
 
 and fun_expr_list (accSet, accList) elt =
     let env, newE = expression accSet elt in
@@ -153,7 +155,7 @@ and replace_id_if_need renaming i =
 and expression env e = match e with
     | S.Variable i -> env, S.Variable (replace_id_if_need (snd env) i)
 
-    | S.Define (i, e1, e2) -> 
+    | S.Define (i, e1, e2) ->
       let env, newE1 = expression env e1 in
       let env, newI = check_and_generate_new_id env i in
       let env, newE2 = expression env e2 in
@@ -168,7 +170,7 @@ and expression env e = match e with
       let env, newEl = List.fold_left fun_expr_list (env, []) el in
       env, S.UnknownFunCall (newE, newEl)
 
-    | S.While (e1, e2) -> 
+    | S.While (e1, e2) ->
       let env, newE1 = expression env e1 in
       let env, newE2 = expression env e2 in
       env, S.While (newE1, newE2)
@@ -182,7 +184,7 @@ and expression env e = match e with
     | S.Switch (e, el, eOp) ->
       let env, newE = expression env e in
       let env, newEl, _ = Array.fold_left fun_expr_array (env, el, 0) el in
-      let env, newEOp = 
+      let env, newEOp =
       begin
       match eOp with
       | Some x -> let env, e = expression env x in env, Some e
@@ -219,8 +221,13 @@ and declaration env = T.(function
       DFunction (FId f,
                  formals,
                  (locals env (idset_of_idlist formals) ec,
-                  save_callee_saved @ ec @
+                  comment "Save callee saved registers" ::
+                  save_callee_saved @
+                  [comment ("Body of function " ^ f)] @
+                  ec @
+                  [comment "Restore callee saved registers"] @
                   restore_registers MipsArch.callee_saved_registers ls @
+                  [comment "Return"] @
                   [labelled (Ret return_register)]))
 
     | S.ExternalFunction (S.FunId f) ->
@@ -270,18 +277,23 @@ and expression out = T.(function
     | S.FunCall (S.FunId f, es) when is_binop f ->
       assign out (binop f) es
 
-    | S.FunCall (f, actuals) ->
+    | S.FunCall (S.FunId fid as f, actuals) ->
       let fst_four_actuals, extra_actuals = split_actuals actuals in
       let ais, pass_fst_four_actuals = pass_fst_four_actuals fst_four_actuals in
       let ls, save_caller_saved =
         save_registers MipsArch.caller_saved_registers
       in
+      comment "Pass first four actuals" ::
       pass_fst_four_actuals @
+      [comment "Pass extra actuals"] @
       as_rvalues extra_actuals
         (fun rs ->
+           comment "Save caller-saved registers" ::
            save_caller_saved @
+           [comment ("Call function " ^ fid)] @
            [labelled (T.Call (out, `Immediate (literal (S.LFun f)),
                               ais @ rs))]) @
+      [comment "Restore caller-saved registers"] @
       restore_registers MipsArch.caller_saved_registers ls
 
     | S.UnknownFunCall (ef, actuals) ->
@@ -308,6 +320,8 @@ and expression out = T.(function
         condIns @ [labelled (Switch(condVar, labelsOfLsOfCases, None))] @
         casesIns @ closeLabel
   )
+
+and comment s = labelled (T.Comment s)
 
 and load l r = T.Assign (l, T.Load, [r])
 
