@@ -137,62 +137,62 @@ and declaration env p = match p with
   | _ -> p
 
 and fun_expr_list (accSet, accList) elt =
-    let env, newE = expression accSet elt in
-    (env, newE::accList)
+  let env, newE = expression accSet elt in
+  (env, newE::accList)
 
 and fun_expr_array (accSet, accArray, c) elt =
-    let env, newE = expression accSet elt in
-    accArray.(c) <- newE;
-    (env, accArray, c+1)
+  let env, newE = expression accSet elt in
+  accArray.(c) <- newE;
+  (env, accArray, c+1)
 
 and replace_id_if_need renaming i =
-    try
-      let existId = List.assoc i renaming in
-      replace_id_if_need renaming existId
-    with
-    | Not_found -> i
+  try
+    let existId = List.assoc i renaming in
+    replace_id_if_need renaming existId
+  with
+  | Not_found -> i
 
 and expression env e = match e with
-    | S.Variable i -> env, S.Variable (replace_id_if_need (snd env) i)
+  | S.Variable i -> env, S.Variable (replace_id_if_need (snd env) i)
 
-    | S.Define (i, e1, e2) ->
-      let env, newE1 = expression env e1 in
-      let env, newI = check_and_generate_new_id env i in
-      let env, newE2 = expression env e2 in
-      env, S.Define (newI, newE1, newE2)
+  | S.Define (i, e1, e2) ->
+    let env, newE1 = expression env e1 in
+    let env, newI = check_and_generate_new_id env i in
+    let env, newE2 = expression env e2 in
+    env, S.Define (newI, newE1, newE2)
 
-    | S.FunCall (f, el) ->
-      let env, newEl = List.fold_left fun_expr_list (env, []) el in
-      env, S.FunCall (f, newEl)
+  | S.FunCall (f, el) ->
+    let env, newEl = List.fold_left fun_expr_list (env, []) el in
+    env, S.FunCall (f, newEl)
 
-    | S.UnknownFunCall (e, el) ->
-      let env, newE = expression env e in
-      let env, newEl = List.fold_left fun_expr_list (env, []) el in
-      env, S.UnknownFunCall (newE, newEl)
+  | S.UnknownFunCall (e, el) ->
+    let env, newE = expression env e in
+    let env, newEl = List.fold_left fun_expr_list (env, []) el in
+    env, S.UnknownFunCall (newE, newEl)
 
-    | S.While (e1, e2) ->
-      let env, newE1 = expression env e1 in
-      let env, newE2 = expression env e2 in
-      env, S.While (newE1, newE2)
+  | S.While (e1, e2) ->
+    let env, newE1 = expression env e1 in
+    let env, newE2 = expression env e2 in
+    env, S.While (newE1, newE2)
 
-    | S.IfThenElse (e, e1, e2) ->
-      let env, newE = expression env e in
-      let env, newE1 = expression env e1 in
-      let env, newE2 = expression env e2 in
-      env, S.IfThenElse (newE, newE1, newE2)
+  | S.IfThenElse (e, e1, e2) ->
+    let env, newE = expression env e in
+    let env, newE1 = expression env e1 in
+    let env, newE2 = expression env e2 in
+    env, S.IfThenElse (newE, newE1, newE2)
 
-    | S.Switch (e, el, eOp) ->
-      let env, newE = expression env e in
-      let env, newEl, _ = Array.fold_left fun_expr_array (env, el, 0) el in
-      let env, newEOp =
+  | S.Switch (e, el, eOp) ->
+    let env, newE = expression env e in
+    let env, newEl, _ = Array.fold_left fun_expr_array (env, el, 0) el in
+    let env, newEOp =
       begin
-      match eOp with
-      | Some x -> let env, e = expression env x in env, Some e
-      | None -> env, eOp
+        match eOp with
+        | Some x -> let env, e = expression env x in env, Some e
+        | None -> env, eOp
       end in
-      env, S.Switch (newE, newEl, newEOp)
+    env, S.Switch (newE, newEl, newEOp)
 
-    | _ -> env, e
+  | _ -> env, e
 
 (** [translate' p env] turns a Fopix program [p] into a Retrolix
     program using [env] to retrieve contextual information. *)
@@ -213,22 +213,23 @@ and declaration env = T.(function
 
     | S.DefineFunction (S.FunId f, xs, e) ->
       let return_register = register MipsArch.return_register in
-      let ec = expression return_register e in
+      let body = expression return_register e in
       let formals = List.map identifier xs in
       let ls, save_callee_saved =
         save_registers MipsArch.callee_saved_registers
       in
-      DFunction (FId f,
-                 formals,
-                 (locals env (idset_of_idlist formals) ec,
-                  comment "Save callee saved registers" ::
-                  save_callee_saved @
-                  [comment ("Body of function " ^ f)] @
-                  ec @
-                  [comment "Restore callee saved registers"] @
-                  restore_registers MipsArch.callee_saved_registers ls @
-                  [comment "Return"] @
-                  [labelled (Ret return_register)]))
+      let instrs =
+        comment "Save callee saved registers" ::
+        save_callee_saved @
+        [comment ("Body of function " ^ f)] @
+        body @
+        [comment "Restore callee saved registers"] @
+        restore_registers MipsArch.callee_saved_registers ls @
+        [comment "Return"] @
+        [labelled (Ret return_register)]
+      in
+      let locals = locals env (idset_of_idlist formals) instrs in
+      DFunction (FId f, formals, (locals, instrs))
 
     | S.ExternalFunction (S.FunId f) ->
       DExternalFunction (FId f)
