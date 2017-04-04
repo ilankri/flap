@@ -144,3 +144,6 @@ tests-m3 [ Fri Mar 31 11:46:57 CEST 2017 ] [ 153eb02ada2a0b54194b42eba590272e570
 tests-m1 [ Tue Apr 4 10:54:24 CEST 2017 ] [ 0a46e317273dc03e30cedfd5cf6d03b52610b562 ] BAD:   7 / 7 GOOD:  135 / 135  | 
 tests-m2 [ Tue Apr 4 10:54:27 CEST 2017 ] [ 0a46e317273dc03e30cedfd5cf6d03b52610b562 ] BAD:   0 / 0 GOOD:  71 / 71  | 
 tests-m3 [ Tue Apr 4 10:54:29 CEST 2017 ] [ 0a46e317273dc03e30cedfd5cf6d03b52610b562 ] BAD:   52 / 52 GOOD:  9 / 42  | 
+tests-m1 [ Tue Apr 4 12:03:16 CEST 2017 ] [ 9bdfb735464d641d6563082e729934ec976244f4 ] BAD:   7 / 7 GOOD:  135 / 135  | 
+tests-m2 [ Tue Apr 4 12:03:20 CEST 2017 ] [ 9bdfb735464d641d6563082e729934ec976244f4 ] BAD:   0 / 0 GOOD:  71 / 71  | 
+tests-m3 [ Tue Apr 4 12:03:22 CEST 2017 ] [ 9bdfb735464d641d6563082e729934ec976244f4 ] BAD:   52 / 52 GOOD:  9 / 42  | 
