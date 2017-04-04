@@ -348,7 +348,7 @@ let typecheck tenv ast : typing_environment =
        Γ₀ ⊢ K (p₁, …, pn) ⇒ Γn, τ                                 
 
        Note that 'α₁ … αm' do nothing *)
-      | PTaggedValue (k, ps) -> 
+    | PTaggedValue (k, ps) -> 
       let (Scheme (_, tau)) as atyScheme = lookup_type_scheme_of_constructor (Position.value k) tenv in
       let checkEachPMatch accu p tvInK =
         ( 
@@ -360,27 +360,42 @@ let typecheck tenv ast : typing_environment =
       let tenv' = List.fold_left2 checkEachPMatch tenv ps tausInK in
       tenv', monotype (output_type_of_function tau)
 
-    (* | PTypeAnnotation ({ Position.value = PTaggedValue (k, ps) }, ty) -> *)
-    (*   failwith "Students! This is your job!" *)
-
     (* ∀i Γ ⊢ pᵢ ⇒ Γᵢ, σᵢ    σ₁ = … = σn    Γ₁ = … = Γn
        ————————————————————————————————————————————————
-       Γ ⊢ p₁ | … | pn ⇒ Γ₁, σ₁                         *)
-    | POr ps ->
-      failwith "Students! This is your job!"
-
-    (* ∀i Γᵢ₋₁ ⊢ pᵢ ⇒ Γᵢ, σᵢ   σ₁ = … = σₙ
+      Γ ⊢ p₁ | … | pn ⇒ Γ₁, σ₁                         
+      A verifier avec Idir... difference avec PAnd?
+    *)
+    | POr ps -> 
+      let checkEachPEqual (env, prevAty) p =
+        (
+         let _, pAty = located (pattern env) p in
+         match prevAty with
+         | Some x -> check_expected_type (Position.position p) (type_of_monotype pAty) (type_of_monotype x); (env, Some pAty)
+         | None -> (env, Some pAty)
+        ) in
+      let gamma, sigma = List.fold_left checkEachPEqual (tenv, None) ps in
+      begin
+      match sigma with
+      | Some x -> gamma, x
+      | None -> assert false (** Never reached case *)
+      end 
+    (* ∀i Γᵢ₋₁ ⊢ pᵢ ⇒ Γᵢ, σᵢ   σ₁ = … = σn
        ———————————————————————————————————
        Γ₀ ⊢ p₁ & … & pn ⇒ Γn, σn           *)
     | PAnd ps ->
-      failwith "Students! This is your job!"
-
-    (*
-       ———————————————
-       Γ ⊢ _ ⇒ Γ, ∀α.α *)
-    (* | PWildcard -> *)
-    (*   let newAlpha = ATyVar(fresh ()) in *)
-    (*   tenv, (monotype newAlpha ) *)
+      let checkEachPEqual (prevEnv, prevAty) p = 
+        (   
+         let e, pAty = located (pattern prevEnv) p in
+         match prevAty with
+         | Some x -> check_expected_type (Position.position p) (type_of_monotype pAty) (type_of_monotype x); (e, Some pAty)
+         | None -> (e, Some pAty)
+        ) in
+      let gammaN, sigmaN = List.fold_left checkEachPEqual (tenv, None) ps in
+      begin
+      match sigmaN with
+      | Some x -> gammaN, x
+      | None -> assert false (** Never reached case *)
+      end
 
     (* Γ ⊢ p ⇒ Γ', σ'    σ' = σ
        ————————————————————————
