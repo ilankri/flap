@@ -300,12 +300,12 @@ and expression out = T.(function
     | S.FunCall (S.FunId f, es) when is_binop f ->
       assign out (binop f) es
 
-    | S.FunCall (S.FunId fid, actuals) ->
+    | S.FunCall (fid, actuals) ->
       let fst_four_actuals, extra_actuals = split_params actuals in
       comment "Pass first four actuals" ::
       pass_fst_four_actuals fst_four_actuals @
       [comment "Pass extra actuals"] @
-      as_rvalues extra_actuals (call_function out (T.FId fid))
+      as_rvalues extra_actuals (call_function out (literal (S.LFun fid)))
 
     | S.UnknownFunCall (ef, actuals) ->
       failwith "Students! This is your job!"
@@ -336,7 +336,7 @@ and comment s = labelled (T.Comment s)
 
 and load l r = T.Assign (l, T.Load, [r])
 
-and call_function out (T.FId fid as f) extra_actuals =
+and call_function out (T.LFun(T.FId(fid)) as f) extra_actuals =
   let call out f actuals = T.Call (out, `Immediate f, actuals) in
   let ls, save_caller_saved =
     save_registers MipsArch.caller_saved_registers
@@ -344,7 +344,7 @@ and call_function out (T.FId fid as f) extra_actuals =
   comment "Save caller-saved registers" ::
   save_caller_saved @
   [comment ("Call function " ^ fid)] @
-  [labelled (call out (T.LFun f) extra_actuals)] @
+  [labelled (call out f extra_actuals)] @
   [comment "Restore caller-saved registers"] @
   restore_registers MipsArch.caller_saved_registers ls
 
@@ -408,11 +408,23 @@ and first_label = function
 and labelled i =
   (fresh_label (), i)
 
+and rename_predefine_function f =
+  match f with 
+      (** To handle different function name change from fopix to retrolix :
+          allocate_block -> block_create 
+          write_block -> block_set
+          read_block -> block_get
+      *)
+  | "allocate_block" -> "block_create"
+  | "write_block" -> "block_set"
+  | "read_block" -> "block_get"
+  | _ -> f
+
 and literal = T.(function
     | S.LInt x ->
       LInt x
-    | S.LFun (S.FunId f) ->
-      LFun (FId f)
+    | S.LFun (S.FunId f) -> 
+      LFun (FId (rename_predefine_function f))
     | S.LChar c ->
       LChar c
     | S.LString s ->
