@@ -1,4 +1,4 @@
-#!ocaml -init
+#!/usr/bin/ocaml -init
 (* To get a usable toplevel with flap modules:
    - First compile flap in bytecode: "make byte" or "make byte-debug"
    - Then launch: ocaml -init flap.top
@@ -23,4 +23,3 @@ let () = Options.(set_mode Interactive);;
 let () = Options.(set_source_language "hopix");;
 let () = print_string
 "Flap modules loaded.\n\n"
-
