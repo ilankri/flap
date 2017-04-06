@@ -2,9 +2,16 @@
 .PHONY: check bad good clean all clean-silent annnounce expected
 all:
 
--include ../../../../Makefile.local
+ifeq ($(LOCAL_TEST), yes)
+  FLAP_PATH = ../../../../../../flap
+else
+  FLAP_PATH = ../../../..
+endif
 
-PROGRAM=../../../../$(TARGET) $(OPTIONS)
+-include $(FLAP_PATH)/Makefile.local
+
+PROGRAM = $(FLAP_PATH)/$(TARGET) $(OPTIONS)
+
 -include ../../extension
 
 OPTIONS=$(shell if test -f options; then cat options; else echo ""; fi)

@@ -22,7 +22,10 @@ else
   MENHIROPT=-yaccflag --explain $(MENHIR_STRICT)
 endif
 
-OCAMLBUILDFLAGS_COMMON = -cflag "-annot" -cflag "-bin-annot" $(MENHIROPT)
+# During the development phase, we disable the warnings about unused
+# variables.
+OCAMLBUILDFLAGS_COMMON = -cflag "-w" -cflag "-26" -cflag "-annot"	\
+				-cflag "-bin-annot" $(MENHIROPT)
 
 # In Emacs, use classic display to enable error jumping.
 TERM = $(shell echo $$TERM)
@@ -44,8 +47,8 @@ check_cmd = LOCAL_TEST=yes $(MAKE) -C ../flapivor/tests/$(1) check
 check_log_cmd = VERBOSE=1 $(call check_cmd,$(1)) > ../log/local-$(1).log
 
 # Test suite variables.
-MS = 1 2
-TESTS = $(addprefix tests-m,$(MS))
+SUITES = m1 m2 m3 flap
+TESTS = $(addprefix tests-,$(SUITES))
 
 #########
 # Rules #

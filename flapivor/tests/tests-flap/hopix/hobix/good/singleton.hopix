@@ -1,0 +1,5 @@
+type list = Nil | Cons (int, list)
+
+fun singleton (l) = l ? Cons (_, Nil) => true | _ => false
+
+val x = singleton (Nil)

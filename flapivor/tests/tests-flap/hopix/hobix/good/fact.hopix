@@ -1,0 +1,3 @@
+fun fact (n) = if n = 0 then 1 else fact (n - 1) * n
+
+val x = fact (6)
