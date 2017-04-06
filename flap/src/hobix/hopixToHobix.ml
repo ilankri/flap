@@ -273,7 +273,7 @@ and expression env = HobixAST.(function
 
 and branch env scrutinee next (HopixAST.Branch (p, e)) =
   let cond, defs = pattern' env scrutinee p in
-  defines defs (HobixAST.IfThenElse (cond, expression' env e, next))
+  HobixAST.IfThenElse (cond, defines defs (expression' env e), next)
 
 and expand_pattern = HopixAST.(ListMonad.(function
     | PTypeAnnotation (p, _) -> located expand_pattern p
