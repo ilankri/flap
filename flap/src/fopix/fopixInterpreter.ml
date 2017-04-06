@@ -41,16 +41,16 @@ let print_value m v =
           "true"
         | VBool false ->
           "false"
-	| VChar c ->
-	  "'" ^ Char.escaped c ^ "'"
-	| VString s ->
-	  "\"" ^ String.escaped s ^ "\""
-	| VUnit ->
-	  "()"
-	| VAddress a ->
-	  print_block m d a
-	| VFun _ ->
-	  "<fun>"
+        | VChar c ->
+          "'" ^ Char.escaped c ^ "'"
+        | VString s ->
+          "\"" ^ String.escaped s ^ "\""
+        | VUnit ->
+          "()"
+        | VAddress a ->
+          print_block m d a
+        | VFun _ ->
+          "<fun>"
         | VPrimitive (s, _) ->
           Printf.sprintf "<primitive: %s>" s
   and print_block m d a =
@@ -174,7 +174,7 @@ and evaluation_of_binary_symbol environment = function
     arith_binop environment (arith_operator_of_symbol s)
   | ("`<" | "`>" | "`<=" | "`>=" | "`=") as s ->
     arith_cmpop environment (cmp_operator_of_symbol s)
-  | ("||" | "&&") as s ->
+  | ("`||" | "`&&") as s ->
     boolean_binop environment (boolean_operator_of_symbol s)
   | _ -> assert false
 
@@ -208,12 +208,12 @@ and expression runtime = function
     begin match value_as_int (expression runtime e) with
       | None -> error [] "Switch on integers only."
       | Some i ->
-	let i = Int32.to_int i in
-	if i < Array.length bs then
-	  expression runtime bs.(i)
-	else match default with
-	  | Some t -> expression runtime t
-	  | None -> error [] "No default case in switch."
+        let i = Int32.to_int i in
+        if i < Array.length bs then
+          expression runtime bs.(i)
+        else match default with
+          | Some t -> expression runtime t
+          | None -> error [] "No default case in switch."
     end
 
   | IfThenElse (c, t, f) ->
