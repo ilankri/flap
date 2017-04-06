@@ -367,18 +367,21 @@ let typecheck tenv ast : typing_environment =
       A verifier avec Idir... difference avec PAnd?
     *)
     | POr ps -> 
-      let checkEachPEqual (env, prevAty) p =
+      let checkEachPEqual (prevEnv, prevAty) p =
         (
-         let _, pAty = located (pattern env) p in
+         let gammai, pAty = located (pattern tenv) p in
+         let prevEnv = match prevEnv with
+         | Some x -> if (x<>gammai) then type_error (Position.position p) (Printf.sprintf "Pattern types mismatch!");Some gammai
+         | None -> Some gammai in
          match prevAty with
-         | Some x -> check_expected_type (Position.position p) (type_of_monotype pAty) (type_of_monotype x); (env, Some pAty)
-         | None -> (env, Some pAty)
+         | Some x -> check_expected_type (Position.position p) (type_of_monotype pAty) (type_of_monotype x); (prevEnv, Some pAty)
+         | None -> (prevEnv, Some pAty)
         ) in
-      let gamma, sigma = List.fold_left checkEachPEqual (tenv, None) ps in
+      let gamma, sigma = List.fold_left checkEachPEqual (None, None) ps in
       begin
-      match sigma with
-      | Some x -> gamma, x
-      | None -> assert false (** Never reached case *)
+      match gamma, sigma with
+      | Some x, Some y -> x, y
+      | _ -> assert false (** Never reached case *)
       end 
     (* ∀i Γᵢ₋₁ ⊢ pᵢ ⇒ Γᵢ, σᵢ   σ₁ = … = σn
        ———————————————————————————————————
