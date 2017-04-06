@@ -227,9 +227,9 @@ let typecheck tenv ast : typing_environment =
       in
       List.iter f eelist; monotype elsety
 
-    (* Γ₀ = Γ(α₁ … αₖ)    ∀i Γᵢ₋₁ ⊢ pᵢ ⇒ Γᵢ, τᵢ    Γₙ ⊢ e : τ
+    (* Γ₀ = Γ(α₁ … α)    ∀i Γᵢ₋₁ ⊢ pᵢ ⇒ Γᵢ, τᵢ    Γ ⊢ e : τ
        ———————————————————————————————————————————————————————
-       Γ ⊢ \[α₁ … αₖ](p₁, …, pₙ) => e : ∀α₁ … αₖ.τ₁⋆ … ⋆τₙ → τ *)
+       Γ ⊢ \[α₁ … α(p₁, …, p) => e : ∀α₁ … α.τ₁⋆ … ⋆τ → τ *)
     | Fun fdef ->
       failwith "Students! This is your job!"
 
@@ -242,9 +242,10 @@ let typecheck tenv ast : typing_environment =
 
     (* Γ ⊢ e : σ'    ∀i Γ ⊢ pᵢ ⇒ Γᵢ, σ'    ∀i Γᵢ ⊢ eᵢ : σ
        ——————————————————————————————————————————————————
-       Γ ⊢ e ? p₁ => e₁ | … | pₙ => eₙ : σ                *)
+       Γ ⊢ e ? p₁ => e₁ | … | pn => en : σ                *)
     | Case (e, bs) ->
-      failwith "Students! This is your job!"
+      let sigma' = located (type_scheme_of_expression tenv) e in
+      branches tenv sigma' None bs
 
     (* Γ ⊢ e : τ
        ——————————————————
@@ -427,7 +428,14 @@ let typecheck tenv ast : typing_environment =
 
   and branch tenv sty oty pos = function
     | Branch (p, e) ->
-      failwith "Students! This is your job!"
+      let envP, tyP = located (pattern tenv) p in
+      let atyE = located (type_scheme_of_expression tenv) e in
+      check_expected_type (Position.position p) (type_of_monotype tyP) (type_of_monotype sty);
+      begin
+      match oty with
+      | Some x -> check_expected_type (Position.position e) (type_of_monotype x) (type_of_monotype atyE); Some atyE
+      | None -> Some atyE
+      end
 
   in
   program ast
