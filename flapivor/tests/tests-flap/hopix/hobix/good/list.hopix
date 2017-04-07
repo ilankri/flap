@@ -4,4 +4,4 @@ fun range (i, j) = if i > j then Nil else Cons (i, range (i + 1, j))
 
 fun len (l) = l ? Nil => 0 | Cons (_, l) => 1 + len (l)
 
-val x = len (range (1, 100))
+val main = print_int (len (range (1, 100)))
