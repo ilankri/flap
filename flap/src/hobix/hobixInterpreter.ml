@@ -176,10 +176,33 @@ let primitives =
   let boolarithops =
     [ ("`||", ( || )); ("`&&", ( && )) ]
   in
+  let print s =
+    output_string stdout s;
+    flush stdout;
+    VUnit
+  in
+  let print_int =
+    VPrimitive  ("print_int", function
+      | [ VInt x ] -> print (Int32.to_string x)
+      | _ -> assert false (* By typing. *)
+    )
+  in
+  let print_string =
+    VPrimitive  ("print_string", function
+      | [ VString x ] -> print x
+      | _ -> assert false (* By typing. *)
+    )
+  in
+  let bind' x w env = Environment.bind env (Id x) w in
   Environment.empty
   |> bind_all binarith binarithops
   |> bind_all cmparith cmparithops
   |> bind_all boolarith boolarithops
+  |> bind' "print_int" print_int
+  |> bind' "print_string" print_string
+  |> bind' "true"         (VBool true)
+  |> bind' "false"        (VBool false)
+  |> bind' "nothing"      VUnit
 
 let initial_runtime () = {
   memory      = Memory.create (640 * 1024);
@@ -231,16 +254,27 @@ and define_recvalues environment memory rdefs =
 *)
 and expression environment memory = function
   | Apply (a, b) ->
-    let vbs = expressions environment memory b in
+    let vbs () = expressions environment memory b in
     begin match expression environment memory a with
-      | VPrimitive (_, f) ->
-        f vbs
+    | VPrimitive ("`||", f) ->
+       begin match expression environment memory (List.nth b 0) with
+       | VBool true -> VBool true
+       | _ -> expression environment memory (List.nth b 1)
+       end
+    | VPrimitive ("`&&", f) ->
+       begin match expression environment memory (List.nth b 0) with
+       | VBool false -> VBool false
+       | _ -> expression environment memory (List.nth b 1)
+       end
 
-      | VFun (xs, e, environment) ->
-	expression (List.fold_left2 bind_identifier environment xs vbs) memory e
+    | VPrimitive (_, f) ->
+       f (vbs ())
 
-      | _ ->
-        assert false (* By typing. *)
+    | VFun (xs, e, environment) ->
+       expression (List.fold_left2 bind_identifier environment xs (vbs ())) memory e
+
+    | _ ->
+       assert false (* By typing. *)
     end
 
   | While (c, e) ->
