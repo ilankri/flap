@@ -37,24 +37,24 @@ let print_value m v =
   let rec print_value d v =
     if d >= max_depth then "..." else
       match v with
-        | VInt x ->
-          Int32.to_string x
-        | VBool true ->
-          "true"
-        | VBool false ->
-          "false"
-        | VChar c ->
-          "'" ^ Char.escaped c ^ "'"
-        | VString s ->
-          "\"" ^ String.escaped s ^ "\""
-        | VUnit ->
-          "()"
-        | VAddress a ->
-          print_block m d a
-        | VFun _ ->
-          "<fun>"
-        | VPrimitive (s, _) ->
-          Printf.sprintf "<primitive: %s>" s
+      | VInt x ->
+        Int32.to_string x
+      | VBool true ->
+        "true"
+      | VBool false ->
+        "false"
+      | VChar c ->
+        "'" ^ Char.escaped c ^ "'"
+      | VString s ->
+        "\"" ^ String.escaped s ^ "\""
+      | VUnit ->
+        "()"
+      | VAddress a ->
+        print_block m d a
+      | VFun _ ->
+        "<fun>"
+      | VPrimitive (s, _) ->
+        Printf.sprintf "<primitive: %s>" s
   and print_block m d a =
     let b = Memory.dereference m a in
     let vs = Array.to_list (Memory.array_of_block b) in
