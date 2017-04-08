@@ -116,10 +116,12 @@ type observable = {
 
 let initial_runtime () =
   let bind_bool s b env = Environment.bind env (Id s) (VBool b) in
+  let bind_nothing env = Environment.bind env (Id "nothing") VUnit in
   {
     memory = Memory.create (640 * 1024);
     environment =
       Environment.initial
+      |> bind_nothing
       |> bind_bool "true" true
       |> bind_bool "false" false;
     functions  = [];
@@ -190,7 +192,10 @@ and expression runtime = function
     literal l
 
   | Variable x ->
-    Environment.lookup x runtime.environment
+    begin try Environment.lookup x runtime.environment with
+      | Environment.UnboundIdentifier (Id id) ->
+        error' ("Unbound identifier " ^ id ^ ".")
+    end
 
   | While (cond, e) ->
     let rec loop () =
@@ -231,6 +236,16 @@ and expression runtime = function
                   }
     in
     expression runtime e
+
+  | FunCall (FunId "print_int", [x]) | FunCall (FunId "print_string", [x]) ->
+    let print x =
+      match expression runtime x with
+      | VInt i -> print_string (Int32.to_string i);
+      | VString s -> print_string s
+      | _ -> error' ""
+    in
+    print x;
+    VUnit
 
   | FunCall (FunId "allocate_block", [size]) ->
     let l = expression runtime size in
