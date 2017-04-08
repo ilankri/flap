@@ -43,9 +43,14 @@ let fresh_id =
 
 let identifier (S.Id x) = T.Id x
 
-let int32_of_boolid = function
-  | "true" -> Int32.one
-  | "false" -> Int32.zero
+let rtrue = `Immediate (T.LInt Int32.one)
+
+let rfalse = `Immediate (T.LInt Int32.zero)
+
+let as_bool (S.Id id) =
+  match id with
+  | "true" -> rtrue
+  | "false" -> rfalse
   | _ -> assert false
 
 (** Convert a list of Retrolix identifiers to a set of Retrolix
@@ -76,29 +81,25 @@ let local globals instr = T.(
     let ( ++ ) = IdSet.union in
     let locals xs = List.fold_left ( ++ ) IdSet.empty (List.map local xs) in
     match instr with
-    | Call (l, r, rs) -> local l ++ local r ++ locals rs
-    | TailCall (r, rs) -> local r ++ locals rs
-    | Ret r -> local r
-    | Assign (l, _, rs) -> local l ++ locals rs
+    | Call (lv, rv, rvs) -> local lv ++ local rv ++ locals rvs
+    | TailCall (rv, rvs) -> local rv ++ locals rvs
+    | Ret rv -> local rv
+    | Assign (lv, _, rvs) -> local lv ++ locals rvs
     | Jump _ | Comment _ | Exit -> IdSet.empty
-    | ConditionalJump (_, rs, _, _) -> locals rs
-    | Switch (r, _, _) -> local r
+    | ConditionalJump (_, rvs, _, _) -> locals rvs
+    | Switch (rv, _, _) -> local rv
   )
 
-(** [locals globals formals b] takes a set of variables [globals] and
-    a set of variables [formals] and returns the variables use in the
-    list of instructions [b] which are not in [globals] or [formals]. *)
-let locals globals formals b =
+(** [locals globals b] takes a set of variables [globals] and returns
+    the variables use in the list of instructions [b] which are not in
+    [globals].  *)
+let locals globals b =
   IdSet.elements (
-    IdSet.diff
-      (List.fold_left
-         IdSet.union
-         IdSet.empty
-         (List.map (fun (_, instr) -> local globals instr) b))
-      formals
+    (List.fold_left IdSet.union IdSet.empty
+       (List.map (fun (_, instr) -> local globals instr) b))
   )
 
-let register r = T.(`Register (RId (MipsArch.string_of_register r)))
+let register reg = T.(`Register (RId (MipsArch.string_of_register reg)))
 
 let rec get_globals set = function
   | S.DefineValue (x, _) -> push set x
@@ -109,6 +110,9 @@ and push set x =
 
 let rec preprocess defList env =
   let (globals, renaming) = env in
+  let globals =
+    IdSet.add (T.Id "true") (IdSet.add (T.Id "false") globals)
+  in
   let globals = List.fold_left get_globals globals defList in
   let env = (globals, renaming) in
   let defs = List.map (declaration env) defList in
@@ -150,7 +154,7 @@ and declaration env p = match p with
 
   | _ -> p
 
-and fun_expr_list (accSet, accList) elt =
+and fun_expr_list elt (accSet, accList) =
   let env, newE = expression accSet elt in
   (env, newE::accList)
 
@@ -168,12 +172,7 @@ and replace_id_if_need renaming i =
 
 and expression env e = match e with
   | S.Variable (S.Id id as i) ->
-    let e =
-      match id with
-      | "true" | "false" as b -> S.Literal (S.LInt (int32_of_boolid b))
-      | _ -> S.Variable (replace_id_if_need (snd env) i)
-    in
-    env, e
+    env, S.Variable (replace_id_if_need (snd env) i)
 
   | S.Define (i, e1, e2) ->
     let env, newE1 = expression env e1 in
@@ -182,12 +181,12 @@ and expression env e = match e with
     env, S.Define (newI, newE1, newE2)
 
   | S.FunCall (f, el) ->
-    let env, newEl = List.fold_left fun_expr_list (env, []) el in
+    let env, newEl = List.fold_right fun_expr_list el (env, []) in
     env, S.FunCall (f, newEl)
 
   | S.UnknownFunCall (e, el) ->
     let env, newE = expression env e in
-    let env, newEl = List.fold_left fun_expr_list (env, []) el in
+    let env, newEl = List.fold_right fun_expr_list el (env, []) in
     env, S.UnknownFunCall (newE, newEl)
 
   | S.While (e1, e2) ->
@@ -218,8 +217,11 @@ and expression env e = match e with
     program using [env] to retrieve contextual information. *)
 let rec translate' p env =
   (** The global variables are extracted in a the preprocess. *)
-  let p, env = preprocess p env in
+  (* let p, env = preprocess p env in *)
   let (globals, renaming) = env in
+  let globals = List.fold_left get_globals globals p in
+  let env = (globals, renaming) in
+
   (** Then, we translate Fopix declarations into Retrolix declarations. *)
   let defs = List.map (declaration globals) p in
   (defs, env)
@@ -227,30 +229,34 @@ let rec translate' p env =
 and declaration env = T.(function
     | S.DefineValue (S.Id x, e) ->
       let x = Id x in
-      let ec = expression (`Variable x) e in
-      let locals = locals env IdSet.empty ec in
+      let ec = expression (`Variable x) e @ [labelled (Ret (`Variable x))] in
+      let locals = locals env ec in
       DValue (x, (locals, ec))
 
     | S.DefineFunction (S.FunId f, xs, e) ->
-      let ls, save_callee_saved =
+      let lvs, save_callee_saved =
         save_registers MipsArch.callee_saved_registers
       in
       let fst_four_formals, xs = split_params xs in
       let return_register = register MipsArch.return_register in
       let formals = List.map identifier xs in
       let instrs =
+        comment "Retrieve first four actuals" ::
+        retrieve_fst_four_actuals fst_four_formals @
         comment "Save callee saved registers" ::
         save_callee_saved @
-        [comment "Retrieve first four actuals"] @
-        retrieve_fst_four_actuals fst_four_formals @
-        [comment ("Body of function " ^ f)] @
+        comment ("Body of function " ^ f) ::
         expression return_register e @
-        [comment "Restore callee saved registers"] @
-        restore_registers MipsArch.callee_saved_registers ls @
-        [comment "Return"] @
+        comment "Restore callee saved registers" ::
+        restore_registers MipsArch.callee_saved_registers lvs @
+        comment "Return" ::
+        (* We return the content of the return register just to make the
+           Retrolix interpreter happy...  *)
         [labelled (Ret return_register)]
       in
-      let locals = locals env (idset_of_idlist formals) instrs in
+      let locals =
+        List.filter (fun x -> not (List.mem x formals)) (locals env instrs)
+      in
       DFunction (FId f, formals, (locals, instrs))
 
     | S.ExternalFunction (S.FunId f) ->
@@ -263,8 +269,13 @@ and expression out = T.(function
     | S.Literal l ->
       [labelled (Assign (out, Load, [ `Immediate (literal l) ]))]
 
-    | S.Variable (S.Id x) ->
-      [labelled (Assign (out, Load, [ `Variable (Id x) ]))]
+    | S.Variable (S.Id id as x) ->
+      let rv =
+        match id with
+        | "false" | "true" -> as_bool x
+        | _ -> `Variable (Id id)
+      in
+      [load out rv]
 
     | S.Define (S.Id x, e1, e2) ->
       (** Hey student! The following code is wrong in general,
@@ -300,12 +311,21 @@ and expression out = T.(function
     | S.FunCall (S.FunId f, es) when is_binop f ->
       assign out (binop f) es
 
-    | S.FunCall (fid, actuals) ->
+    | S.FunCall (S.FunId fid as f, actuals) ->
       let fst_four_actuals, extra_actuals = split_params actuals in
+      let caller_saved_registers =
+        MipsArch.caller_saved_registers @ MipsArch.argument_passing_registers
+      in
+      let lvs, save_caller_saved = save_registers caller_saved_registers in
+      comment "Save caller-saved registers" ::
+      save_caller_saved @
       comment "Pass first four actuals" ::
       pass_fst_four_actuals fst_four_actuals @
-      [comment "Pass extra actuals"] @
-      as_rvalues extra_actuals (call_function out (literal (S.LFun fid)))
+      comment ("Call function " ^ fid) ::
+      call_function out f extra_actuals @
+      comment "Restore caller-saved registers" ::
+      restore_registers caller_saved_registers lvs @
+      [load out (register MipsArch.return_register)]
 
     | S.UnknownFunCall (ef, actuals) ->
       failwith "Students! This is your job!"
@@ -332,30 +352,34 @@ and expression out = T.(function
         casesIns @ closeLabel
   )
 
+and retrieve_fst_four_actuals fst_four_formals =
+  let instrs, _, _ =
+    ExtStd.List.asymmetric_map2
+      (fun formal ai ->
+         load (`Variable (identifier formal)) (register ai))
+      fst_four_formals
+      MipsArch.argument_passing_registers
+  in
+  instrs
+
 and comment s = labelled (T.Comment s)
 
-and load l r = T.Assign (l, T.Load, [r])
+and load lv rv = labelled (T.Assign (lv, T.Load, [rv]))
 
-and call_function out (T.LFun(T.FId(fid)) as f) extra_actuals =
-  let call out f actuals = T.Call (out, `Immediate f, actuals) in
-  let ls, save_caller_saved =
-    save_registers MipsArch.caller_saved_registers
-  in
-  comment "Save caller-saved registers" ::
-  save_caller_saved @
-  [comment ("Call function " ^ fid)] @
-  [labelled (call out f extra_actuals)] @
-  [comment "Restore caller-saved registers"] @
-  restore_registers MipsArch.caller_saved_registers ls
+and call_function out (S.FunId fid as f) actuals =
+  as_rvalues actuals (fun actuals ->
+      [labelled (T.Call (out, `Immediate (literal (S.LFun f)), actuals))]
+    )
+
 
 and save_registers regs =
-  let save_register reg l = labelled (load l (register reg)) in
-  let ls = List.map (fun _ -> `Variable (fresh_variable ())) regs in
-  (ls, List.map2 save_register regs ls)
+  let save_register reg lv = load lv (register reg) in
+  let lvs = List.map (fun _ -> `Variable (fresh_variable ())) regs in
+  (lvs, List.map2 save_register regs lvs)
 
-and restore_registers regs ls =
-  let restore_register reg l = labelled (load (register reg) l) in
-  List.map2 restore_register regs ls
+and restore_registers regs lvs =
+  let restore_register reg lv = load (register reg) lv in
+  List.map2 restore_register regs lvs
 
 and inst_jump_to_label l =
   [labelled (T.Jump (first_label l))]
@@ -364,31 +388,20 @@ and pass_fst_four_actuals fst_four_actuals =
   let instrs, _, _ =
     ExtStd.List.asymmetric_map2
       (fun ai actual -> expression (register ai) actual)
-      MipsArch.argument_passing_registers
-      fst_four_actuals
+      MipsArch.argument_passing_registers fst_four_actuals
   in
   List.flatten instrs
-
-and retrieve_fst_four_actuals fst_four_formals =
-  let instrs, _, _ =
-    ExtStd.List.asymmetric_map2
-      (fun formal ai ->
-         labelled (load (`Variable (identifier formal)) (register ai)))
-      fst_four_formals
-      MipsArch.argument_passing_registers
-  in
-  instrs
 
 and as_rvalue e =
   let x = `Variable (fresh_variable ()) in
   (x, expression x e)
 
-and as_rvalues rs f =
-  let xs, es = List.(split (map as_rvalue rs)) in
+and as_rvalues rvs f =
+  let xs, es = List.(split (map as_rvalue rvs)) in
   List.flatten es @ f xs
 
-and assign out op rs =
-  as_rvalues rs (fun xs ->
+and assign out op rvs =
+  as_rvalues rvs (fun xs ->
       [labelled (T.Assign (out, op, xs))]
     )
 
@@ -409,12 +422,12 @@ and labelled i =
   (fresh_label (), i)
 
 and rename_predefine_function f =
-  match f with 
-      (** To handle different function name change from fopix to retrolix :
-          allocate_block -> block_create 
-          write_block -> block_set
-          read_block -> block_get
-      *)
+  match f with
+  (** To handle different function name change from fopix to retrolix :
+      allocate_block -> block_create
+      write_block -> block_set
+      read_block -> block_get
+  *)
   | "allocate_block" -> "block_create"
   | "write_block" -> "block_set"
   | "read_block" -> "block_get"
@@ -423,7 +436,7 @@ and rename_predefine_function f =
 and literal = T.(function
     | S.LInt x ->
       LInt x
-    | S.LFun (S.FunId f) -> 
+    | S.LFun (S.FunId f) ->
       LFun (FId (rename_predefine_function f))
     | S.LChar c ->
       LChar c
@@ -432,7 +445,7 @@ and literal = T.(function
   )
 
 and is_binop = function
-  | "`+" | "`-" | "`*" | "`/" -> true
+  | "`+" | "`-" | "`*" | "`/" | "`||" | "`&&" -> true
   | c -> is_condition c
 
 and is_condition = function
@@ -444,6 +457,8 @@ and binop = T.(function
     | "`-" -> Sub
     | "`*" -> Mul
     | "`/" -> Div
+    | "`||" -> Or
+    | "`&&" -> And
     | c -> Bool (condition_op c)
   )
 
