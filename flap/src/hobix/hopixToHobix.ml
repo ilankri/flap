@@ -218,13 +218,12 @@ and expression env = HobixAST.(function
         (fun scrutinee -> List.fold_right (branch scrutinee) branches crash)
 
     | HopixAST.Ref e ->
-      let x = fresh_identifier () in
-      HobixAST.(Define (
-          x,
-          AllocateBlock (Literal (LInt (Int32.of_int 1))),
-          WriteBlock (Variable x, Literal (LInt Int32.zero),
-                      located (expression env) e))
-        )
+      let init_then_return_ref env r e =
+        seqs [write_block r 0 (expression' env e); r]
+      in
+      def
+        (AllocateBlock (int_literal 1))
+        (fun r -> init_then_return_ref env (Variable r) e)
 
     | HopixAST.Read r ->
       read_block (located (expression env) r) 0
@@ -341,7 +340,10 @@ and pattern env scrutinee = HobixAST.(function
 
     | HopixAST.PLiteral l ->
       (* Pb: If scrutinee is not an int, is_equal is undefined...  *)
-      (is_equal scrutinee (Literal (literal' l)), [])
+      begin match literal' l with
+        | LInt _ as l -> (is_equal scrutinee (Literal l), [])
+        | LChar _ | LString _ -> failwith "TODO"
+      end
 
     | HopixAST.POr ps -> assert false
 
