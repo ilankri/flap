@@ -217,9 +217,8 @@ and expression env e = match e with
     program using [env] to retrieve contextual information. *)
 let rec translate' p env =
   (** The global variables are extracted in a the preprocess. *)
-  (* let p, env = preprocess p env in *)
+  let p, env = preprocess p env in
   let (globals, renaming) = env in
-  let globals = List.fold_left get_globals globals p in
   let env = (globals, renaming) in
 
   (** Then, we translate Fopix declarations into Retrolix declarations. *)
