@@ -1,0 +1,6 @@
+type t ('a) = K ('a)
+
+fun open ['a] (x : t ('a)) : 'a =
+  x ? K (y : 'a) => y
+
+val test : unit = print_int (open[int] (K[int] (1))); print_string ("\n")

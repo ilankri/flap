@@ -1,0 +1,3 @@
+val zero = (\['a](x : 'a) => (x : 'a))[int](0)
+
+val test = print_int (zero); print_string ("\n")

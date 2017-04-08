@@ -1,0 +1,2 @@
+val s = "foobar"
+val test = print_string (s); print_string ("\n")

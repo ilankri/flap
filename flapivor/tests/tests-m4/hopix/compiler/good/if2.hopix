@@ -1,0 +1,4 @@
+val test : int =
+  if true then 0 else if false then 1 else 2
+
+val show = print_int (test); print_string ("\n")

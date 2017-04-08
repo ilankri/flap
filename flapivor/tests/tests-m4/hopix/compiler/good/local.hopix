@@ -1,0 +1,7 @@
+val test : int =
+  val x : int = 3;
+  val z : int -> int = \(x : int) => x + 1;
+  val u : int = z (x);
+  u
+
+val show = print_int (test); print_string ("\n")

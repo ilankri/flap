@@ -1,0 +1,5 @@
+fun f (x : unit) : unit = nothing
+
+val test : unit = f (nothing)
+
+val end = print_string ("Nothing!\n")

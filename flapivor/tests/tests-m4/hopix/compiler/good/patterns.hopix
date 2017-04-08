@@ -1,0 +1,27 @@
+type t = A (t) | B (t, t) | C (t, t, t, t) | D (t, int, t) | E
+
+fun f (x : t ()) : int =
+  x ? {
+  | A (E) => 0
+  | A (A (E)) => 1
+  | A (B (E, E)) => 2
+  | A (B (A (E), E)) => 3
+  | B (A (E), B (E, E)) => 4
+  | C (E, E, A (B (E, E)), E) => 5
+  | C (D (E, (x : int), E), E, E, E) => x
+  | (_ : t ()) => -1
+  }
+
+fun check (x : t (), expected : int) : unit =
+  if f (x) = expected then print_string ("OK\n") else print_string ("KO\n")
+
+val test =
+  check (E, -1);
+  check (A (E), 0);
+  check (A (A (E)), 1);
+  check (A (B (E, E)), 2);
+  check (A (B (A (E), E)), 3);
+  check (B (A (E), B (E, E)), 4);
+  check (C (E, E, A (B (E, E)), E), 5);
+  check (C (D (E, 42, E), E, E, E), 42);
+  check (C (E, E, E, E), -1)

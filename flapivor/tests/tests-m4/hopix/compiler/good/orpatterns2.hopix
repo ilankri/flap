@@ -1,0 +1,8 @@
+type u = A (int, int) | B (int) | C
+
+val test1 : int = A (0, 2) ? {
+| A (x : int, (_ : int)) | B (x : int) => x
+| C => 1
+}
+
+val test = print_int (test1); print_string ("\n")
