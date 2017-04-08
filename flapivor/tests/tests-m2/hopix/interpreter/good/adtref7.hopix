@@ -1,3 +1,5 @@
+type node = Node (cell (int), int, cell (int))
+
 fun node (l, x, r) = Node (ref l, x, ref r)
 fun sum (n, t) =
   if n < 0 then 0 else t ? {
@@ -11,4 +13,3 @@ val cycle = (u := t)
 val main =
   print_int (sum (10, t));
   print_string ("!\n")
-

@@ -1,3 +1,5 @@
+type t = A | B (int) | C (int, int) | D (t, t)
+
 val a = A
 val b1 = B (1)
 val c12 = C (1, 2)

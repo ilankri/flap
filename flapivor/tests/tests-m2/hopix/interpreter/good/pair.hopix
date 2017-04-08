@@ -1,3 +1,5 @@
+type pair = Pair (int, int)
+
 fun mk_pair (x, y) = Pair (x, y)
 
 fun fst (p) = p ? Pair (x, y) => x
