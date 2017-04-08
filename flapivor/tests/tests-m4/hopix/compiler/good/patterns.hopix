@@ -1,6 +1,6 @@
 type t = A (t) | B (t, t) | C (t, t, t, t) | D (t, int, t) | E
 
-fun f (x : t ()) : int =
+fun f (x : t) : int =
   x ? {
   | A (E) => 0
   | A (A (E)) => 1
@@ -9,10 +9,10 @@ fun f (x : t ()) : int =
   | B (A (E), B (E, E)) => 4
   | C (E, E, A (B (E, E)), E) => 5
   | C (D (E, (x : int), E), E, E, E) => x
-  | (_ : t ()) => -1
+  | (_ : t) => -1
   }
 
-fun check (x : t (), expected : int) : unit =
+fun check (x : t, expected : int) : unit =
   if f (x) = expected then print_string ("OK\n") else print_string ("KO\n")
 
 val test =

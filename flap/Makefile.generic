@@ -47,7 +47,7 @@ check_cmd = LOCAL_TEST=yes $(MAKE) -C ../flapivor/tests/$(1) check
 check_log_cmd = VERBOSE=1 $(call check_cmd,$(1)) > ../log/local-$(1).log
 
 # Test suite variables.
-SUITES = m1 m2 m3 flap
+SUITES = m1 m2 m3 m4 flap
 TESTS = $(addprefix tests-,$(SUITES))
 
 #########

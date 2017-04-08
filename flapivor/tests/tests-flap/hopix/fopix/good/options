@@ -1,1 +1,1 @@
--u true -s hopix -t fopix -VV false -V false --dry true -r true
+-u true -s hopix -t fopix -VV false -V false --dry false -r true
