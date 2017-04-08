@@ -173,3 +173,8 @@ tests-m1 [ Sat Apr 8 22:27:05 CEST 2017 ] [ 8b6d66f350fdf638ea0ab4bbbfb6d4405f1c
 tests-m2 [ Sat Apr 8 22:27:09 CEST 2017 ] [ 8b6d66f350fdf638ea0ab4bbbfb6d4405f1c9c27 ] BAD:   0 / 0 GOOD:  71 / 71  | 
 tests-m3 [ Sat Apr 8 22:27:11 CEST 2017 ] [ 8b6d66f350fdf638ea0ab4bbbfb6d4405f1c9c27 ] BAD:   52 / 52 GOOD:  9 / 42  | 
 tests-m4 [ Sat Apr 8 22:27:13 CEST 2017 ] [ 8b6d66f350fdf638ea0ab4bbbfb6d4405f1c9c27 ] BAD:   0 / 0 GOOD:  0 / 48  | 
+tests-m1 [ Sun Apr 9 01:44:03 CEST 2017 ] [ b56dfc85c17bce88c81f5b0f22558fe9473f5ba5 ] Makefile.generic:73: recipe for target 'flap.native' failed make[1]: Leaving directory '/home/opam/source/flap'  | 
+tests-m2 [ Sun Apr 9 01:44:04 CEST 2017 ] [ b56dfc85c17bce88c81f5b0f22558fe9473f5ba5 ] Makefile.generic:73: recipe for target 'flap.native' failed make[1]: Leaving directory '/home/opam/source/flap'  | 
+tests-m3 [ Sun Apr 9 01:44:04 CEST 2017 ] [ b56dfc85c17bce88c81f5b0f22558fe9473f5ba5 ] Makefile.generic:73: recipe for target 'flap.native' failed make[1]: Leaving directory '/home/opam/source/flap'  | 
+tests-m4 [ Sun Apr 9 01:44:05 CEST 2017 ] [ b56dfc85c17bce88c81f5b0f22558fe9473f5ba5 ] Makefile.generic:73: recipe for target 'flap.native' failed make[1]: Leaving directory '/home/opam/source/flap'  | 
+tests-flap [ Sun Apr 9 01:44:05 CEST 2017 ] [ b56dfc85c17bce88c81f5b0f22558fe9473f5ba5 ] Makefile.generic:73: recipe for target 'flap.native' failed make[1]: Leaving directory '/home/opam/source/flap'  | 
