@@ -1,0 +1,8 @@
+type t = A (t) | E | B (t, t)
+
+fun f (x : t) : int =
+  x ? { A (A (A (A (A (B (E, x : t)))))) => 0 | (_ : t ()) => 1 }
+
+val test =
+  print_int (f (A (E))); print_string ("\n");
+  print_int (f (A (A (A (A (A (B (E, A (E))))))))); print_string ("\n")

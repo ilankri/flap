@@ -1,0 +1,4 @@
+val test : string =
+  if true then "string" else "gnirst"
+
+val show = print_string (test); print_string ("\n")

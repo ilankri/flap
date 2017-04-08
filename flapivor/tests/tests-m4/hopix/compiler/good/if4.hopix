@@ -1,0 +1,4 @@
+val x = 3
+val test : unit =
+  if x = 0 then nothing else print_int (x); print_string ("\n")
+

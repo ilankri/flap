@@ -1,0 +1,19 @@
+type ilist = Node (int, cell (ilist ())) | Nil
+
+val alt = ref (Nil)
+
+fun hd (l : ilist ()) : int =
+  l ? Node (x : int, _ : cell (ilist)) => x
+
+fun tl (l : ilist ()) : ilist =
+  l ? Node (_ : int, xs : cell (ilist)) => !xs
+
+fun nth (n : int, l : ilist ()) : int =
+  if n = 0 then hd (l) else nth (n - 1, tl (l))
+
+val test =
+  alt := Node (1, ref (Node (2, alt)));
+  print_int (nth (0, !alt)); print_string ("\n");
+  print_int (nth (1, !alt)); print_string ("\n");
+  print_int (nth (2, !alt)); print_string ("\n");
+  print_int (nth (500000, !alt)); print_string ("\n")

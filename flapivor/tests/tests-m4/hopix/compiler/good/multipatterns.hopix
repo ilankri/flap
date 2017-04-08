@@ -1,0 +1,9 @@
+type t = A | B
+type u = S (t) | T (int)
+
+val x : int = S (A) ? {
+| S (A | B)  => 0
+| (_ : u) => 1
+}
+
+val test = print_int (x); print_string ("\n")

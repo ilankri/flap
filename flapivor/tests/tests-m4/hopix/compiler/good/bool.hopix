@@ -1,0 +1,4 @@
+val t = true
+val f = false
+
+val test = print_string ("True is true, False is false.\n")

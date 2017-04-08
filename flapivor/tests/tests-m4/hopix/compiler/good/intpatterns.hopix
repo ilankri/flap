@@ -1,0 +1,11 @@
+fun f (x : int) : int =
+  x ? { 0 => 1 | 1 => 0 | (_ : int) => -1 }
+
+fun check (x : int, expected : int) : unit =
+  print_int (x);
+  if x = expected then print_string (" OK\n") else print_string (" KO\n")
+
+val test =
+  check (f (0), 1);
+  check (f (1), 0);
+  check (f (42), -1)

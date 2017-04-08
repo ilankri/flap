@@ -1,0 +1,8 @@
+fun apply['a, 'b] (f : 'a -> 'b, x : 'a) : 'b =
+  f (x)
+
+fun succ (x : int) : int = x + 1
+
+val one = apply[int, int] (succ, 0)
+
+val test = print_int (one); print_string ("\n")

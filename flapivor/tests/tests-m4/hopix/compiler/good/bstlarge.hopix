@@ -1,0 +1,51 @@
+type bst = Leaf (int) | Node (bst, int, bst) | Empty
+
+fun mem (x : int, t : bst) : bool =
+  t ? {
+  | Empty =>
+    false
+  | Leaf (y : int) =>
+    x = y
+  | Node (left : bst, y : int, right : bst) =>
+    x = y || (if x < y then mem (x, left) else mem (x, right))
+}
+
+fun insert (x : int, t : bst) : bst =
+  t ? {
+  | Empty => Leaf (x)
+  | Leaf (y : int) =>
+    if x = y then t
+    else if x < y then Node (Leaf (x), y, Empty)
+    else Node (Leaf (y), x, Empty)
+  | Node (left : bst, y : int, right : bst) =>
+    if x = y then t
+    else if x < y then Node (insert (x, left), y, right)
+    else Node (left, y, insert (x, right))
+  }
+
+fun insertRange (start : int, stop : int, t : bst) : bst =
+  if stop < start then
+    t
+  else
+    insertRange (start + 1, stop, insert (start, t))
+
+val t1 = insertRange (0, 10, Empty)
+val t2 = insertRange (20, 30, t1)
+val t3 = insertRange (30, 1000, t2)
+
+fun notb (x : bool) : bool =
+  if x then false else true
+
+fun check (x : int, present : bool) : unit =
+  val r = mem (x, t3);
+  if (r && present) || (notb (r) && notb (present)) then
+    print_string ("OK\n")
+  else
+    print_string ("KO\n")
+
+val test =
+  check (5, true);
+  check (15, false);
+  check (42, true);
+  check (73, true);
+  check (1023, false)
