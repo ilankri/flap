@@ -299,6 +299,8 @@ and expression runtime = function
     in
     expression runtime body
 
+  | UnknownFunCall (_, _) -> error' ("UnknownFunCall is not implemented.") 
+
 and binop
   : type a b. a coercion -> b wrapper -> _ -> (a -> a -> b) -> _ -> _ -> value
   = fun coerce wrap runtime op l r ->
