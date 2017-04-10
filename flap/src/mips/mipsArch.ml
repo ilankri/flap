@@ -34,14 +34,14 @@ let a x =
   assert (x >= 0 && x <= 3);
   A x
 
-let all_registers = ExtStd.List.(List.(
-  flatten [
-    map t (range 0 9);
-    map v [0];
-    map a (range 0 3);
-    map s (range 0 7)
-  ]
-))
+let all_registers = ExtStd.List.(
+    flatten [
+      map t (range 0 9);
+      map v [0];
+      map a (range 0 3);
+      map s (range 0 7)
+    ]
+  )
 
 let string_of_register = function
   | Sp -> "$sp"
@@ -69,33 +69,33 @@ let register_of_string = function
   | "$fp" ->
     Fp
   | "$sp" ->
-     Sp
+    Sp
   | "$gp" ->
-     Gp
+    Gp
   | "$ra" ->
-     Ra
+    Ra
   | s when Str.(string_match (regexp "\\$t\\([0-9]\\)") s 0) ->
-     t (int_of_string (Str.matched_group 1 s))
+    t (int_of_string (Str.matched_group 1 s))
   | s when Str.(string_match (regexp "\\$a\\([0-3]\\)") s 0) ->
-     a (int_of_string (Str.matched_group 1 s))
+    a (int_of_string (Str.matched_group 1 s))
   | s when Str.(string_match (regexp "\\$v\\([0-1]\\)") s 0) ->
-     v (int_of_string (Str.matched_group 1 s))
+    v (int_of_string (Str.matched_group 1 s))
   | s when Str.(string_match (regexp "\\$s\\([0-7]\\)") s 0) ->
-     S (int_of_string (Str.matched_group 1 s))
+    S (int_of_string (Str.matched_group 1 s))
   | s ->
-     raise (InvalidMIPSRegisterName s)
+    raise (InvalidMIPSRegisterName s)
 
-let argument_passing_registers = ExtStd.List.(List.(
-  map a (range 0 3)
-))
+let argument_passing_registers = ExtStd.List.(
+    map a (range 0 3)
+  )
 
-let callee_saved_registers = ExtStd.List.(List.(
-  Ra :: map s (range 0 7)
-))
+let callee_saved_registers = ExtStd.List.(
+    Ra :: map s (range 0 7)
+  )
 
-let caller_saved_registers = ExtStd.List.(List.(
-  map t (range 0 9)
-))
+let caller_saved_registers = ExtStd.List.(
+    argument_passing_registers @ map t (range 0 9)
+  )
 
 let return_register =
   v 0
