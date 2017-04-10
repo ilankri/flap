@@ -1,0 +1,5 @@
+fun id ['a] (x : 'a) : 'a = x
+
+val y : int = id [int] (42)
+
+val test = print_int (y); print_string ("\n")

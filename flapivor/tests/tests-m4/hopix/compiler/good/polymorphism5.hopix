@@ -1,0 +1,13 @@
+type t ('a, 'b) = K ('a -> 'b)
+
+fun compose ['a, 'b, 'c] (x : t ('a, 'b), f : 'b -> 'c) : t('a, 'c) =
+  x ? K (g : 'a -> 'b) => K ['a, 'c] (\(x : 'a) => f (g (x)))
+
+val tid : t (int, int)   = K[int, int] (\(x : int) => x)
+
+val tsucc : t (int, int) = compose[int, int, int] (tid, \(x : int) => x + 1)
+
+val tdble : t (int, int) = compose[int, int, int] (tsucc, \(x : int) => x * 2)
+
+val test =
+   tdble ? K (f : int -> int) => print_int (f (3)); print_string ("\n")

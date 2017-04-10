@@ -1,0 +1,4 @@
+val x : int =
+  if true then 0 else 1
+
+val test = print_int (x); print_string ("\n")

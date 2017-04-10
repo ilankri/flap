@@ -156,3 +156,30 @@ tests-m3 [ Thu Apr 6 12:15:13 CEST 2017 ] [ 66709691acbfb4360b8db8c7f3fb4df86752
 tests-m1 [ Thu Apr 6 12:37:41 CEST 2017 ] [ 426d2b634b569dbdac43522367bdb8bedbb08a2f ] BAD:   7 / 7 GOOD:  135 / 135  | 
 tests-m2 [ Thu Apr 6 12:37:45 CEST 2017 ] [ 426d2b634b569dbdac43522367bdb8bedbb08a2f ] BAD:   0 / 0 GOOD:  71 / 71  | 
 tests-m3 [ Thu Apr 6 12:37:47 CEST 2017 ] [ 426d2b634b569dbdac43522367bdb8bedbb08a2f ] BAD:   52 / 52 GOOD:  9 / 42  | 
+tests-m1 [ Thu Apr 6 20:19:17 CEST 2017 ] [ ae662f4a1c7ed06ae0db3ff0622684243491f7e5 ] BAD:   7 / 7 GOOD:  135 / 135  | 
+tests-m2 [ Thu Apr 6 20:19:20 CEST 2017 ] [ ae662f4a1c7ed06ae0db3ff0622684243491f7e5 ] BAD:   0 / 0 GOOD:  71 / 71  | 
+tests-m3 [ Thu Apr 6 20:19:22 CEST 2017 ] [ ae662f4a1c7ed06ae0db3ff0622684243491f7e5 ] BAD:   52 / 52 GOOD:  9 / 42  | 
+tests-m1 [ Thu Apr 6 21:23:15 CEST 2017 ] [ 1a1a44041c99876d1a3075b78d2731326a120c4e ] BAD:   7 / 7 GOOD:  135 / 135  | 
+tests-m2 [ Thu Apr 6 21:23:19 CEST 2017 ] [ 1a1a44041c99876d1a3075b78d2731326a120c4e ] BAD:   0 / 0 GOOD:  71 / 71  | 
+tests-m3 [ Thu Apr 6 21:23:21 CEST 2017 ] [ 1a1a44041c99876d1a3075b78d2731326a120c4e ] BAD:   52 / 52 GOOD:  9 / 42  | 
+tests-m1 [ Fri Apr 7 13:08:27 CEST 2017 ] [ caf323db5222f97a2871c9ff0d7b4bc1eec3f2bb ] BAD:   7 / 7 GOOD:  135 / 135  | 
+tests-m2 [ Fri Apr 7 13:08:31 CEST 2017 ] [ caf323db5222f97a2871c9ff0d7b4bc1eec3f2bb ] BAD:   0 / 0 GOOD:  71 / 71  | 
+tests-m3 [ Fri Apr 7 13:08:33 CEST 2017 ] [ caf323db5222f97a2871c9ff0d7b4bc1eec3f2bb ] BAD:   52 / 52 GOOD:  9 / 42  | 
+tests-m1 [ Sat Apr 8 21:31:12 CEST 2017 ] [ 37cd261382f1cfe77a4158100489ed653bff68a5 ] BAD:   7 / 7 GOOD:  135 / 135  | 
+tests-m2 [ Sat Apr 8 21:31:16 CEST 2017 ] [ 37cd261382f1cfe77a4158100489ed653bff68a5 ] BAD:   0 / 0 GOOD:  71 / 71  | 
+tests-m3 [ Sat Apr 8 21:31:18 CEST 2017 ] [ 37cd261382f1cfe77a4158100489ed653bff68a5 ] BAD:   52 / 52 GOOD:  9 / 42  | 
+tests-m4 [ Sat Apr 8 21:31:20 CEST 2017 ] [ 37cd261382f1cfe77a4158100489ed653bff68a5 ] BAD:   0 / 0 GOOD:  0 / 48  | 
+tests-m1 [ Sat Apr 8 22:27:05 CEST 2017 ] [ 8b6d66f350fdf638ea0ab4bbbfb6d4405f1c9c27 ] BAD:   7 / 7 GOOD:  135 / 135  | 
+tests-m2 [ Sat Apr 8 22:27:09 CEST 2017 ] [ 8b6d66f350fdf638ea0ab4bbbfb6d4405f1c9c27 ] BAD:   0 / 0 GOOD:  71 / 71  | 
+tests-m3 [ Sat Apr 8 22:27:11 CEST 2017 ] [ 8b6d66f350fdf638ea0ab4bbbfb6d4405f1c9c27 ] BAD:   52 / 52 GOOD:  9 / 42  | 
+tests-m4 [ Sat Apr 8 22:27:13 CEST 2017 ] [ 8b6d66f350fdf638ea0ab4bbbfb6d4405f1c9c27 ] BAD:   0 / 0 GOOD:  0 / 48  | 
+tests-m1 [ Sun Apr 9 01:44:03 CEST 2017 ] [ b56dfc85c17bce88c81f5b0f22558fe9473f5ba5 ] Makefile.generic:73: recipe for target 'flap.native' failed make[1]: Leaving directory '/home/opam/source/flap'  | 
+tests-m2 [ Sun Apr 9 01:44:04 CEST 2017 ] [ b56dfc85c17bce88c81f5b0f22558fe9473f5ba5 ] Makefile.generic:73: recipe for target 'flap.native' failed make[1]: Leaving directory '/home/opam/source/flap'  | 
+tests-m3 [ Sun Apr 9 01:44:04 CEST 2017 ] [ b56dfc85c17bce88c81f5b0f22558fe9473f5ba5 ] Makefile.generic:73: recipe for target 'flap.native' failed make[1]: Leaving directory '/home/opam/source/flap'  | 
+tests-m4 [ Sun Apr 9 01:44:05 CEST 2017 ] [ b56dfc85c17bce88c81f5b0f22558fe9473f5ba5 ] Makefile.generic:73: recipe for target 'flap.native' failed make[1]: Leaving directory '/home/opam/source/flap'  | 
+tests-flap [ Sun Apr 9 01:44:05 CEST 2017 ] [ b56dfc85c17bce88c81f5b0f22558fe9473f5ba5 ] Makefile.generic:73: recipe for target 'flap.native' failed make[1]: Leaving directory '/home/opam/source/flap'  | 
+tests-m1 [ Sun Apr 9 01:56:43 CEST 2017 ] [ 93f38e03756eb500e961842873d6a54021398f50 ] BAD:   7 / 7 GOOD:  135 / 135  | 
+tests-m2 [ Sun Apr 9 01:56:46 CEST 2017 ] [ 93f38e03756eb500e961842873d6a54021398f50 ] BAD:   0 / 0 GOOD:  71 / 71  | 
+tests-m3 [ Sun Apr 9 01:56:47 CEST 2017 ] [ 93f38e03756eb500e961842873d6a54021398f50 ] BAD:   52 / 52 GOOD:  9 / 42  | 
+tests-m4 [ Sun Apr 9 01:56:54 CEST 2017 ] [ 93f38e03756eb500e961842873d6a54021398f50 ] BAD:   0 / 0 GOOD:  43 / 48  | 
+tests-flap [ Sun Apr 9 01:56:57 CEST 2017 ] [ 93f38e03756eb500e961842873d6a54021398f50 ] BAD:   0 / 0 GOOD:  89 / 141  | 

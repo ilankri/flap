@@ -1,3 +1,5 @@
+type tree = Leaf (cell (int)) | Node (tree, tree)
+
 fun leaf (x) = Leaf (ref x)
 fun node (l, r) = Node (l, r)
 fun sum (t) = t ? {

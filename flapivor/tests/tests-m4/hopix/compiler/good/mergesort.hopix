@@ -1,0 +1,53 @@
+type ilist = Nil | Cons (int, ilist)
+
+fun merge (a : ilist, b : ilist) : ilist =
+  a ? {
+  | Nil => b
+  | Cons (x : int, xs : ilist) =>
+    b ? {
+      Nil => a
+    | Cons (y : int, ys : ilist) =>
+      if x <= y then Cons (x, merge (xs, b)) else Cons (y, merge (a, ys))
+    }
+  }
+
+type lpair = Pair (ilist, ilist)
+
+fun split (a : ilist) : lpair =
+  a ? {
+  | Nil =>
+    Pair (Nil, Nil)
+  | Cons (x : int, Nil) =>
+    Pair (a, Nil)
+  | Cons (x : int, Cons (y : int, ys : ilist)) =>
+    split (ys) ? Pair (left : ilist, right : ilist) => Pair (Cons (x, left), Cons (y, right))
+  }
+
+fun sort (a : ilist) : ilist =
+  a ? {
+  | Nil => a
+  | Cons (x : int, Nil) => a
+  | (a : ilist) => split (a) ? Pair (l : ilist, r : ilist) => merge (sort (l), sort (r))
+  }
+
+fun issorted (a : ilist) : bool =
+  a ? {
+  | Nil
+  | Cons (_ : int, Nil) => true
+  | Cons (x : int, Cons (y : int, ys : ilist) & (b : ilist)) => (x <= y) && issorted (b)
+  }
+
+fun altrange (start : int, stop : int) : ilist =
+  if start > stop then Nil else
+  Cons (start, Cons (0 - start, Cons (stop - start, Cons (start - stop, altrange (start + 1, stop)))))
+
+fun check (start : int, stop : int) : unit =
+  if issorted (sort (altrange (start, stop))) then
+    print_string ("OK\n")
+  else
+    print_string ("KO\n")
+
+val test =
+  check (0, 10);
+  check (0, 100);
+  check (0, 1000)

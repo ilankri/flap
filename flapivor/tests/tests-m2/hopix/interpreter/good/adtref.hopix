@@ -1,3 +1,5 @@
+type list = Nil | Cons (int, cell (list))
+
 val n = ref Nil
 val l = Cons (1, ref (Cons (2, n)))
 val make_cycle = (n := l)

@@ -1,3 +1,5 @@
+type list = Nil | Cons (int, list)
+
 val nil = Nil
 val l1 = Cons (1, Cons (2, nil))
 val l2 = Cons (0, l1)

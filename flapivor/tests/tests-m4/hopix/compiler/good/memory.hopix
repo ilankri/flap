@@ -1,0 +1,3 @@
+val r : cell (int) = ref (0)
+
+val test = print_string ("Make string works!\n")

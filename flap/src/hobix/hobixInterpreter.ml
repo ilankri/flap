@@ -154,7 +154,8 @@ let primitives =
       )
   in
   let bind_all what l x =
-    List.fold_left (fun env (x, v) -> Environment.bind env (Id x) (what x v)) x l
+    List.fold_left (fun env (x, v) -> Environment.bind env (Id x) (what x v))
+      x l
   in
   (* Define arithmetic binary operators. *)
   let binarith name =
@@ -165,7 +166,8 @@ let primitives =
   (* Define arithmetic comparison operators. *)
   let cmparith name = intbin name (fun x -> VBool x) in
   let cmparithops =
-    [ ("`=", ( = )); ("`<", ( < )); ("`>", ( > )); ("`>=", ( >= )); ("`<=", ( <= )) ]
+    [ ("`=", ( = )); ("`<", ( < )); ("`>", ( > )); ("`>=", ( >= ));
+      ("`<=", ( <= )) ]
   in
   let boolbin name out op =
     VPrimitive (name, function [VBool x; VBool y] -> out (op x y)
@@ -176,10 +178,33 @@ let primitives =
   let boolarithops =
     [ ("`||", ( || )); ("`&&", ( && )) ]
   in
+  let print s =
+    output_string stdout s;
+    flush stdout;
+    VUnit
+  in
+  let print_int =
+    VPrimitive  ("print_int", function
+        | [ VInt x ] -> print (Int32.to_string x)
+        | _ -> assert false (* By typing. *)
+      )
+  in
+  let print_string =
+    VPrimitive  ("print_string", function
+        | [ VString x ] -> print x
+        | _ -> assert false (* By typing. *)
+      )
+  in
+  let bind' x w env = Environment.bind env (Id x) w in
   Environment.empty
   |> bind_all binarith binarithops
   |> bind_all cmparith cmparithops
   |> bind_all boolarith boolarithops
+  |> bind' "print_int" print_int
+  |> bind' "print_string" print_string
+  |> bind' "true"         (VBool true)
+  |> bind' "false"        (VBool false)
+  |> bind' "nothing"      VUnit
 
 let initial_runtime () =
   let bind_bool s b env = Environment.bind env (Id s) (VBool b) in
@@ -196,7 +221,8 @@ let rec evaluate runtime ast =
     let runtime' = List.fold_left definition runtime ast in
     (runtime', extract_observable runtime runtime')
   with Environment.UnboundIdentifier (Id x) ->
-    Error.error "interpretation" Position.dummy (Printf.sprintf "`%s' is unbound." x)
+    Error.error "interpretation" Position.dummy
+      (Printf.sprintf "`%s' is unbound." x)
 
 (* [definition pos runtime d] evaluates the new definition [d]
    into a new runtime [runtime']. In the specification, this
@@ -221,7 +247,10 @@ and definition runtime d =
     runtime
 
 and define_recvalues environment memory rdefs =
-  let environment = List.fold_left (fun env (x, _) -> bind_identifier env x VUnit) environment rdefs in
+  let environment =
+    List.fold_left (fun env (x, _) -> bind_identifier env x VUnit) environment
+      rdefs
+  in
   let vs = expressions environment memory (snd (List.split rdefs)) in
   List.iter2 (fun (x, _) v ->
       Environment.update x environment v
@@ -236,13 +265,25 @@ and define_recvalues environment memory rdefs =
 *)
 and expression environment memory = function
   | Apply (a, b) ->
-    let vbs = expressions environment memory b in
+    let vbs () = expressions environment memory b in
     begin match expression environment memory a with
+      | VPrimitive ("`||", f) ->
+        begin match expression environment memory (List.nth b 0) with
+          | VBool true -> VBool true
+          | _ -> expression environment memory (List.nth b 1)
+        end
+      | VPrimitive ("`&&", f) ->
+        begin match expression environment memory (List.nth b 0) with
+          | VBool false -> VBool false
+          | _ -> expression environment memory (List.nth b 1)
+        end
+
       | VPrimitive (_, f) ->
-        f vbs
+        f (vbs ())
 
       | VFun (xs, e, environment) ->
-        expression (List.fold_left2 bind_identifier environment xs vbs) memory e
+        expression (List.fold_left2 bind_identifier environment xs (vbs ()))
+          memory e
 
       | _ ->
         assert false (* By typing. *)

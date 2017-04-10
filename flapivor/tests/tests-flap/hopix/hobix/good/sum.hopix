@@ -1,0 +1,4 @@
+fun sum (x, y, z, t, u) =
+  if x = 0 then y + z + t + u else 1 + sum (x - 1, y, z, t, u)
+
+val main = print_int (sum (1, 2, 3, 4, 5))
