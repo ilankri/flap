@@ -225,34 +225,55 @@ let rec translate' p env =
   let defs = List.map (declaration globals) p in
   (defs, env)
 
+and callee_prologue formals =
+  let fst_four_formals = fst (split_params formals) in
+  let lvs, save_callee_saved =
+    save_registers MipsArch.callee_saved_registers
+  in
+  let instrs =
+    comment "Retrieve first four actuals" ::
+    retrieve_fst_four_actuals fst_four_formals @
+    comment "Save callee saved registers" ::
+    save_callee_saved
+  in
+  (lvs, instrs)
+
+and callee_epilogue lvs =
+  comment "Restore callee saved registers" ::
+  restore_registers MipsArch.callee_saved_registers lvs
+
+and define_function f xs e proc_call_conv =
+  let lvs, callee_prologue =
+    if proc_call_conv then callee_prologue xs else ([], [])
+  in
+  let out, callee_epilogue =
+    if proc_call_conv then
+      (register MipsArch.return_register, callee_epilogue lvs)
+    else (`Variable (fresh_variable ()), [])
+  in
+  callee_prologue @
+  comment ("Body of function " ^ f) ::
+  expression out e @
+  callee_epilogue @
+  comment "Return" ::
+  (* We return the content of the return register just to make the
+     Retrolix interpreter happy...  *)
+  [labelled (T.Ret out)]
+
+and formals xs proc_call_conv =
+  let xs = if proc_call_conv then snd (split_params xs) else xs in
+  List.map identifier xs
+
 and declaration env = T.(function
     | S.DefineValue (S.Id x, e) ->
       let x = Id x in
-      let ec = expression (`Variable x) e @ [labelled (Ret (`Variable x))] in
+      let ec = expression (`Variable x) e in
       let locals = locals env ec in
       DValue (x, (locals, ec))
 
     | S.DefineFunction (S.FunId f, xs, e) ->
-      let lvs, save_callee_saved =
-        save_registers MipsArch.callee_saved_registers
-      in
-      let fst_four_formals, xs = split_params xs in
-      let return_register = register MipsArch.return_register in
-      let formals = List.map identifier xs in
-      let instrs =
-        comment "Retrieve first four actuals" ::
-        retrieve_fst_four_actuals fst_four_formals @
-        comment "Save callee saved registers" ::
-        save_callee_saved @
-        comment ("Body of function " ^ f) ::
-        expression return_register e @
-        comment "Restore callee saved registers" ::
-        restore_registers MipsArch.callee_saved_registers lvs @
-        comment "Return" ::
-        (* We return the content of the return register just to make the
-           Retrolix interpreter happy...  *)
-        [labelled (Ret return_register)]
-      in
+      let instrs = define_function f xs e true in
+      let formals = formals xs true in
       let locals =
         List.filter (fun x -> not (List.mem x formals)) (locals env instrs)
       in
@@ -261,6 +282,38 @@ and declaration env = T.(function
     | S.ExternalFunction (S.FunId f) ->
       DExternalFunction (FId f)
   )
+
+and caller_prologue actuals =
+  let fst_four_actuals = fst (split_params actuals) in
+  let lvs, save_caller_saved =
+    save_registers MipsArch.caller_saved_registers
+  in
+  let instrs =
+    comment "Save caller-saved registers" ::
+    save_caller_saved @
+    comment "Pass first four actuals" ::
+    pass_fst_four_actuals fst_four_actuals
+  in
+  (lvs, instrs)
+
+and caller_epilogue lvs out =
+  comment "Restore caller-saved registers" ::
+  restore_registers MipsArch.caller_saved_registers lvs @
+  comment "Retrieve return value" ::
+  [load out (register MipsArch.return_register)]
+
+and fun_call out (S.FunId fid as f) xs proc_call_conv =
+  let lvs, caller_prologue =
+    if proc_call_conv then caller_prologue xs else ([], [])
+  in
+  let actuals, caller_epilogue =
+    if proc_call_conv then (snd (split_params xs), caller_epilogue lvs out) else
+      (xs, [])
+  in
+  caller_prologue @
+  comment ("Call function " ^ fid) ::
+  call_function out f actuals @
+  caller_epilogue
 
 (** [expression out e] compiles [e] into a block of Retrolix
     instructions that stores the evaluation of [e] into [out]. *)
@@ -311,20 +364,7 @@ and expression out = T.(function
       assign out (binop f) es
 
     | S.FunCall (S.FunId fid as f, actuals) ->
-      let fst_four_actuals, extra_actuals = split_params actuals in
-      let caller_saved_registers =
-        MipsArch.caller_saved_registers @ MipsArch.argument_passing_registers
-      in
-      let lvs, save_caller_saved = save_registers caller_saved_registers in
-      comment "Save caller-saved registers" ::
-      save_caller_saved @
-      comment "Pass first four actuals" ::
-      pass_fst_four_actuals fst_four_actuals @
-      comment ("Call function " ^ fid) ::
-      call_function out f extra_actuals @
-      comment "Restore caller-saved registers" ::
-      restore_registers caller_saved_registers lvs @
-      [load out (register MipsArch.return_register)]
+      fun_call out f actuals true
 
     | S.UnknownFunCall (ef, actuals) ->
       failwith "Students! This is your job!"
@@ -369,7 +409,6 @@ and call_function out (S.FunId fid as f) actuals =
   as_rvalues actuals (fun actuals ->
       [labelled (T.Call (out, `Immediate (literal (S.LFun f)), actuals))]
     )
-
 
 and save_registers regs =
   let save_register reg lv = load lv (register reg) in
