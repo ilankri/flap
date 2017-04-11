@@ -346,11 +346,12 @@ and expression out = T.(function
                 EQ,
                 [ condReg; `Immediate (LInt (Int32.of_int 0)) ],
                 first_label closeLabel,
-                first_label condIns
+                first_label eIns
               )
             )]
       in
-      condIns @ condJump @ eIns @ condJump @ closeLabel
+      condIns @ condJump @ eIns @ labelled (Jump (first_label condIns)) ::
+                                  closeLabel
 
     | S.IfThenElse (c, t, f) ->
       let closeLabel = [labelled (Comment "Exit If")] in
