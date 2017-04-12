@@ -5,7 +5,9 @@ exception LiteralExceeds16bits of int
 (** [check_invariant x] ensures that the integer [x] is a valid
     representation for a 16 bits signed integer. *)
 let check_invariant x =
-  failwith "Students! This is your job!"
+  let max_int16 = 1 lsl 15 - 1 in
+  let min_int16 = -(max_int16 + 1) in
+  if x < min_int16 || x > max_int16 then raise (LiteralExceeds16bits x)
 
 (** [hi x] returns the 16 highest bits of [x]'s 32 bits. *)
 let hi x =

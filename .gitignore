@@ -4,3 +4,5 @@ _build/
 flap/flap
 flap/myocamlbuild_config.ml
 log/local-tests-*.log
+flap/debian_wheezy_mips_standard.qcow2
+flap/vmlinux-3.2.0-4-4kc-malta

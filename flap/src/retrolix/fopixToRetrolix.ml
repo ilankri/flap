@@ -231,10 +231,10 @@ and callee_prologue formals =
     save_registers MipsArch.callee_saved_registers
   in
   let instrs =
-    comment "Retrieve first four actuals" ::
-    retrieve_fst_four_actuals fst_four_formals @
     comment "Save callee saved registers" ::
-    save_callee_saved
+    save_callee_saved @
+    comment "Retrieve first four actuals" ::
+    retrieve_fst_four_actuals fst_four_formals
   in
   (lvs, instrs)
 
