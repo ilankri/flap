@@ -77,6 +77,12 @@ end = struct
 
   exception UnboundIdentifier of identifier
 
+  let _ =
+    Printexc.register_printer (function
+        | UnboundIdentifier (Id x) -> Some (Printf.sprintf "Unbound identifier %s" x)
+        | _ -> None
+      )
+
   let lookup x e =
     try
       List.assoc x e
@@ -187,6 +193,12 @@ and expression runtime = function
   | Literal l ->
     literal l
 
+  | Variable (Id "true") ->
+     VBool true
+
+  | Variable (Id "false") ->
+     VBool false
+
   | Variable x ->
     Environment.lookup x runtime.environment
 
@@ -233,6 +245,18 @@ and expression runtime = function
   | FunCall (FunId "read_block", [location; index]) ->
     failwith "Student! This is your job!"
 
+  | FunCall (FunId "print_int", [e]) ->
+     begin match expression runtime e with
+     | VInt x -> print_string (Int32.to_string x)
+     | _ -> assert false (* By typing. *)
+     end
+
+  | FunCall (FunId "print_string", [e]) ->
+     begin match expression runtime e with
+     | VString s -> print_string s
+     | _ -> assert false (* By typing. *)
+     end
+
   | FunCall (FunId "write_block", [location; index; e]) ->
     failwith "Student! This is your job!"
 
@@ -260,6 +284,11 @@ and literal = function
   | LString s -> VString s
   | LChar c -> VChar c
   | LFun f -> VFun f
+
+and print_string s =
+  output_string stdout s;
+  flush stdout;
+  VUnit
 
 and extract_observable runtime runtime' =
   let rec substract new_environment env env' =

@@ -193,6 +193,18 @@ let primitives =
       | _ -> assert false (* By typing. *)
     )
   in
+  let equal_string =
+    VPrimitive  ("equal_string", function
+      | [ VString x; VString y ] -> VBool (String.compare x y = 0)
+      | _ -> assert false (* By typing. *)
+    )
+  in
+  let equal_char =
+    VPrimitive  ("equal_char", function
+      | [ VChar x; VChar y ] -> VBool (Char.compare x y = 0)
+      | _ -> assert false (* By typing. *)
+    )
+  in
   let bind' x w env = Environment.bind env (Id x) w in
   Environment.empty
   |> bind_all binarith binarithops
@@ -200,6 +212,8 @@ let primitives =
   |> bind_all boolarith boolarithops
   |> bind' "print_int" print_int
   |> bind' "print_string" print_string
+  |> bind' "equal_string" equal_string
+  |> bind' "equal_char"   equal_char
   |> bind' "true"         (VBool true)
   |> bind' "false"        (VBool false)
   |> bind' "nothing"      VUnit

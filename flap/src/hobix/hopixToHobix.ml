@@ -106,8 +106,13 @@ let rec seqs = function
   | e :: es -> seq e (seqs es)
 
 (** [is_equal e1 e2] is the boolean expression [e1 = e2]. *)
-let is_equal e1 e2 =
-  HobixAST.(Apply (Variable (Id "`="), [e1; e2]))
+let is_equal l e1 e2 =
+  let equality = HobixAST.(match l with
+    | LInt _ -> "`="
+    | LString _ -> "equal_string"
+    | LChar _ -> "equal_char"
+  ) in
+  HobixAST.(Apply (Variable (Id equality), [e1; e2]))
 
 (** [conj e1 e2] is the boolean expression [e1 && e2]. *)
 let conj e1 e2 =
@@ -183,8 +188,11 @@ and expression env = HobixAST.(function
     HobixAST.(Define (
       x,
       AllocateBlock (Literal (LInt (Int32.of_int 1))),
-      WriteBlock (Variable x, Literal (LInt Int32.zero),
-		  located (expression env) e))
+      seqs [
+          WriteBlock (Variable x, Literal (LInt Int32.zero),
+                      located (expression env) e);
+          Variable x
+        ])
     )
 
   | HopixAST.Read r ->
