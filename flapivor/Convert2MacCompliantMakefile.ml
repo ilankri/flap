@@ -16,6 +16,10 @@ let modifyRmQuote text =
 let r = Str.regexp {|\$\(RM\) --force|} in
   Str.global_replace r "$(RM) -f" text
 
+let modifyTimeout text =
+let r = Str.regexp {|timeout|} in
+  Str.global_replace r "gtimeout" text
+
 let modify text =
     let text1 = modifyCut text in
     let text2 = modifyRM text1 in
