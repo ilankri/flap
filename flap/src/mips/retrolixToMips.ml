@@ -146,7 +146,16 @@ let rec translate (p : S.t) (env : environment) : T.t * environment =
       located inside the stack frame. If [x] is global, this
       address is represented by a label. *)
   and variable_address stacksize env ((S.Id s) as x) =
-    failwith "Student! This is your job!"
+    let offset =
+      try Some (List.assoc x env) with
+      | Not_found -> None
+    in
+    match offset with
+    | Some offset ->            (* [x] is local.  *)
+      let offset = T.Literal (Int16.of_int (stacksize - offset)) in
+      T.RegisterOffsetAddress (MipsArch.Sp, offset)
+    | None ->                   (* [x] is global.  *)
+      T.LabelAddress (T.Label (global_variable_label s))
 
   (** [load_variable stacksize env r x] emits the instructions
       to load a variable [x] in register [r]. *)
