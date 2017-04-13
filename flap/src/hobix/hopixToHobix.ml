@@ -107,8 +107,13 @@ let rec seqs = function
   | e :: es -> seq e (seqs es)
 
 (** [is_equal e1 e2] is the boolean expression [e1 = e2]. *)
-let is_equal e1 e2 =
-  HobixAST.(Apply (Variable (Id "`="), [e1; e2]))
+let is_equal l e1 e2 =
+  let equality = HobixAST.(match l with
+    | LInt _ -> "`="
+    | LString _ -> "equal_string"
+    | LChar _ -> "equal_char"
+  ) in
+  HobixAST.(Apply (Variable (Id equality), [e1; e2]))
 
 (** [conj e1 e2] is the boolean expression [e1 && e2]. *)
 let conj e1 e2 =
@@ -332,7 +337,8 @@ and pattern env scrutinee = HobixAST.(function
         )
       in
       let same_tag =
-        is_equal (read_block scrutinee 0) (tag_of_constructor' env k)
+        is_equal (LInt Int32.zero) (read_block scrutinee 0)
+          (tag_of_constructor' env k)
       in
       (conjs (same_tag :: conds), List.flatten defs)
 
@@ -341,7 +347,7 @@ and pattern env scrutinee = HobixAST.(function
     | HopixAST.PLiteral l ->
       (* Pb: If scrutinee is not an int, is_equal is undefined...  *)
       begin match literal' l with
-        | LInt _ as l -> (is_equal scrutinee (Literal l), [])
+        | LInt _ as l -> (is_equal l scrutinee (Literal l), [])
         | LChar _ | LString _ -> failwith "TODO"
       end
 
