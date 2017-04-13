@@ -1,2 +1,2 @@
-f :  -> unit
+f : unit -> unit
 test : unit
