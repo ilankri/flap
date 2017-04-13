@@ -108,3 +108,5 @@ let tmp1 =
 
 let tmp2 =
   fp
+
+let word_size = 4
