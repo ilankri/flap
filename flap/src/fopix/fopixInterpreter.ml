@@ -249,16 +249,6 @@ and expression runtime = function
     in
     expression runtime e
 
-  | FunCall (FunId "print_int", [x]) | FunCall (FunId "print_string", [x]) ->
-    let print x =
-      match expression runtime x with
-      | VInt i -> print_string (Int32.to_string i);
-      | VString s -> print_string s
-      | _ -> error' ""
-    in
-    print x;
-    VUnit
-
   | FunCall (FunId "allocate_block", [size]) ->
     let l = expression runtime size in
     begin
@@ -323,7 +313,7 @@ and expression runtime = function
     in
     expression runtime body
 
-  | UnknownFunCall (_, _) -> error' ("UnknownFunCall is not implemented.") 
+  | UnknownFunCall (_, _) -> error' ("UnknownFunCall is not implemented.")
 
 and binop
   : type a b. a coercion -> b wrapper -> _ -> (a -> a -> b) -> _ -> _ -> value
