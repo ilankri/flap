@@ -1,3 +1,6 @@
+(* No need to save frame pointer?  Why?  Because it can be computed with
+   stack pointer and frame size...  *)
+
 (* This module implements a compiler from Retrolix to Mips *)
 
 let error pos msg =
@@ -15,7 +18,13 @@ let initial_environment () = ()
 module S = Source.AST
 module T = Target.AST
 
-let labelled label instrs = [{T.label = T.Label label; T.value = instrs}]
+let fresh_label =
+  let c = ref 0 in
+  fun () ->
+    incr c;
+    T.Label ("__" ^ string_of_int !c)
+
+let labelled instrs = [{T.label = fresh_label (); T.value = instrs}]
 
 let labelled' label instr = [{T.label = T.Label label; T.value = [instr]}]
 
@@ -37,24 +46,38 @@ let rec translate (p : S.t) (env : environment) : T.t * environment =
         }) instructions
 
   and block' locals instrs =
-    let stacksize = List.length locals lsl 2 in
-    allocate_stack_frame locals @
-    block stacksize locals instrs @
-    free_stack_frame stacksize
+    let stacksize = List.length locals * MipsArch.word_size in
+    labelled (allocate_stack_frame locals) @
+    block stacksize locals instrs
 
   (** [instruction stacksize locals env l i] compiles the retrolix
       instruction [i] whose label is [l] into a list of MIPS
       instructions. [stacksize] is the size of the current stack
       frame and [locals] the list of local variables. *)
   and instruction stacksize locals env l = T.(function
-      | S.Call (_, _, _) -> failwith "TODO"
+      | S.Call (_, f, rs) ->
+        begin match f with
+          | `Immediate (S.LFun f) -> call stacksize env f rs
+          | _ -> assert false
+        end
+
       | S.TailCall (_, _) -> failwith "TODO"
-      | S.Ret _ -> failwith "TODO"
+
+      (* Pop the stack frame and then jump to return address.  *)
+      | S.Ret _ ->
+        free_stack_frame stacksize @
+        [T.Jr MipsArch.Ra]
+
       | S.Assign (_, _, _) -> failwith "TODO"
+
       | S.Jump _ -> failwith "TODO"
+
       | S.ConditionalJump (_, _, _, _) -> failwith "TODO"
+
       | S.Switch (_, _, _) -> failwith "TODO"
+
       | S.Comment _ -> failwith "TODO"
+
       | S.Exit -> failwith "TODO"
     )
 
@@ -162,12 +185,14 @@ let rec translate (p : S.t) (env : environment) : T.t * environment =
       pointer to introduce a fresh stack frame large
       enough to store the variables [locals]. *)
   and allocate_stack_frame locals =
-    failwith "Student! This is your job!"
+    let frame_size = List.length locals * MipsArch.word_size in
+    let frame_size = T.Literal (Int16.of_int (-frame_size)) in
+    [T.Addiu (MipsArch.Sp, MipsArch.Sp, frame_size)]
 
   (** [free_stack_frame size] destructs the latest
       stack frame given the [size] of this stack frame. *)
   and free_stack_frame size =
-    failwith "Student! This is your job!"
+    [T.Addiu (MipsArch.Sp, MipsArch.Sp, T.Literal (Int16.of_int size))]
 
   (** [extract_global xs d] extracts a global variable definition from [d]
       and inserts it in the list [xs]. *)
@@ -191,8 +216,8 @@ let rec translate (p : S.t) (env : environment) : T.t * environment =
       | S.DExternalFunction _ | S.DFunction _ -> bs
     in
     labelled' "main" (T.Comment "Entry point") @
-    List.fold_left init_global_var [] p @
-    labelled "out" (
+    List.fold_left init_global_var [] (List.rev p) @
+    labelled (
       T.Comment "Exit" ::
       load_immediate (MipsArch.a 0) Int32.zero @
       [T.J (T.Label "exit")]
