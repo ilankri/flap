@@ -110,3 +110,10 @@ let tmp2 =
   fp
 
 let word_size = 4
+
+(** Split the given parameters list into two lists.  The first one
+    contains at most the first four parameters and the second one the
+    rest of the parameters, if any.  *)
+let split_params = function
+  | p0 :: p1 :: p2 :: p3 :: extra_params -> ([p0; p1; p2; p3], extra_params)
+  | params -> (params, [])

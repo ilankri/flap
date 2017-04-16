@@ -81,7 +81,8 @@ end = struct
 
   let _ =
     Printexc.register_printer (function
-        | UnboundIdentifier (Id x) -> Some (Printf.sprintf "Unbound identifier %s" x)
+        | UnboundIdentifier (Id x) ->
+          Some (Printf.sprintf "Unbound identifier %s" x)
         | _ -> None
       )
 
@@ -198,10 +199,10 @@ and expression runtime = function
     literal l
 
   | Variable (Id "true") ->
-     VBool true
+    VBool true
 
   | Variable (Id "false") ->
-     VBool false
+    VBool false
 
   | Variable x ->
     begin try Environment.lookup x runtime.environment with
@@ -270,16 +271,16 @@ and expression runtime = function
     end
 
   | FunCall (FunId "print_int", [e]) ->
-     begin match expression runtime e with
-     | VInt x -> print_string (Int32.to_string x)
-     | _ -> assert false (* By typing. *)
-     end
+    begin match expression runtime e with
+      | VInt x -> print_string (Int32.to_string x)
+      | _ -> assert false (* By typing. *)
+    end
 
   | FunCall (FunId "print_string", [e]) ->
-     begin match expression runtime e with
-     | VString s -> print_string s
-     | _ -> assert false (* By typing. *)
-     end
+    begin match expression runtime e with
+      | VString s -> print_string s
+      | _ -> assert false (* By typing. *)
+    end
 
   | FunCall (FunId "write_block", [location; index; e]) ->
     begin
