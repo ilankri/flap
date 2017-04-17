@@ -186,7 +186,15 @@ and evaluation_of_binary_symbol environment = function
   | ("`<" | "`>" | "`<=" | "`>=" | "`=") as s ->
     arith_cmpop environment (cmp_operator_of_symbol s)
   | ("`||" | "`&&") as s ->
-    boolean_binop environment (boolean_operator_of_symbol s)
+    fun e1 e2 ->
+      let v1 = expression environment e1 in
+      begin match value_as_bool v1 with
+        | Some false ->
+          if s = "`||" then expression environment e2 else v1
+        | Some true ->
+          if s = "`&&" then expression environment e2 else v1
+        | _ -> assert false
+      end
   | _ -> assert false
 
 and is_binary_primitive = function
