@@ -250,7 +250,7 @@ let lookup_type_info_of_ty_cons pos tc env =
   try List.assoc tc env.type_constructors with
   | Not_found -> raise (UnboundTypeConstructor (pos, tc))
 
-let find_duplication ls =
+let find_double ls =
   let ls = List.sort compare ls in
   let rec aux = function
     | [] | [_] -> None
@@ -331,7 +331,9 @@ let bind_type_definition x ts tdef env =
   let pre_env =
     let env = bind_type_variables Position.dummy env ts in
     let type_constructors =
-      (x, { arity; data_constructors }) :: env.type_constructors
+      match find_double data_constructors with
+      | None -> (x, { arity; data_constructors }) :: env.type_constructors
+      | Some dc -> raise (AlreadyBoundDataCons (Position.dummy, dc))
     in
     { env with type_constructors; constructors = [] }
   in
