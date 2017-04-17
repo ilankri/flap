@@ -121,6 +121,49 @@ let store_variable (stacksize : int) env x r =
       T.Sw (r, addr)
     ]
 
+let semantics op =
+  let as_int32 = function
+    | S.LInt i -> i
+    | S.LFun _ | S.LChar _ | S.LString _ -> assert false
+  in
+  let cond_semantics = function
+    | S.GT -> ( > )
+    | S.LT -> ( < )
+    | S.GTE -> ( >= )
+    | S.LTE -> ( <= )
+    | S.EQ -> ( = )
+  in
+  let op =
+    match op with
+    | S.Add -> Int32.add
+    | S.Mul -> Int32.mul
+    | S.Div -> Int32.div
+    | S.Sub -> Int32.sub
+    | S.And -> failwith "TODO"
+    | S.Or -> failwith "TODO"
+    | S.Bool cond ->
+      fun x y ->
+        if (cond_semantics cond) (Int32.compare x y) 0 then Int32.one else
+          Int32.zero
+    | S.Load -> assert false
+  in
+  fun i j -> op (as_int32 i) (as_int32 j)
+
+let mk_instr binop = fun rdest r1 r2 ->
+  match binop with
+  | S.Add -> T.Add (rdest, r1, r2)
+  | S.Mul -> T.Mul (rdest, r1, r2)
+  | S.Div -> T.Div (rdest, r1, r2)
+  | S.Sub -> T.Sub (rdest, r1, r2)
+  | S.And -> failwith "TODO"
+  | S.Or -> failwith "TODO"
+  | S.Bool S.GT -> T.Sgt (rdest, r1, r2)
+  | S.Bool S.LT -> T.Slt (rdest, r1, r2)
+  | S.Bool S.GTE -> T.Sge (rdest, r1, r2)
+  | S.Bool S.LTE -> T.Sle (rdest, r1, r2)
+  | S.Bool S.EQ -> T.Seq (rdest, r1, r2)
+  | S.Load -> assert false
+
 (** [translate p env] turns a Retrolix program into a MIPS program. *)
 let rec translate (p : S.t) (env : environment) : T.t * environment =
 
@@ -163,7 +206,16 @@ let rec translate (p : S.t) (env : environment) : T.t * environment =
             | `Variable x -> store_variable stacksize env x rsrc
           )
 
-      | S.Assign (_, _, _) -> failwith "TODO"
+      | S.Assign (lv, binop, [rv1; rv2]) ->
+        load_rvalue stacksize env lv tmp2 (fun rdest ->
+            mk_operation stacksize env rdest rv1 rv2
+              (semantics binop) (mk_instr binop rdest) @ (
+              match lv with
+              | `Register _ -> []
+              | `Variable x -> store_variable stacksize env x rdest)
+          )
+
+      | S.Assign (_, _, _) -> assert false
 
       | S.Jump _ -> failwith "TODO"
 
