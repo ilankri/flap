@@ -8,6 +8,10 @@ exception UnboundTypeVariable of Position.position * type_variable
 
 exception UnboundIdentifier of Position.position * identifier
 
+exception WrongNbArgsTyCons of Position.position * type_constructor * int * int
+
+exception AlreadyBoundDataCons of Position.position * constructor
+
 let ty_cons_err error pos (TCon s) = error pos "type constructor" s
 
 let ty_var_err error pos (TId s) = error pos "type variable" s
@@ -24,10 +28,16 @@ let wrong_nb_args_err xarity iarity pos what which =
     (Printf.sprintf "The %s %s has arity %d and not %d."
        what which xarity iarity)
 
+let already_bound_err pos what which =
+  type_error pos (Printf.sprintf "Already bound %s %s." what which)
+
 let report_error = function
   | UnboundTypeConstructor (pos, tc) -> ty_cons_err unbound_err pos tc
   | UnboundTypeVariable (pos, tv) -> ty_var_err unbound_err pos tv
   | UnboundIdentifier (pos, id) -> id_err unbound_err pos id
+  | WrongNbArgsTyCons (pos, tc, xarity, iarity) ->
+    ty_cons_err (wrong_nb_args_err xarity iarity) pos tc
+  | AlreadyBoundDataCons (pos, dc) -> data_cons_err already_bound_err pos dc
   | exn -> raise exn
 
 (** Abstract syntax for types.
@@ -240,16 +250,25 @@ let lookup_type_info_of_ty_cons pos tc env =
   try List.assoc tc env.type_constructors with
   | Not_found -> raise (UnboundTypeConstructor (pos, tc))
 
+let find_duplication ls =
+  let ls = List.sort compare ls in
+  let rec aux = function
+    | [] | [_] -> None
+    | x :: y :: ys ->
+      if x = y then Some x else aux (y :: ys)
+  in
+  aux ls
+
+let check_ty_cons_arity pos tc xarity iarity =
+  if xarity <> iarity then raise (WrongNbArgsTyCons (pos, tc, xarity, iarity))
+
 let rec check_well_formed_type pos env = function
   | ATyVar tv ->
     if not (is_type_variable_defined pos env tv) then
       raise (UnboundTypeVariable (pos, tv))
-  (* TODO: Check that constructors are all different.  *)
   | ATyCon (tc, ts) ->
     let tc_info = lookup_type_info_of_ty_cons pos tc env in
-    let nargs = List.length ts in
-    if nargs <> tc_info.arity then
-      ty_cons_err (wrong_nb_args_err tc_info.arity nargs) pos tc
+    check_ty_cons_arity pos tc tc_info.arity (List.length ts);
   | ATyArrow (ts, t) ->
     List.iter (check_well_formed_type pos env) ts;
     check_well_formed_type pos env t
