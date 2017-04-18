@@ -16,26 +16,33 @@ let ( ++ ) x y =
 
 let vcat = separate_map hardline (fun x -> x)
 
-let rec program p =
-  vcat (List.map definition p)
+type decorations = {
+    pre  : label -> document list;
+    post : label -> document list;
+}
 
-and definition = function
+let nodecorations = { pre = (fun _ -> []); post = (fun _ -> []) }
+
+let rec program ?(decorations=nodecorations) p =
+  vcat (List.map (definition decorations) p)
+
+and definition decorations = function
   | DValue (x, b) ->
     group (string "code" ++ parens (identifier x))
-    ^^ hardline ^^ block b ++ string "end"
+    ^^ hardline ^^ block decorations b ++ string "end"
   | DFunction (f, xs, b) ->
     group (string "def"
            ++ function_identifier f
            ++ parens (identifiers xs))
     ++ string ":" ^^ hardline
-    ^^ block b
+    ^^ block decorations b
   | DExternalFunction f ->
     group (string "external" ++ function_identifier f)
 
-and block (ls, b) =
+and block decorations (ls, b) =
   let shift = max_label_length b in
   group (locals ls ^^ string ":") ++
-  vcat (List.map (labelled_instruction shift) b)
+  vcat (List.map (labelled_instruction decorations shift) b)
 
 and identifiers xs =
   separate_map (comma ^^ space) identifier xs
@@ -50,8 +57,12 @@ and locals = function
   | [] -> empty
   | xs -> group (string "local" ++ group (identifiers xs))
 
-and labelled_instruction lsize (l, i) =
-  group (label lsize l ^^ group (instruction i) ^^ string ";")
+and labelled_instruction decorations lsize (l, i) =
+  vcat (
+      (decorations.pre l)
+      @ [ group (label lsize l ^^ group (instruction i) ^^ string ";") ]
+      @ (decorations.post l)
+    )
 
 and label lsize (Label l) =
   string (Printf.sprintf "%*s: " lsize l)

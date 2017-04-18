@@ -508,4 +508,5 @@ let preprocess p env =
 let translate p env =
   (*let p, env = preprocess p env in *)
   let p, env = translate' p env in
+  let p = RetrolixRegisterAllocation.translate p in
   (p, env)
