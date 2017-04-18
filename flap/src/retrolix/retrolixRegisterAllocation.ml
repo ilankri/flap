@@ -24,10 +24,13 @@
 
 open RetrolixAST
 
-module LabelMap = Map.Make (struct
+module LabelOrd = struct
   type t = label
-  let compare = compare
-end)
+  let compare (Label l1) (Label l2) = String.compare l1 l2
+end
+
+module LabelMap = Map.Make (LabelOrd)
+module LabelSet = Set.Make (LabelOrd)
 
 (** Liveness Analysis. *)
 type location = lvalue
@@ -47,15 +50,38 @@ let find_default d k m =
 
 let empty_results =
   {
-    live_in = LabelMap.empty;
+    live_in  = LabelMap.empty;
     live_out = LabelMap.empty;
   }
 
+let string_of_lvalue = function
+  | `Register (RId r) -> "$" ^ r
+  | `Variable (Id r) -> r
+
+let string_of_label (Label s) = s
+
+let string_of_lset s =
+  String.concat " " (List.map string_of_lvalue (LSet.elements s))
+
+let string_of_lmap m =
+  String.concat "\n" (
+      List.map (fun (l, s) ->
+          Printf.sprintf "  %s : %s\n" (string_of_label l) (string_of_lset s)
+      ) (LabelMap.bindings m)
+  )
+
+let string_of_results r =
+  Printf.sprintf
+    "IN:\n%s\nOUT:\n%s\n"
+    (string_of_lmap r.live_in)
+    (string_of_lmap r.live_out)
+
 (** [def i] returns the variables defined by [i]. *)
+
 let def i =
   failwith "Student! This is your job!"
 
-(** [use i] returns the variables defined by [i]. *)
+(** [use i] returns the variables used by [i]. *)
 let use i =
   failwith "Student! This is your job!"
 
@@ -64,9 +90,24 @@ let use i =
 let predecessors p =
   failwith "Student! This is your job!"
 
-(** [liveness_analysis p] returns the liveness analysis of [p]. *)
-let liveness_analysis p =
-  ()
+(** [liveness_analysis p] returns the liveness analysis of [p].
+
+   This is a data flow analysis which overapproximates the variables
+   that are alive before (live-in) and after (live-out) each
+   instruction. To do so, we use the following two equations:
+
+   in(n)  = use(n) ∪ (out(n) ∖ def(n))
+   out(n) = ⋃_{s ∈ successors (n)} in(s)
+
+   for each node n of the control flow graph, i.e. for each label
+   of the program.
+
+   As these equations are mutually recursive, they must be solved
+   using a fixpoint.
+
+*)
+let liveness_analysis p : liveness_analysis_result =
+  failwith "Student! This is your job!"
 
 (** Interference graph. *)
 
@@ -98,13 +139,10 @@ module IGraphColoring = GraphColoring.Make
   (struct
     type t = lvalue
     let compare = compare
-    let to_string : t -> string = function
-      | `Register (RId r) -> "$" ^ r
-      | `Variable (Id r) -> r
+    let to_string : t -> string = string_of_lvalue
    end)
   (struct
     type t = register
-    (** The following will change when we will seriously implement the MIPS backend.  *)
     let all = MipsArch.(List.map (fun r -> RId (string_of_register' r)) all_registers)
     let cardinal = List.length all
     let to_string (RId r) = r
@@ -142,6 +180,20 @@ let register_allocation coloring p =
 (** Putting all together. *)
 let translate p =
   let liveness = liveness_analysis p in
+  if Options.get_verbose_mode () then RetrolixPrettyPrinter.(
+    let get_decoration space m l =
+      let s = try LabelMap.find l m with Not_found -> LSet.empty in
+      [PPrint.string ("{ " ^ string_of_lset s ^ " }")]
+      @ (if space then [PPrint.empty] else [])
+    in
+    let decorations = {
+        pre = get_decoration false liveness.live_in;
+        post = get_decoration true liveness.live_out
+    }
+    in
+    let p = to_string (program ~decorations) p in
+    Printf.eprintf "Liveness:\n%s\n" p;
+  );
   let igraph   = interference_graph p liveness in
   let coloring = colorize_graph igraph in
   register_allocation coloring p
