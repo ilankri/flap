@@ -40,6 +40,10 @@ module LSet = Set.Make (struct
     let compare = compare
 end)
 
+(**
+ * For each IN and OUT, we have a Map in structure :
+   LabelOrd -> LSet
+ * *)
 type liveness_analysis_result = {
   live_in  : LSet.t LabelMap.t;
   live_out : LSet.t LabelMap.t;
@@ -85,7 +89,7 @@ let def i =
 let use i =
   failwith "Student! This is your job!"
 
-(** [predecessors p] returns a function [p] such that [p l] returns
+(** [predecessors p] returns a function [f] such that [f l] returns
     the predecessors of [l] in the control flow graph. *)
 let predecessors p =
   failwith "Student! This is your job!"
@@ -106,8 +110,13 @@ let predecessors p =
    using a fixpoint.
 
 *)
-let liveness_analysis p : liveness_analysis_result =
-  failwith "Student! This is your job!"
+let rec liveness_analysis p : liveness_analysis_result =
+   let final = empty_results in 
+   let listResult = List.map (definition final) p in
+   final
+
+and definition res = function
+   | _ -> failwith "TODO"
 
 (** Interference graph. *)
 
