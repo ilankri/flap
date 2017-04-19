@@ -195,7 +195,7 @@ let typecheck tenv ast : typing_environment =
        Γ ⊢ if c then e
            elif c₁ then e₁
            …
-           elif cₙ then eₙ
+           elif ci then ei
            else e'         : σ
 
        and without:
@@ -206,7 +206,7 @@ let typecheck tenv ast : typing_environment =
        Γ ⊢ if c then e
            elif c₁ then e₁
            …
-           elif cₙ then eₙ : unit       *)
+           elif ci then ei : unit       *)
     | If (eelist, expr) ->
       let elsety =
         match expr with
@@ -233,12 +233,26 @@ let typecheck tenv ast : typing_environment =
     | Fun fdef ->
       failwith "Students! This is your job!"
 
-    (* (K : ∀α₁ … αₖ.τ₁'⋆ … ⋆τₙ' → τ) ∈ Γ
-       ∀i Γ ⊢ eᵢ : τᵢ'[α₁ ↦ τ₁] … [αₖ ↦ τₖ]
+    (* (K : ∀α₁ … α.τ₁'⋆ … αk⋆τk' → τ) ∈ Γ
+       ∀i Γ ⊢ eᵢ : τᵢ'[α₁ ↦ τ₁] … [αk ↦ τk]
        ————————————————————————————————————————————————————
-       Γ ⊢ K[τ₁, …, τₖ](e₁, …, eₙ) : τ[α₁ ↦ τ₁] … [αₖ ↦ τₖ] *)
+       Γ ⊢ K[τ₁, …, τn] (e₁, …, e) : τ[α₁ ↦ τ₁] … [αk ↦ τk] *)
     | Tagged ({ Position.value = (KId x) as k }, types, args) ->
-      failwith "Students! This is your job!"
+      let tyFromK = lookup_type_scheme_of_constructor k tenv in
+      let rmPosTypes = List.map (fun a -> (aty_of_ty' a)) types in
+      let tau = instantiate_type_scheme tyFromK rmPosTypes in
+      let tyListFromTau = 
+      (match tau with
+      | ATyArrow(alist, _) -> alist
+      | _ -> assert false )
+      in 
+      let f t e = 
+      begin
+      let atyFromE = located (type_scheme_of_expression tenv) e  in 
+      check_expected_type (Position.position e) (type_of_monotype atyFromE) t
+      end in
+      List.iter2 f tyListFromTau args;
+      monotype tau
 
     (* Γ ⊢ e : σ'    ∀i Γ ⊢ pᵢ ⇒ Γᵢ, σ'    ∀i Γᵢ ⊢ eᵢ : σ
        ——————————————————————————————————————————————————
