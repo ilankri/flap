@@ -31,10 +31,10 @@ let fresh_label =
   let c = ref 0 in
   fun () -> incr c; T.Label ("l" ^ string_of_int !c)
 
-(** [fresh_label ()] returns a new identifier for a variable. *)
+(** [fresh_variable ()] returns a new identifier for a variable. *)
 let fresh_variable =
   let c = ref 0 in
-  fun () -> incr c; T.(Id ("X" ^ string_of_int !c))
+  fun () -> incr c; `Variable (T.(Id ("X" ^ string_of_int !c)))
 
 (** Used by preprocess to generate new id *)
 let fresh_id =
@@ -57,13 +57,6 @@ let as_bool (S.Id id) =
     identifiers.  *)
 let idset_of_idlist ids =
   List.fold_left (fun acc id -> IdSet.add id acc) IdSet.empty ids
-
-(** Split the given parameters list into two lists.  The first one
-    contains at most the first four parameters and the second one the
-    rest of the parameters, if any.  *)
-let split_params = function
-  | p0 :: p1 :: p2 :: p3 :: extra_params -> ([p0; p1; p2; p3], extra_params)
-  | params -> (params, [])
 
 (**
    Every function in Retrolix starts with a declaration
@@ -226,15 +219,12 @@ let rec translate' p env =
   (defs, env)
 
 and callee_prologue formals =
-  let fst_four_formals = fst (split_params formals) in
-  let lvs, save_callee_saved =
-    save_registers MipsArch.callee_saved_registers
-  in
+  let lvs, save_callee_saved = save_registers MipsArch.callee_saved_registers in
   let instrs =
     comment "Save callee saved registers" ::
     save_callee_saved @
     comment "Retrieve first four actuals" ::
-    retrieve_fst_four_actuals fst_four_formals
+    retrieve_fst_four_actuals (fst (MipsArch.split_params formals))
   in
   (lvs, instrs)
 
@@ -242,27 +232,23 @@ and callee_epilogue lvs =
   comment "Restore callee saved registers" ::
   restore_registers MipsArch.callee_saved_registers lvs
 
-and define_function f xs e proc_call_conv =
+and function_body formals e proc_call_conv =
   let lvs, callee_prologue =
-    if proc_call_conv then callee_prologue xs else ([], [])
+    if proc_call_conv then callee_prologue formals else ([], [])
   in
   let out, callee_epilogue =
     if proc_call_conv then
       (register MipsArch.return_register, callee_epilogue lvs)
-    else (`Variable (fresh_variable ()), [])
+    else (fresh_variable (), [])
   in
   callee_prologue @
-  comment ("Body of function " ^ f) ::
+  comment "Function body" ::
   expression out e @
   callee_epilogue @
   comment "Return" ::
   (* We return the content of the return register just to make the
      Retrolix interpreter happy...  *)
   [labelled (T.Ret out)]
-
-and formals xs proc_call_conv =
-  let xs = if proc_call_conv then snd (split_params xs) else xs in
-  List.map identifier xs
 
 and declaration env = T.(function
     | S.DefineValue (S.Id x, e) ->
@@ -272,8 +258,8 @@ and declaration env = T.(function
       DValue (x, (locals, ec))
 
     | S.DefineFunction (S.FunId f, xs, e) ->
-      let instrs = define_function f xs e true in
-      let formals = formals xs true in
+      let formals = List.map identifier xs in
+      let instrs = function_body formals e true in
       let locals =
         List.filter (fun x -> not (List.mem x formals)) (locals env instrs)
       in
@@ -284,15 +270,12 @@ and declaration env = T.(function
   )
 
 and caller_prologue actuals =
-  let fst_four_actuals = fst (split_params actuals) in
-  let lvs, save_caller_saved =
-    save_registers MipsArch.caller_saved_registers
-  in
+  let lvs, save_caller_saved = save_registers MipsArch.caller_saved_registers in
   let instrs =
     comment "Save caller-saved registers" ::
     save_caller_saved @
     comment "Pass first four actuals" ::
-    pass_fst_four_actuals fst_four_actuals
+    pass_fst_four_actuals (fst (MipsArch.split_params actuals))
   in
   (lvs, instrs)
 
@@ -302,17 +285,29 @@ and caller_epilogue lvs out =
   comment "Retrieve return value" ::
   [load out (register MipsArch.return_register)]
 
-and fun_call out (S.FunId fid as f) xs proc_call_conv =
-  let lvs, caller_prologue =
-    if proc_call_conv then caller_prologue xs else ([], [])
+and fun_call out f actuals proc_call_conv =
+  let fst_four_actuals, extra_actuals =
+    if proc_call_conv then
+      let fst_four_actuals, extra_actuals = MipsArch.split_params actuals in
+      let fst_four_actuals, _, _ =
+        ExtStd.List.asymmetric_map2 (fun _ -> register) fst_four_actuals
+          MipsArch.argument_passing_registers
+      in
+      (fst_four_actuals, extra_actuals)
+    else ([], actuals)
   in
-  let actuals, caller_epilogue =
-    if proc_call_conv then (snd (split_params xs), caller_epilogue lvs out) else
-      (xs, [])
+  let lvs, caller_prologue =
+    if proc_call_conv then caller_prologue actuals else ([], [])
+  in
+  let caller_epilogue =
+    if proc_call_conv then caller_epilogue lvs out else []
   in
   caller_prologue @
-  comment ("Call function " ^ fid) ::
-  call_function out f actuals @
+  comment "Function call" ::
+  as_rvalues extra_actuals (fun extra_actuals ->
+      let actuals = fst_four_actuals @ extra_actuals in
+      [labelled (T.Call (out, `Immediate (literal (S.LFun f)), actuals))]
+    ) @
   caller_epilogue
 
 (** [expression out e] compiles [e] into a block of Retrolix
@@ -337,7 +332,7 @@ and expression out = T.(function
 
     | S.While (c, e) ->
       let closeLabel = [labelled (Comment "Exit While")] in
-      let condReg = `Variable (fresh_variable ()) in
+      let condReg = fresh_variable () in
       let condIns = expression condReg c in
       let eIns = ( expression out e ) in
       let condJump =
@@ -364,8 +359,7 @@ and expression out = T.(function
     | S.FunCall (S.FunId f, es) when is_binop f ->
       assign out (binop f) es
 
-    | S.FunCall (S.FunId fid as f, actuals) ->
-      fun_call out f actuals true
+    | S.FunCall (f, actuals) -> fun_call out f actuals true
 
     | S.UnknownFunCall (ef, actuals) ->
       failwith "Students! This is your job!"
@@ -395,8 +389,7 @@ and expression out = T.(function
 and retrieve_fst_four_actuals fst_four_formals =
   let instrs, _, _ =
     ExtStd.List.asymmetric_map2
-      (fun formal ai ->
-         load (`Variable (identifier formal)) (register ai))
+      (fun formal ai -> load (`Variable formal) (register ai))
       fst_four_formals
       MipsArch.argument_passing_registers
   in
@@ -406,14 +399,9 @@ and comment s = labelled (T.Comment s)
 
 and load lv rv = labelled (T.Assign (lv, T.Load, [rv]))
 
-and call_function out (S.FunId fid as f) actuals =
-  as_rvalues actuals (fun actuals ->
-      [labelled (T.Call (out, `Immediate (literal (S.LFun f)), actuals))]
-    )
-
 and save_registers regs =
   let save_register reg lv = load lv (register reg) in
-  let lvs = List.map (fun _ -> `Variable (fresh_variable ())) regs in
+  let lvs = List.map (fun _ -> fresh_variable ()) regs in
   (lvs, List.map2 save_register regs lvs)
 
 and restore_registers regs lvs =
@@ -432,7 +420,7 @@ and pass_fst_four_actuals fst_four_actuals =
   List.flatten instrs
 
 and as_rvalue e =
-  let x = `Variable (fresh_variable ()) in
+  let x = fresh_variable () in
   (x, expression x e)
 
 and as_rvalues rvs f =
@@ -446,8 +434,8 @@ and assign out op rvs =
 
 and condition lt lf c = T.(
     let x = fresh_variable () in
-    expression (`Variable x) c
-    @ [ labelled (ConditionalJump (EQ, [ `Variable x;
+    expression x c
+    @ [ labelled (ConditionalJump (EQ, [ x;
                                          `Immediate (LInt (Int32.of_int 0)) ],
                                    lf,
                                    lt))]
@@ -520,4 +508,5 @@ let preprocess p env =
 let translate p env =
   (*let p, env = preprocess p env in *)
   let p, env = translate' p env in
+  let p = RetrolixRegisterAllocation.translate p in
   (p, env)

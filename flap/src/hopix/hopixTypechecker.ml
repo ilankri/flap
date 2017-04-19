@@ -97,14 +97,21 @@ let typecheck tenv ast : typing_environment =
     try List.fold_left (fun env x -> located (definition env) x) tenv p with
     | exn -> HopixTypes.report_error exn
 
+  and rec_definition tenv recdefs =
+    let fids, fdefs = List.split recdefs in
+    let ftys = List.map (located (extract_function_type_scheme tenv)) fdefs in
+    let fids = List.map Position.value fids in
+    let tenv = List.fold_right2 bind_value fids ftys tenv in
+    List.iter (located (check_function_definition tenv)) fdefs;
+    tenv
+
   and definition tenv pos = function
     | DefineValue (x, e) ->
       bind_value (Position.value x) (
         located (type_scheme_of_expression tenv) e
       ) tenv
 
-    | DefineRecFuns recdefs ->
-      failwith "Students! This is your job!"
+    | DefineRecFuns recdefs -> rec_definition tenv recdefs
 
     | DefineType (t, ts, tdef) ->
       let tyListNoPosition = List.map Position.value ts in
@@ -120,7 +127,16 @@ let typecheck tenv ast : typing_environment =
       definition [fdef]. This function does not check that the function
       definition actually has the type scheme written by the programmer. *)
   and extract_function_type_scheme tenv pos (FunctionDefinition (ts, ps, e)) =
-    failwith "Students! This is your job!"
+    let extract_arg_ty tenv arg =
+      type_of_monotype (located (type_of_pattern tenv) arg)
+    in
+    let arg_tys = List.map (extract_arg_ty tenv) ps in
+    let ret_ty =
+      match Position.value e with
+      | TypeAnnotation (_, ty) -> aty_of_ty' ty
+      | _ -> assert false    (* By check_program_is_fully_annotated.  *)
+    in
+    Scheme (List.map Position.value ts, ATyArrow (arg_tys, ret_ty))
 
   (** [check_function_definition tenv pos fdef] checks that the
       function definition [fdef] is well-typed with respect to the
@@ -128,9 +144,9 @@ let typecheck tenv ast : typing_environment =
       [tenv] already contains the type scheme of the function [f]
       defined by [fdef] as well as all the functions which are
       mutually recursively defined with [f]. *)
-  and check_function_definition tenv pos = function
-    | FunctionDefinition (ts, ps, e) ->
-      failwith "Students! This is your job!"
+  and check_function_definition tenv pos (FunctionDefinition (ts, ps, e)) =
+    let tenv, _ = patterns tenv ps in
+    ignore (located (type_scheme_of_expression tenv) e)
 
   (** [check_expected_type pos xty ity] verifies that the expected
       type [xty] is syntactically equal to the inferred type [ity]
@@ -173,12 +189,12 @@ let typecheck tenv ast : typing_environment =
     | TypeAnnotation (e, ty) ->
       let sigma = located (type_scheme_of_expression tenv) e in
       let pty = type_of_monotype sigma in
-      check_expected_type (Position.position ty) pty
-        (aty_of_ty (Position.value ty));
+      check_expected_type (Position.position ty) (aty_of_ty (Position.value ty))
+        pty;
       sigma
 
     | DefineRec (recdefs, e) ->
-      failwith "Students! This is your job!"
+      located (type_scheme_of_expression (rec_definition tenv recdefs)) e
 
     (* Γ ⊢ e : ∀α₁ … αn τ'₁⋆ … ⋆τ'm → τ
        ∀i Γ ⊢ ei: τ'i[αi ↦ τi] … [αn↦ τn]
@@ -360,13 +376,13 @@ let typecheck tenv ast : typing_environment =
 
     (* (K : ∀α₁ … αm.τ₁⋆ … ⋆τn → τ) ∈ Γ    ∀i Γᵢ₋₁ ⊢ pᵢ ⇒ Γᵢ, τᵢ
        ——————————————————————————————————————————————————————————
-       Γ₀ ⊢ K (p₁, …, pn) ⇒ Γn, τ                                 
+       Γ₀ ⊢ K (p₁, …, pn) ⇒ Γn, τ
 
        Note that 'α₁ … αm' do nothing *)
-    | PTaggedValue (k, ps) -> 
+    | PTaggedValue (k, ps) ->
       let (Scheme (_, tau)) as atyScheme = lookup_type_scheme_of_constructor (Position.value k) tenv in
       let checkEachPMatch accu p tvInK =
-        ( 
+        (
           let e, pAty = located (pattern accu) p in
           check_expected_type (Position.position p) (type_of_monotype pAty) tvInK;
           e
@@ -377,42 +393,42 @@ let typecheck tenv ast : typing_environment =
 
     (* ∀i Γ ⊢ pᵢ ⇒ Γᵢ, σᵢ    σ₁ = … = σn    Γ₁ = … = Γn
        ————————————————————————————————————————————————
-      Γ ⊢ p₁ | … | pn ⇒ Γ₁, σ₁                         
-      A verifier avec Idir... difference avec PAnd?
+       Γ ⊢ p₁ | … | pn ⇒ Γ₁, σ₁
+       A verifier avec Idir... difference avec PAnd?
     *)
-    | POr ps -> 
+    | POr ps ->
       let checkEachPEqual (prevEnv, prevAty) p =
         (
-         let gammai, pAty = located (pattern tenv) p in
-         let prevEnv = match prevEnv with
-         | Some x -> if (x<>gammai) then type_error (Position.position p) (Printf.sprintf "Pattern types mismatch!");Some gammai
-         | None -> Some gammai in
-         match prevAty with
-         | Some x -> check_expected_type (Position.position p) (type_of_monotype pAty) (type_of_monotype x); (prevEnv, Some pAty)
-         | None -> (prevEnv, Some pAty)
+          let gammai, pAty = located (pattern tenv) p in
+          let prevEnv = match prevEnv with
+            | Some x -> if (x<>gammai) then type_error (Position.position p) (Printf.sprintf "Pattern types mismatch!");Some gammai
+            | None -> Some gammai in
+          match prevAty with
+          | Some x -> check_expected_type (Position.position p) (type_of_monotype pAty) (type_of_monotype x); (prevEnv, Some pAty)
+          | None -> (prevEnv, Some pAty)
         ) in
       let gamma, sigma = List.fold_left checkEachPEqual (None, None) ps in
       begin
-      match gamma, sigma with
-      | Some x, Some y -> x, y
-      | _ -> assert false (** Never reached case *)
-      end 
+        match gamma, sigma with
+        | Some x, Some y -> x, y
+        | _ -> assert false (** Never reached case *)
+      end
     (* ∀i Γᵢ₋₁ ⊢ pᵢ ⇒ Γᵢ, σᵢ   σ₁ = … = σn
        ———————————————————————————————————
        Γ₀ ⊢ p₁ & … & pn ⇒ Γn, σn           *)
     | PAnd ps ->
-      let checkEachPEqual (prevEnv, prevAty) p = 
-        (   
-         let e, pAty = located (pattern prevEnv) p in
-         match prevAty with
-         | Some x -> check_expected_type (Position.position p) (type_of_monotype pAty) (type_of_monotype x); (e, Some pAty)
-         | None -> (e, Some pAty)
+      let checkEachPEqual (prevEnv, prevAty) p =
+        (
+          let e, pAty = located (pattern prevEnv) p in
+          match prevAty with
+          | Some x -> check_expected_type (Position.position p) (type_of_monotype pAty) (type_of_monotype x); (e, Some pAty)
+          | None -> (e, Some pAty)
         ) in
       let gammaN, sigmaN = List.fold_left checkEachPEqual (tenv, None) ps in
       begin
-      match sigmaN with
-      | Some x -> gammaN, x
-      | None -> assert false (** Never reached case *)
+        match sigmaN with
+        | Some x -> gammaN, x
+        | None -> assert false (** Never reached case *)
       end
 
     (* Γ ⊢ p ⇒ Γ', σ'    σ' = σ
@@ -449,9 +465,9 @@ let typecheck tenv ast : typing_environment =
       let atyE = located (type_scheme_of_expression tenv) e in
       check_expected_type (Position.position p) (type_of_monotype tyP) (type_of_monotype sty);
       begin
-      match oty with
-      | Some x -> check_expected_type (Position.position e) (type_of_monotype x) (type_of_monotype atyE); Some atyE
-      | None -> Some atyE
+        match oty with
+        | Some x -> check_expected_type (Position.position e) (type_of_monotype x) (type_of_monotype atyE); Some atyE
+        | None -> Some atyE
       end
 
   in
