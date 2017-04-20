@@ -13,7 +13,7 @@ let modifyRM text =
   Str.global_replace r "rm -f" text
 
 let modifyRmQuote text =
-let r = Str.regexp {|\$\(RM\) --force|} in
+let r = Str.regexp {|\$(RM) --force|} in
   Str.global_replace r "$(RM) -f" text
 
 let modifyTimeout text =
