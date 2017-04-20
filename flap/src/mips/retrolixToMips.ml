@@ -217,7 +217,7 @@ let rec translate (p : S.t) (env : environment) : T.t * environment =
 
       | S.Assign (_, _, _) -> assert false
 
-      | S.Jump _ -> failwith "TODO"
+      | S.Jump (S.Label l) -> [T.J (T.Label l)]
 
       | S.ConditionalJump (_, _, _, _) -> failwith "TODO"
 
@@ -225,7 +225,7 @@ let rec translate (p : S.t) (env : environment) : T.t * environment =
 
       | S.Comment s -> [T.Comment s]
 
-      | S.Exit -> failwith "TODO"
+      | S.Exit -> (load_immediate (MipsArch.v 0) (Int32.of_int 10))@[T.Syscall]
     )
 
   (** First, push the rvalues [rs] on the stack, then jump to the label [f]
