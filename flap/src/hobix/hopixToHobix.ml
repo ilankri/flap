@@ -297,12 +297,13 @@ and expand_patterns' ps wrap = ListMonad.(
     return (wrap (List.map Position.unknown_pos ps))
   )
 
-and expand_patterns = ListMonad.(function
-    | [] -> return []
-    | p :: ps ->
-      expand_pattern p >>= fun p ->
-      expand_patterns ps >>= fun ps ->
-      return (p :: ps)
+and expand_patterns ps = ListMonad.(
+    List.fold_right (fun p macc ->
+        expand_pattern p >>= fun p ->
+        macc >>= fun acc ->
+        return (p :: acc)
+      )
+      ps (return [])
   )
 
 (** [expands_or_patterns branches] returns a sequence of branches
