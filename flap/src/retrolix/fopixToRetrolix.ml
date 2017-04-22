@@ -218,23 +218,23 @@ let rec translate' p env =
   let defs = List.map (declaration globals) p in
   (defs, env)
 
-and callee_prologue formals =
+and callee_prologue fst_four_formals =
   let lvs, save_callee_saved = save_registers MipsArch.callee_saved_registers in
   let instrs =
-    comment "Save callee saved registers" ::
+    comment "Save callee-saved registers" ::
     save_callee_saved @
     comment "Retrieve first four actuals" ::
-    retrieve_fst_four_actuals (fst (MipsArch.split_params formals))
+    retrieve_fst_four_actuals fst_four_formals
   in
   (lvs, instrs)
 
 and callee_epilogue lvs =
-  comment "Restore callee saved registers" ::
+  comment "Restore callee-saved registers" ::
   restore_registers MipsArch.callee_saved_registers lvs
 
-and function_body formals e proc_call_conv =
+and function_body fst_four_formals e proc_call_conv =
   let lvs, callee_prologue =
-    if proc_call_conv then callee_prologue formals else ([], [])
+    if proc_call_conv then callee_prologue fst_four_formals else ([], [])
   in
   let out, callee_epilogue =
     if proc_call_conv then
@@ -258,26 +258,22 @@ and declaration env = T.(function
       DValue (x, (locals, ec))
 
     | S.DefineFunction (S.FunId f, xs, e) ->
-      let formals = List.map identifier xs in
-      let instrs = function_body formals e true in
+      let fst_four_formals, extra_formals = MipsArch.split_params xs in
+      let extra_formals = List.map identifier extra_formals in
+      let instrs = function_body fst_four_formals e false in
       let locals =
-        List.filter (fun x -> not (List.mem x formals)) (locals env instrs)
+        List.filter (fun x -> not (List.mem x extra_formals))
+          (locals env instrs)
       in
-      DFunction (FId f, formals, (locals, instrs))
+      DFunction (FId f, extra_formals, (locals, instrs))
 
     | S.ExternalFunction (S.FunId f) ->
       DExternalFunction (FId f)
   )
 
-and caller_prologue actuals =
+and caller_prologue fst_four_actuals =
   let lvs, save_caller_saved = save_registers MipsArch.caller_saved_registers in
-  let instrs =
-    comment "Save caller-saved registers" ::
-    save_caller_saved @
-    comment "Pass first four actuals" ::
-    pass_fst_four_actuals (fst (MipsArch.split_params actuals))
-  in
-  (lvs, instrs)
+  (lvs, comment "Save caller-saved registers" :: save_caller_saved)
 
 and caller_epilogue lvs out =
   comment "Restore caller-saved registers" ::
@@ -287,26 +283,20 @@ and caller_epilogue lvs out =
 
 and fun_call out f actuals proc_call_conv =
   let fst_four_actuals, extra_actuals =
-    if proc_call_conv then
-      let fst_four_actuals, extra_actuals = MipsArch.split_params actuals in
-      let fst_four_actuals, _, _ =
-        ExtStd.List.asymmetric_map2 (fun _ -> register) fst_four_actuals
-          MipsArch.argument_passing_registers
-      in
-      (fst_four_actuals, extra_actuals)
-    else ([], actuals)
+    if proc_call_conv then MipsArch.split_params actuals else ([], actuals)
   in
   let lvs, caller_prologue =
-    if proc_call_conv then caller_prologue actuals else ([], [])
+    if proc_call_conv then caller_prologue fst_four_actuals else ([], [])
   in
   let caller_epilogue =
     if proc_call_conv then caller_epilogue lvs out else []
   in
-  caller_prologue @
-  comment "Function call" ::
+  comment "Pass actuals" ::
+  pass_fst_four_actuals (fst_four_actuals) @
   as_rvalues extra_actuals (fun extra_actuals ->
-      let actuals = fst_four_actuals @ extra_actuals in
-      [labelled (T.Call (out, `Immediate (literal (S.LFun f)), actuals))]
+      caller_prologue @
+      comment "Function call" ::
+      [labelled (T.Call (out, `Immediate (literal (S.LFun f)), extra_actuals))]
     ) @
   caller_epilogue
 
@@ -359,7 +349,7 @@ and expression out = T.(function
     | S.FunCall (S.FunId f, es) when is_binop f ->
       assign out (binop f) es
 
-    | S.FunCall (f, actuals) -> fun_call out f actuals true
+    | S.FunCall (f, actuals) -> fun_call out f actuals false
 
     | S.UnknownFunCall (ef, actuals) ->
       failwith "Students! This is your job!"
@@ -389,7 +379,7 @@ and expression out = T.(function
 and retrieve_fst_four_actuals fst_four_formals =
   let instrs, _, _ =
     ExtStd.List.asymmetric_map2
-      (fun formal ai -> load (`Variable formal) (register ai))
+      (fun formal ai -> load (`Variable (identifier formal)) (register ai))
       fst_four_formals
       MipsArch.argument_passing_registers
   in
@@ -508,5 +498,5 @@ let preprocess p env =
 let translate p env =
   (*let p, env = preprocess p env in *)
   let p, env = translate' p env in
-  let p = RetrolixRegisterAllocation.translate p in
+  (* let p = RetrolixRegisterAllocation.translate p in *)
   (p, env)
