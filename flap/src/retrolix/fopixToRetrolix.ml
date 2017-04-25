@@ -10,21 +10,13 @@ module Target = Retrolix
 module S = Source.AST
 module T = Target.AST
 
-(** We will need the following pieces of information to be carrying
-    along the translation: *)
-module IdCmp = struct
-  type t = T.identifier
-  let compare = compare
-end
-module IdSet = Set.Make (IdCmp)
-
 (** The compilation environment stores the list of global
     variables (to compute local variables) and a table
     representing a renaming (for alpha-conversion). *)
-type environment = IdSet.t * (S.identifier * S.identifier) list
+type environment = T.IdSet.t * (S.identifier * S.identifier) list
 
 (** Initially, the environment is empty. *)
-let initial_environment () = (IdSet.empty, [])
+let initial_environment () = (T.IdSet.empty, [])
 
 (** [fresh_label ()] returns a new identifier for a label. *)
 let fresh_label =
@@ -35,19 +27,6 @@ let fresh_label =
 let fresh_variable =
   let c = ref 0 in
   fun () -> incr c; T.(Id ("X" ^ string_of_int !c))
-
-(**
-   Every function in Retrolix starts with a declaration
-   of local variables. So we need a way to compute the
-   local variables of some generated code. This is the
-   purpose of the next function:
-*)
-
-(** [locals globals b] takes a set of variables [globals] and returns
-    the variables use in the list of instructions [b] which are not
-    in [globals]. *)
-let locals globals b =
-   failwith "Students! This is your job!"
 
 (** [translate' p env] turns a Fopix program [p] into a Retrolix
     program using [env] to retrieve contextual information. *)
@@ -72,7 +51,7 @@ and get_globals env = function
     env
 
 and push env x =
-  IdSet.add (identifier x) env
+  T.IdSet.add (identifier x) env
 
 and declaration env = T.(function
   | S.DefineValue (S.Id x, e) ->
@@ -97,6 +76,12 @@ and expression out = T.(function
   | S.Literal l ->
     [labelled (Assign (out, Load, [ `Immediate (literal l) ]))]
 
+  | S.Variable (S.Id "true") ->
+     expression out (S.(Literal (LInt (Int32.one))))
+
+  | S.Variable (S.Id "false") ->
+     expression out (S.(Literal (LInt (Int32.zero))))
+
   | S.Variable (S.Id x) ->
     [labelled (Assign (out, Load, [ `Variable (Id x) ]))]
 
@@ -110,6 +95,12 @@ and expression out = T.(function
        failwith "Students! This is your job!"
   | S.IfThenElse (c, t, f) ->
        failwith "Students! This is your job!"
+
+  | S.FunCall (S.FunId "`&&", [e1; e2]) ->
+     expression out (S.(IfThenElse (e1, e2, Variable (Id "false"))))
+
+  | S.FunCall (S.FunId "`||", [e1; e2]) ->
+     expression out (S.(IfThenElse (e1, Variable (Id "true"), e2)))
 
   | S.FunCall (S.FunId f, es) when is_binop f ->
     assign out (binop f) es

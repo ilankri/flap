@@ -85,8 +85,8 @@ let def i =
 let use i =
   failwith "Student! This is your job!"
 
-(** [predecessors p] returns a function [p] such that [p l] returns
-    the predecessors of [l] in the control flow graph. *)
+(** [predecessors p] returns a function [pred] such that [pred l]
+   returns the predecessors of [l] in the control flow graph. *)
 let predecessors p =
   failwith "Student! This is your job!"
 
@@ -171,7 +171,7 @@ let interference_graph p liveness : interference_graph =
 (** Graph coloring. *)
 
 let colorize_graph g =
-  ()
+  IGraphColoring.colorize g
 
 (** Register allocation directed by the graph coloring. *)
 let register_allocation coloring p =

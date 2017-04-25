@@ -120,12 +120,14 @@ type observable = {
 
 let initial_runtime () =
   let bind_bool s b env = Environment.bind env (Id s) (VBool b) in
+  let bind_unit s env = Environment.bind env (Id s) VUnit in
   {
     memory = Memory.create (640 * 1024);
     environment =
       Environment.initial
-      |> bind_bool "true" true
-      |> bind_bool "false" false;
+      |> bind_bool "true"  true
+      |> bind_bool "false" false
+      |> bind_unit "nothing";
     functions  = [];
   }
 
@@ -180,8 +182,6 @@ and evaluation_of_binary_symbol environment = function
     arith_binop environment (arith_operator_of_symbol s)
   | ("`<" | "`>" | "`<=" | "`>=" | "`=") as s ->
     arith_cmpop environment (cmp_operator_of_symbol s)
-  | ("`||" | "`&&") as s ->
-    boolean_binop environment (boolean_operator_of_symbol s)
   | _ -> assert false
 
 and is_binary_primitive = function
@@ -245,6 +245,18 @@ and expression runtime = function
   | FunCall (FunId "read_block", [location; index]) ->
     failwith "Student! This is your job!"
 
+  | FunCall (FunId "equal_string", [e1; e2]) ->
+     begin match expression runtime e1, expression runtime e2 with
+     | VString s1, VString s2 -> VBool (String.compare s1 s2 = 0)
+     | _ -> assert false (* By typing. *)
+     end
+
+  | FunCall (FunId "equal_char", [e1; e2]) ->
+     begin match expression runtime e1, expression runtime e2 with
+     | VChar s1, VChar s2 -> VBool (Char.compare s1 s2 = 0)
+     | _ -> assert false (* By typing. *)
+     end
+
   | FunCall (FunId "print_int", [e]) ->
      begin match expression runtime e with
      | VInt x -> print_string (Int32.to_string x)
@@ -259,6 +271,14 @@ and expression runtime = function
 
   | FunCall (FunId "write_block", [location; index; e]) ->
     failwith "Student! This is your job!"
+
+  | FunCall (FunId (("`&&" | "`||") as binop), [e1; e2]) ->
+     begin match expression runtime e1, binop with
+     | VBool true, "`&&" | VBool false, "`||" -> expression runtime e2
+     | VBool false, "`&&" -> VBool false
+     | VBool true, "`||" -> VBool true
+     | _, _ -> assert false (* By typing. *)
+     end
 
   | FunCall (FunId s, [e1; e2]) when is_binary_primitive s ->
     evaluation_of_binary_symbol runtime s e1 e2
