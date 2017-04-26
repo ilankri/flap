@@ -1,0 +1,16 @@
+fun one   (x, y, z, t, u, v, w) = x
+fun two   (x, y, z, t, u, v, w) = y
+fun three (x, y, z, t, u, v, w) = z
+fun four  (x, y, z, t, u, v, w) = t
+fun five  (x, y, z, t, u, v, w) = u
+fun six   (x, y, z, t, u, v, w) = v
+fun seven (x, y, z, t, u, v, w) = w
+
+val main =
+  print_int (one   (1, 2, 3, 4, 5, 6, 7));
+  print_int (two   (1, 2, 3, 4, 5, 6, 7));
+  print_int (three (1, 2, 3, 4, 5, 6, 7));
+  print_int (four  (1, 2, 3, 4, 5, 6, 7));
+  print_int (five  (1, 2, 3, 4, 5, 6, 7));
+  print_int (six   (1, 2, 3, 4, 5, 6, 7));
+  print_int (seven (1, 2, 3, 4, 5, 6, 7))
