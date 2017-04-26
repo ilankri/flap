@@ -232,6 +232,18 @@ and callee_epilogue lvs =
   comment "Restore callee-saved registers" ::
   restore_registers MipsArch.callee_saved_registers lvs
 
+and define_function env f xs e proc_call_conv =
+  let fst_four_formals, extra_formals =
+    if proc_call_conv then MipsArch.split_params xs else ([], xs)
+  in
+  let extra_formals = List.map identifier extra_formals in
+  let instrs = function_body fst_four_formals e proc_call_conv in
+  let locals =
+    List.filter (fun x -> not (List.mem x extra_formals))
+      (locals env instrs)
+  in
+  T.DFunction (T.FId f, extra_formals, (locals, instrs))
+
 and function_body fst_four_formals e proc_call_conv =
   let lvs, callee_prologue =
     if proc_call_conv then callee_prologue fst_four_formals else ([], [])
@@ -257,15 +269,7 @@ and declaration env = T.(function
       let locals = locals env ec in
       DValue (x, (locals, ec))
 
-    | S.DefineFunction (S.FunId f, xs, e) ->
-      let fst_four_formals, extra_formals = MipsArch.split_params xs in
-      let extra_formals = List.map identifier extra_formals in
-      let instrs = function_body fst_four_formals e false in
-      let locals =
-        List.filter (fun x -> not (List.mem x extra_formals))
-          (locals env instrs)
-      in
-      DFunction (FId f, extra_formals, (locals, instrs))
+    | S.DefineFunction (S.FunId f, xs, e) -> define_function env f xs e true
 
     | S.ExternalFunction (S.FunId f) ->
       DExternalFunction (FId f)
@@ -349,7 +353,7 @@ and expression out = T.(function
     | S.FunCall (S.FunId f, es) when is_binop f ->
       assign out (binop f) es
 
-    | S.FunCall (f, actuals) -> fun_call out f actuals false
+    | S.FunCall (f, actuals) -> fun_call out f actuals true
 
     | S.UnknownFunCall (ef, actuals) ->
       failwith "Students! This is your job!"
