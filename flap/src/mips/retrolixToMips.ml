@@ -219,7 +219,7 @@ let rec translate (p : S.t) (env : environment) : T.t * environment =
 
       | S.Jump (S.Label l) -> [T.J (T.Label l)]
 
-      | S.ConditionalJump (_, _, _, _) -> failwith "TODO"
+      | S.ConditionalJump (c, rvl, l1, l2) -> failwith "TODO" 
 
       | S.Switch (_, _, _) -> failwith "TODO"
 
