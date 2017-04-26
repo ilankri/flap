@@ -123,14 +123,14 @@ type observable = {
 
 let initial_runtime () =
   let bind_bool s b env = Environment.bind env (Id s) (VBool b) in
-  let bind_nothing env = Environment.bind env (Id "nothing") VUnit in
+  let bind_unit s env = Environment.bind env (Id s) VUnit in
   {
     memory = Memory.create (640 * 1024);
     environment =
       Environment.initial
-      |> bind_nothing
-      |> bind_bool "true" true
-      |> bind_bool "false" false;
+      |> bind_bool "true"  true
+      |> bind_bool "false" false
+      |> bind_unit "nothing";
     functions  = [];
   }
 
@@ -278,6 +278,18 @@ and expression runtime = function
       | None -> error' "A block must be an address."
     end
 
+  | FunCall (FunId "equal_string", [e1; e2]) ->
+     begin match expression runtime e1, expression runtime e2 with
+     | VString s1, VString s2 -> VBool (String.compare s1 s2 = 0)
+     | _ -> assert false (* By typing. *)
+     end
+
+  | FunCall (FunId "equal_char", [e1; e2]) ->
+     begin match expression runtime e1, expression runtime e2 with
+     | VChar s1, VChar s2 -> VBool (Char.compare s1 s2 = 0)
+     | _ -> assert false (* By typing. *)
+     end
+
   | FunCall (FunId "print_int", [e]) ->
     begin match expression runtime e with
       | VInt x -> print_string (Int32.to_string x)
@@ -301,6 +313,14 @@ and expression runtime = function
         error' "'write_block' should have 3 parameters as \
                 (VAddress, VInt, expression)"
     end
+
+  | FunCall (FunId (("`&&" | "`||") as binop), [e1; e2]) ->
+     begin match expression runtime e1, binop with
+     | VBool true, "`&&" | VBool false, "`||" -> expression runtime e2
+     | VBool false, "`&&" -> VBool false
+     | VBool true, "`||" -> VBool true
+     | _, _ -> assert false (* By typing. *)
+     end
 
   | FunCall (FunId s, [e1; e2]) when is_binary_primitive s ->
     evaluation_of_binary_symbol runtime s e1 e2

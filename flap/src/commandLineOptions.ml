@@ -96,6 +96,11 @@ let generic_options = Arg.(align (List.flatten [
     (Bool Options.set_check_types)
     ("(true|false) Ask the compiler to check types for toplevel values.");
 
+  options
+    ["--retromips"]
+    (Bool Options.set_retromips)
+    ("(true|false) Activate the MIPS version of Retrolix.")
+
 ]))
 
 let usage_msg =

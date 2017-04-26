@@ -60,8 +60,8 @@ struct
   type pick_result =
     | EmptyGraph
     | SimplifiableNode of NodeLabel.t
-    | PreferenceNodes of NodeLabel.t * NodeLabel.t
     | MaybeSpillNode of NodeLabel.t
+    | PreferenceNodes of NodeLabel.t * NodeLabel.t
 
   (** [pick g] returns a node of degree less than the number [k] of
       colors and that is not in a preference relation if there is
@@ -113,8 +113,8 @@ let test () =
       Customize them to test your implementation in an appropriate
       way.
   *)
-  let show = false in
-  let nb_test = 10000 in
+  let show = true in
+  let nb_test = 1 in
   let nb_color = 3 in
   let min_nodes = 10 and max_nodes = 20 in
   let freq_conflict = 0.2 and freq_preference = 0.3 in
