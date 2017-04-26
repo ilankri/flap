@@ -5,7 +5,13 @@
 
       - doc/resources/MIPS-specification.pdf (section A.6)
 
-      - http://www.cs.umb.edu/cs641/MIPscallconvention.html *)
+      - http://www.cs.umb.edu/cs641/MIPscallconvention.html
+
+    In the code below, we always denote by [stacksize] the size in words
+    of the current stack frame.  Offsets in the stack frame are taken
+    from the top of the frame.  Thus, if a variable [x] is stored at
+    offset [i] in the stack frame, then the address of [x] is [sp + 4 *
+    i] where [sp] is the current stack pointer.  *)
 
 let error pos msg =
   Error.error "compilation" pos msg
@@ -22,31 +28,25 @@ let initial_environment () = ()
 module S = Source.AST
 module T = Target.AST
 
-let fresh_label =
-  let c = ref 0 in
-  fun () ->
-    incr c;
-    T.Label ("__" ^ string_of_int !c)
-
-let labelled instrs = [{T.label = fresh_label (); T.value = instrs}]
-
-let labelled' label instrs = [{T.label = T.Label label; T.value = instrs}]
+let labelled label instrs = {T.label = label; T.value = instrs}
 
 let int16_literal i = T.Literal (Int16.of_int i)
 
-let sizeof nwords = nwords * MipsArch.word_size
+let arg_reg_count = List.length MipsArch.argument_passing_registers
 
-let sizeof' nwords = int16_literal (sizeof nwords)
+let sizeof word_count = int16_literal (word_count * MipsArch.word_size)
 
+(* FIXME: Handle integers not representable with only 16 bits.  *)
 let load_immediate r i = [T.Li (r, T.Literal (Int16.of_int32 i))]
 
-let increment_sp nwords = [T.Addiu (MipsArch.sp, MipsArch.sp, sizeof' nwords)]
+let increment_sp word_count =
+  [T.Addiu (MipsArch.sp, MipsArch.sp, sizeof word_count)]
 
-let decrement_sp nwords =
-  [T.Addiu (MipsArch.sp, MipsArch.sp, sizeof' (-nwords))]
+let decrement_sp word_count =
+  [T.Addiu (MipsArch.sp, MipsArch.sp, sizeof (-word_count))]
 
 let sp_offset_address offset =
-  T.RegisterOffsetAddress (MipsArch.sp, sizeof' offset)
+  T.RegisterOffsetAddress (MipsArch.sp, sizeof offset)
 
 (** The labels of global variable are prefixed by __global__. *)
 let global_variable_label x = "__global__" ^ x
@@ -66,7 +66,7 @@ let variable_address stacksize env ((S.Id s) as x) =
   in
   match offset with
   | Some offset ->              (* [x] is local.  *)
-    sp_offset_address (stacksize - offset)
+    sp_offset_address offset
   | None ->                     (* [x] is global.  *)
     T.LabelAddress (T.Label (global_variable_label s))
 
@@ -164,15 +164,64 @@ let mk_instr binop = fun rdest r1 r2 ->
   | S.Bool S.EQ -> T.Seq (rdest, r1, r2)
   | S.Load -> assert false
 
+(** [allocate_stack_frame size] modifies the stack pointer to
+    introduce a fresh stack frame large enough to store [size]
+    variables.  *)
+let allocate_stack_frame size = decrement_sp size
+
+(** [free_stack_frame size] destructs the latest
+    stack frame given the [size] of this stack frame. *)
+let free_stack_frame size = increment_sp size
+
+(** [extract_global xs d] extracts a global variable definition from [d]
+    and inserts it in the list [xs]. *)
+let extract_global xs = function
+  | S.DValue (S.Id x, _) -> (T.Label (global_variable_label x)) :: xs
+  | _ -> xs
+
+(** First, push the rvalues [rs] on the stack and then jump to the
+    label [f].  *)
+let call stacksize env (S.FId f) rs =
+  let push i rv =
+    load_rvalue stacksize env rv tmp1 (fun rsrc ->
+        [T.Sw (rsrc, sp_offset_address (i + arg_reg_count))]
+      )
+  in
+  List.flatten (List.mapi push rs) @ [T.Jal (T.Label f)]
+
+(** [mk_operation stacksize env rdest r1 r2 semantics make] compiles
+    the application of an operation of two rvalues [r1] and [r2] whose
+    result is stored in [rdest].
+
+    If the two rvalues are immediate literals, [semantics] is applied
+    to directly produce the result.
+
+    Otherwise, [make] is used to emit the assembler instruction corresponding
+    to the operation. [load_rvalue] is used to determine if the [rvalues] must
+    be first loaded in temporary registers [tmp1] and [tmp2].
+*)
+let mk_operation stacksize env rdest r1 r2 semantics make = S.(
+    match r1, r2 with
+    | `Immediate i, `Immediate j ->
+      load_immediate rdest (semantics i j)
+
+    | r1, r2 ->
+      load_rvalue stacksize env r1 tmp1 (fun r1 ->
+          load_rvalue stacksize env r2 tmp2 (fun r2 ->
+              [make r1 r2]
+            )
+        )
+  )
+
 (** [translate p env] turns a Retrolix program into a MIPS program. *)
 let rec translate (p : S.t) (env : environment) : T.t * environment =
 
-  (** [block stacksize locals formals instructions] compiles a retrolix
+  (** [block stacksize formals locals instructions] compiles a retrolix
       block into a MIPS block list.  *)
   let rec block stacksize formals locals instructions =
     let env =
-      List.mapi (fun i x -> (x, -i)) formals @
-      List.mapi (fun i x -> (x, i + 1)) locals
+      List.mapi (fun i x -> (x, i + stacksize + arg_reg_count)) formals @
+      List.mapi (fun i x -> (x, stacksize - i - 1)) locals
     in
     List.map (fun (S.Label l, i) ->
         {
@@ -225,78 +274,31 @@ let rec translate (p : S.t) (env : environment) : T.t * environment =
 
       | S.Comment s -> [T.Comment s]
 
-      | S.Exit -> (load_immediate (MipsArch.v 0) (Int32.of_int 10))@[T.Syscall]
-    )
-
-  (** First, push the rvalues [rs] on the stack, then jump to the label [f]
-      and finally pop [rs] from the stack.  *)
-  and call stacksize env (S.FId f) rs =
-    let fst_four_actuals, extra_actuals = MipsArch.split_params rs in
-    let push i rv =
-      load_rvalue stacksize env rv tmp1 (fun rsrc ->
-          [T.Sw (rsrc, sp_offset_address (-i - 1))]
-        )
-    in
-    let nwords = List.length rs in
-    (* Note: We have to reverse the list [extra_actuals] to follow the MIPS
-       procedure call conventions (see figure A.6.2 of MIPS
-       specification for details).  *)
-    List.flatten (List.mapi push (List.rev extra_actuals)) @
-    decrement_sp nwords @
-    T.Jal (T.Label f) ::
-    increment_sp nwords
-
-  (** [mk_operation stacksize env rdest r1 r2 semantics make] compiles
-      the application of an operation of two rvalues [r1] and [r2] whose
-      result is stored in [rdest].
-
-      If the two rvalues are immediate literals, [semantics] is applied
-      to directly produce the result.
-
-      Otherwise, [make] is used to emit the assembler instruction corresponding
-      to the operation. [load_rvalue] is used to determine if the [rvalues] must
-      be first loaded in temporary registers [tmp1] and [tmp2].
-  *)
-  and mk_operation stacksize env rdest r1 r2 semantics make = S.(
-      match r1, r2 with
-      | `Immediate i, `Immediate j ->
-        load_immediate rdest (semantics i j)
-
-      | r1, r2 ->
-        load_rvalue stacksize env r1 tmp1 (fun r1 ->
-            load_rvalue stacksize env r2 tmp2 (fun r2 ->
-                [make r1 r2]
-              )
-          )
+      | S.Exit ->
+        load_immediate (MipsArch.a 0) Int32.zero @ [T.J (T.Label "exit")]
     )
 
   (** [function_definition bs df] inserts the compiled code of [df]
       in the block list [bs]. *)
   and function_definition bs = T.(function
       | S.DFunction (S.FId fid, formals, (locals, instrs)) ->
-        let allocate_stack_frame, stacksize = allocate_stack_frame locals in
-        labelled' fid allocate_stack_frame @
+        let max_argc instrs =
+          let aux acc (_, instr) = S.(
+              match instr with
+              | Call (_, _, rvs) | TailCall (_, rvs) ->
+                max acc (List.length rvs)
+              | Ret _ | Assign _ | Jump _ | ConditionalJump _ | Switch _ |
+                Comment _ | Exit -> acc
+            )
+          in
+          arg_reg_count + List.fold_left aux 0 instrs
+        in
+        let stacksize = List.length locals + max_argc instrs in
+        labelled (T.Label fid) (allocate_stack_frame stacksize) ::
         block stacksize formals locals instrs @
         bs
       | S.DValue _ | S.DExternalFunction _ -> bs
     )
-
-  (** [allocate_stack_frame locals] modifies the stack
-      pointer to introduce a fresh stack frame large
-      enough to store the variables [locals]. *)
-  and allocate_stack_frame locals =
-    let nwords = List.length locals in
-    (decrement_sp nwords, nwords)
-
-  (** [free_stack_frame size] destructs the latest
-      stack frame given the [size] of this stack frame. *)
-  and free_stack_frame size = increment_sp size
-
-  (** [extract_global xs d] extracts a global variable definition from [d]
-      and inserts it in the list [xs]. *)
-  and extract_global xs = function
-    | S.DValue (S.Id x, _) -> (T.Label (global_variable_label x)) :: xs
-    | _ -> xs
   in
 
   (**
@@ -308,19 +310,20 @@ let rec translate (p : S.t) (env : environment) : T.t * environment =
      compiled code of each variable code block.
   *)
   let main =
-    let extract_init_code = function
-      | S.DValue (S.Id id, (locals, instrs)) -> (locals, instrs)
-      | S.DExternalFunction _ | S.DFunction _ -> ([], [])
+    let extract_locals acc = function
+      | S.DValue (_, (locals, _)) -> locals @ acc
+      | S.DExternalFunction _ | S.DFunction _ -> acc
     in
-    let locals, instrs = List.split (List.map extract_init_code p) in
-    let main =
-      S.DFunction (S.FId "main", [], (List.flatten locals, List.flatten instrs))
+    let extract_instrs acc = function
+      | S.DValue (_, (_, instrs)) -> instrs @ acc
+      | S.DExternalFunction _ | S.DFunction _ -> acc
     in
-    function_definition [] main @
-    labelled (
-      load_immediate (MipsArch.a 0) Int32.zero @
-      [T.J (T.Label "exit")]
-    )
+    let locals = List.fold_left extract_locals [] p in
+    let instrs =
+      List.fold_left extract_instrs [FopixToRetrolix.labelled S.Exit]
+        (List.rev p)
+    in
+    function_definition [] (S.DFunction (S.FId "main", [], (locals, instrs)))
   in
 
   (** [code] is the program code of [p] compiled in MIPS for GCC. *)

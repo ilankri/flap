@@ -1,0 +1,9 @@
+val x = 123
+
+val y = 321
+
+fun print_int2 (x, y) =
+  print_int (x);
+  print_int (y)
+
+val main = print_int2 (x, y)
