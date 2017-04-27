@@ -204,88 +204,41 @@ let evaluate runtime0 (ast : t) =
       | Some l -> jump l runtime
     in
     match i with
-    | Call (out, `Immediate (LFun (FId "print_int")), [ r1 ]) ->
-      assign runtime out (match rvalue runtime r1 with
-          | DInt i ->
-            print_string (Int32.to_string i);
-            DUnit
-          | _ -> assert false) |> continue
-
-    | Call (out, `Immediate (LFun (FId "print_string")), [ r1 ]) ->
-      assign runtime out (match rvalue runtime r1 with
-          | DString s ->
-            print_string s;
-            DUnit
-          | _ -> assert false) |> continue
-
-    | Call (out, `Immediate (LFun (FId "block_create")), [ r1 ]) ->
-      assign runtime out (match rvalue runtime r1 with
-          | DInt size ->
-            let addr = Memory.allocate runtime.memory size (DInt Int32.zero) in
-            DLocation addr
-          | _ -> assert false) |> continue
-
-    | Call (out, `Immediate (LFun (FId "block_set")), rs) ->
-      assign runtime out (match List.map (rvalue runtime) rs with
-            [ DLocation location; DInt i; v ] ->
-            let block = Memory.dereference runtime.memory location in
-            Memory.write block i v;
-            DUnit
-          | _ -> assert false) |> continue
-
-    | Call (out, `Immediate (LFun (FId "block_get")), rs) ->
-      assign runtime out (match List.map (rvalue runtime) rs with
-          | [ DLocation location; DInt i ] ->
-            let block = Memory.dereference runtime.memory location in
-            Memory.read block i
-          | _ -> assert false) |> continue
-
-    | Call (x, f, rs) ->
-      let y, _ =
-        call runtime (rvalue runtime f) (List.map (rvalue runtime) rs)
-      in
-      assign runtime x y |> continue
-
-    | TailCall (f, rs) ->
-      ignore (call runtime (rvalue runtime f) (List.map (rvalue runtime) rs));
-      continue runtime
-
-    | Ret r ->
-      { runtime with return = Some (rvalue runtime r) }
-
-    | Assign (x, o, rs) ->
-      assign runtime x (op runtime o (List.map (rvalue runtime) rs)) |> continue
-
-    | Jump l ->
-      jump l runtime
-
-    | ConditionalJump (c, rs, l1, l2) ->
-      if condition c (List.map (rvalue runtime) rs) then
-        jump l1 runtime
-      else
-        jump l2 runtime
-
-    | Comment _ ->
-      continue runtime
-
-    | Switch (r, ls, default) ->
-      begin match rvalue runtime r with
-        | DInt x ->
-          let x = Int32.to_int x in
-          if  x < Array.length ls then
-            jump ls.(x) runtime
-          else
-            begin match default with
-              | None -> failwith "Non exhaustive switch."
-              | Some l -> jump l runtime
-            end
-        | _ ->
-          assert false (* By typing. *)
-      end
-
-    | Exit ->
-      runtime
-
+      | Call (x, f, rs) ->
+        let y, runtime = call runtime (rvalue runtime f) (List.map (rvalue runtime) rs) in
+        assign runtime x y |> continue
+      | TailCall (f, rs) ->
+        let _, runtime = call runtime (rvalue runtime f) (List.map (rvalue runtime) rs) in
+        continue runtime
+      | Ret r ->
+        { runtime with return = Some (rvalue runtime r) }
+      | Assign (x, o, rs) ->
+        assign runtime x (op runtime o (List.map (rvalue runtime) rs)) |> continue
+      | Jump l ->
+        jump l runtime
+      | ConditionalJump (c, rs, l1, l2) ->
+        if condition c (List.map (rvalue runtime) rs) then
+          jump l1 runtime
+        else
+          jump l2 runtime
+      | Comment _ ->
+        continue runtime
+      | Switch (r, ls, default) ->
+        begin match rvalue runtime r with
+          | DInt x ->
+            let x = Int32.to_int x in
+            if  x < Array.length ls then
+              jump ls.(x) runtime
+            else
+              begin match default with
+                | None -> failwith "Non exhaustive switch."
+                | Some l -> jump l runtime
+              end
+          | _ ->
+            assert false (* By typing. *)
+        end
+      | Exit ->
+        runtime
   and rvalue runtime = function
     | `Variable x ->
       (try
@@ -351,26 +304,67 @@ let evaluate runtime0 (ast : t) =
 
   and call runtime fv vs =
     match fv with
-    | DFun f ->
-      (try
-         let fdef = FIdMap.find f runtime.functions in
-         let runtime = List.fold_left2 bind_local runtime fdef.formals vs in
-         let runtime = block runtime fdef.body in
-         let return =
-           match runtime.return with
-           | None -> assert false
-           | Some x -> x
-         in
-         (return, runtime)
-       with Not_found ->
-         external_function runtime vs f
-      )
-    | _ ->
-      assert false
+      | DFun f ->
+        (try
+           let fdef = FIdMap.find f runtime.functions in
+           let runtime = List.fold_left2 bind_local runtime fdef.formals vs in
+           let runtime = block runtime fdef.body in
+           let return = match runtime.return with None -> assert false | Some x -> x in
+           (return, runtime)
+         with Not_found ->
+           let vs =
+              if Options.get_retromips () then
+                let rs =
+                  List.map
+                    (fun r -> `Register (RId (MipsArch.string_of_register r)))
+                    MipsArch.argument_passing_registers
+                in
+                (List.map (rvalue runtime) rs @ vs)
+              else
+                vs
+           in
+           let (return, runtime) = external_function runtime vs f in
+           let runtime =
+             if Options.get_retromips () then (
+               let r = (`Register (RId (MipsArch.(string_of_register return_register))))  in
+               assign runtime r return
+             )
+             else
+               runtime
+           in
+           (return, runtime)
+        )
+      | _ ->
+        assert false
 
   and external_function runtime vs (FId f) =
-    match f with
-    | _ -> failwith ("NoSuchFunction: " ^ f)
+    match f, vs with
+      | "allocate_block", (DInt size :: _) ->
+         let addr = Memory.allocate runtime.memory size (DInt Int32.zero) in
+         (DLocation addr, runtime)
+      | "write_block", (DLocation location :: DInt i :: v :: _) ->
+         let block = Memory.dereference runtime.memory location in
+         Memory.write block i v;
+         (DUnit, runtime)
+      | "read_block", (DLocation location :: DInt i :: _) ->
+         let block = Memory.dereference runtime.memory location in
+         (Memory.read block i, runtime)
+      | "print_int", (DInt i :: _) ->
+         print_string (Int32.to_string i);
+         (DUnit, runtime)
+      | "print_char", (DChar i :: _) ->
+         print_char i;
+         (DUnit, runtime)
+      | "print_string", (DString i :: _) ->
+         print_string i;
+         (DUnit, runtime)
+      | _ -> failwith (
+                 Printf.sprintf
+                   "NoSuchFunction or InvalidApplication of `%s' (%d argument(s) provided : %s)."
+                   f
+                   (List.length vs)
+                   (String.concat " " (List.map type_of vs))
+               )
 
   and bind_local runtime x v =
     { runtime with lvariables = IdMap.add x v runtime.lvariables }

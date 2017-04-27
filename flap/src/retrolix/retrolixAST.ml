@@ -64,3 +64,69 @@ and op =
 
 and condition =
   | GT | LT | GTE | LTE | EQ
+
+(** We will need the following pieces of information to be carrying
+    along the translation: *)
+module IdCmp = struct
+  type t = identifier
+  let compare = compare
+end
+module IdSet = Set.Make (IdCmp)
+module IdMap = Map.Make (IdCmp)
+
+(**
+
+  In Retrolix, the toplevel value declarations define global
+  variables. The identifiers of these variables must be distinct.
+
+*)
+exception GlobalIdentifiersMustBeUnique of identifier
+
+let globals =
+  List.fold_left (fun globals -> function
+      | DValue (x, _) ->
+         if IdSet.mem x globals then
+           raise (GlobalIdentifiersMustBeUnique x);
+         IdSet.add x globals
+      | _ ->
+         globals
+  ) IdSet.empty
+
+
+(** Convert a list of Retrolix identifiers to a set of Retrolix
+    identifiers.  *)
+let idset_of_idlist ids =
+  List.fold_left (fun acc id -> IdSet.add id acc) IdSet.empty ids
+
+let local globals instr =
+    let local = function
+      | `Variable id ->
+        if IdSet.mem id globals then IdSet.empty else IdSet.singleton id
+      | `Register _ | `Immediate _ -> IdSet.empty
+    in
+    let ( ++ ) = IdSet.union in
+    let locals xs = List.fold_left ( ++ ) IdSet.empty (List.map local xs) in
+    match instr with
+    | Call (lv, rv, rvs) -> local lv ++ local rv ++ locals rvs
+    | TailCall (rv, rvs) -> local rv ++ locals rvs
+    | Ret rv -> local rv
+    | Assign (lv, _, rvs) -> local lv ++ locals rvs
+    | Jump _ | Comment _ | Exit -> IdSet.empty
+    | ConditionalJump (_, rvs, _, _) -> locals rvs
+    | Switch (rv, _, _) -> local rv
+
+(**
+   Every function in Retrolix starts with a declaration
+   of local variables. So we need a way to compute the
+   local variables of some generated code. This is the
+   purpose of the next function:
+*)
+
+(** [locals globals b] takes a set of variables [globals] and returns
+    the variables use in the list of instructions [b] which are not
+    in [globals]. *)
+let locals globals b =
+  IdSet.elements (
+    (List.fold_left IdSet.union IdSet.empty
+       (List.map (fun (_, instr) -> local globals instr) b))
+  )

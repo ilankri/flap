@@ -10,21 +10,13 @@ module Target = Retrolix
 module S = Source.AST
 module T = Target.AST
 
-(** We will need the following pieces of information to be carrying
-    along the translation: *)
-module IdCmp = struct
-  type t = T.identifier
-  let compare = compare
-end
-module IdSet = Set.Make (IdCmp)
-
 (** The compilation environment stores the list of global
     variables (to compute local variables) and a table
     representing a renaming (for alpha-conversion). *)
-type environment = IdSet.t * (S.identifier * S.identifier) list
+type environment = T.IdSet.t * (S.identifier * S.identifier) list
 
 (** Initially, the environment is empty. *)
-let initial_environment () = (IdSet.empty, [])
+let initial_environment () = (T.IdSet.empty, [])
 
 (** [fresh_label ()] returns a new identifier for a label. *)
 let fresh_label =
@@ -53,45 +45,6 @@ let as_bool (S.Id id) =
   | "false" -> rfalse
   | _ -> assert false
 
-(** Convert a list of Retrolix identifiers to a set of Retrolix
-    identifiers.  *)
-let idset_of_idlist ids =
-  List.fold_left (fun acc id -> IdSet.add id acc) IdSet.empty ids
-
-(**
-   Every function in Retrolix starts with a declaration
-   of local variables. So we need a way to compute the
-   local variables of some generated code. This is the
-   purpose of the next functions:
-*)
-
-let local globals instr = T.(
-    let local = function
-      | `Variable id ->
-        if IdSet.mem id globals then IdSet.empty else IdSet.singleton id
-      | `Register _ | `Immediate _ -> IdSet.empty
-    in
-    let ( ++ ) = IdSet.union in
-    let locals xs = List.fold_left ( ++ ) IdSet.empty (List.map local xs) in
-    match instr with
-    | Call (lv, rv, rvs) -> local lv ++ local rv ++ locals rvs
-    | TailCall (rv, rvs) -> local rv ++ locals rvs
-    | Ret rv -> local rv
-    | Assign (lv, _, rvs) -> local lv ++ locals rvs
-    | Jump _ | Comment _ | Exit -> IdSet.empty
-    | ConditionalJump (_, rvs, _, _) -> locals rvs
-    | Switch (rv, _, _) -> local rv
-  )
-
-(** [locals globals b] takes a set of variables [globals] and returns
-    the variables use in the list of instructions [b] which are not in
-    [globals].  *)
-let locals globals b =
-  IdSet.elements (
-    (List.fold_left IdSet.union IdSet.empty
-       (List.map (fun (_, instr) -> local globals instr) b))
-  )
-
 let register reg = T.(`Register (RId (MipsArch.string_of_register reg)))
 
 let rec get_globals set = function
@@ -99,12 +52,12 @@ let rec get_globals set = function
   | _ -> set
 
 and push set x =
-  IdSet.add (identifier x) set
+  T.IdSet.add (identifier x) set
 
 let rec preprocess defList env =
   let (globals, renaming) = env in
   let globals =
-    IdSet.add (T.Id "true") (IdSet.add (T.Id "false") globals)
+    T.IdSet.add (T.Id "true") (T.IdSet.add (T.Id "false") globals)
   in
   let globals = List.fold_left get_globals globals defList in
   let env = (globals, renaming) in
@@ -114,7 +67,7 @@ let rec preprocess defList env =
 and check_and_generate_new_id env x =
   let (globals, renaming) = env in
   try
-    let _ = IdSet.find (identifier x) globals in
+    let _ = T.IdSet.find (identifier x) globals in
     let newX, newRenaming = generate_new_id renaming x in
     let newEnv = (globals, newRenaming) in
     newEnv, newX
@@ -139,7 +92,7 @@ and declaration env p = match p with
   | S.DefineFunction (f, xs, e) ->
     let (g, r) = initial_environment () in
     let globals =
-      List.fold_left (fun acc s -> (IdSet.add (identifier s) acc)) g xs
+      List.fold_left (fun acc s -> (T.IdSet.add (identifier s) acc)) g xs
     in
     let envForFun = (globals, r) in
     let _, newE = expression envForFun e in
@@ -240,7 +193,7 @@ and define_function env f xs e proc_call_conv =
   let instrs = function_body fst_four_formals e proc_call_conv in
   let locals =
     List.filter (fun x -> not (List.mem x extra_formals))
-      (locals env instrs)
+      (T.locals env instrs)
   in
   T.DFunction (T.FId f, extra_formals, (locals, instrs))
 
@@ -274,6 +227,9 @@ and declaration env = T.(function
     | S.ExternalFunction (S.FunId f) ->
       DExternalFunction (FId f)
   )
+
+and push env x =
+  T.IdSet.add (identifier x) env
 
 and caller_prologue fst_four_actuals =
   let lvs, save_caller_saved = save_registers MipsArch.caller_saved_registers in
@@ -310,13 +266,22 @@ and expression out = T.(function
     | S.Literal l ->
       [labelled (Assign (out, Load, [ `Immediate (literal l) ]))]
 
-    | S.Variable (S.Id id as x) ->
-      let rv =
-        match id with
-        | "false" | "true" -> as_bool x
-        | _ -> `Variable (Id id)
-      in
-      [load out rv]
+    | S.Variable (S.Id "true") ->
+      expression out (S.(Literal (LInt (Int32.one))))
+
+    | S.Variable (S.Id "false") ->
+      expression out (S.(Literal (LInt (Int32.zero))))
+
+    | S.Variable (S.Id x) ->
+      [labelled (Assign (out, Load, [ `Variable (Id x) ]))]
+
+    (* | S.Variable (S.Id id as x) -> *)
+    (*   let rv = *)
+    (*     match id with *)
+    (*     | "false" | "true" -> as_bool x *)
+    (*     | _ -> `Variable (Id id) *)
+    (*   in *)
+    (*   [load out rv] *)
 
     | S.Define (S.Id x, e1, e2) ->
       (** Hey student! The following code is wrong in general,
@@ -349,6 +314,12 @@ and expression out = T.(function
       let insFalse = (expression out f) @ jumpToClose in
       (condition (first_label insTrue) (first_label insFalse) c) @
       insTrue @ insFalse @ closeLabel
+
+    | S.FunCall (S.FunId "`&&", [e1; e2]) ->
+     expression out (S.(IfThenElse (e1, e2, Variable (Id "false"))))
+
+    | S.FunCall (S.FunId "`||", [e1; e2]) ->
+      expression out (S.(IfThenElse (e1, Variable (Id "true"), e2)))
 
     | S.FunCall (S.FunId f, es) when is_binop f ->
       assign out (binop f) es

@@ -89,8 +89,8 @@ let def i =
 let use i =
   failwith "Student! This is your job!"
 
-(** [predecessors p] returns a function [f] such that [f l] returns
-    the predecessors of [l] in the control flow graph. *)
+(** [predecessors p] returns a function [pred] such that [pred l]
+   returns the predecessors of [l] in the control flow graph. *)
 let predecessors p =
   failwith "Student! This is your job!"
 
@@ -111,7 +111,7 @@ let predecessors p =
 
 *)
 let rec liveness_analysis p : liveness_analysis_result =
-   let final = empty_results in 
+   let final = empty_results in
    let listResult = List.map (definition final) p in
    final
 
@@ -180,7 +180,7 @@ let interference_graph p liveness : interference_graph =
 (** Graph coloring. *)
 
 let colorize_graph g =
-  ()
+  IGraphColoring.colorize g
 
 (** Register allocation directed by the graph coloring. *)
 let register_allocation coloring p =

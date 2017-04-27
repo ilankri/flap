@@ -57,10 +57,11 @@ and expression = function
              ++ group (expression c)
              ++ string "then"
       )
-      ++ group (expression t)
-      ++ string "else"
-      ++ group (expression f)
-    )
+      ++ group (expression t))
+    ++ nest 2 (
+      group (string "else"
+                ++ group (expression f))
+         )
     ++ string "end"
   | Define (x, e1, e2) ->
     nest 2 (
@@ -93,7 +94,7 @@ and funcall f es =
       group (parens (expression lhs ++ string f ++ expression rhs))
     | _, _ ->
       let ts = PPrintOCaml.tuple (List.map expression es) in
-      string f ++ ts
+      group (string f ++ ts)
 
 and literal = function
   | LInt x ->
@@ -116,5 +117,5 @@ and int x =
 
 let to_string f x =
   let b = Buffer.create 13 in
-  ToBuffer.pretty 0.5 80 b (f x);
+  ToBuffer.pretty 0.7 80 b (f x);
   Buffer.contents b
