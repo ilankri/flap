@@ -54,8 +54,19 @@ struct
   (** [check_coloring g c] checks if [c] is a valid coloring for [g]
       i.e. that every pair of conflicting nodes have different
       colors. *)
-  let check_coloring g c =
-    failwith "Students! This is your job!"
+  let rec check_coloring g c =
+    let someEdge = Graph.pick_edge g EdgeLabel.conflict in  
+      match someEdge with
+      | Some (n1, n2) -> 
+        let c1 = color_of_node c n1 in
+        let c2 = color_of_node c n2 in
+        if (c1 <> c2) 
+        then 
+          let g' = Graph.del_edge g n1 EdgeLabel.conflict n2 in
+          check_coloring g' c
+        else
+          raise InvalidColoring someEdge
+      | None -> ()
 
   type pick_result =
     | EmptyGraph
