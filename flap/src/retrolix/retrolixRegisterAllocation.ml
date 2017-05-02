@@ -111,12 +111,24 @@ let predecessors p =
 
 *)
 let rec liveness_analysis p : liveness_analysis_result =
-   let final = empty_results in
-   let listResult = List.map (definition final) p in
-   final
+    List.fold_left (definition empty_results) p
 
-and definition res = function
-   | _ -> failwith "TODO"
+and compare_liveness_result resPre resNow def = 
+    if (resPre <> resNow) then definition resNow def else resNow
+
+and definition res d =
+  let resNow = match d with
+  | DValue (_, b) -> block res b 
+  | DFunction (_, idList, b) -> block res b (* idList inutile??? *) 
+  | DExternalFunction _ -> res
+  in
+  compare_liveness_result res resNow d
+
+and block res = function
+  | (_, insList) -> List.fold_left (instruction res) insList
+
+and instruction res function
+  | _ -> failwith "TODO"
 
 (** Interference graph. *)
 
