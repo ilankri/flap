@@ -130,3 +130,6 @@ let locals globals b =
     (List.fold_left IdSet.union IdSet.empty
        (List.map (fun (_, instr) -> local globals instr) b))
   )
+
+(** Convert a MIPS register into a Retrolix register.  *)
+let register reg = `Register (RId (MipsArch.string_of_register reg))

@@ -81,9 +81,11 @@ let string_of_results r =
     (string_of_lmap r.live_out)
 
 (** [def i] returns the variables defined by [i]. *)
-
-let def i =
-  failwith "Student! This is your job!"
+let def = function
+  | Call (lv, _, _) -> LSet.add (register MipsArch.Ra) (LSet.singleton lv)
+  | Assign (lv, _, _) -> LSet.singleton lv
+  | TailCall _ | Ret _ | Jump _ | ConditionalJump _ | Switch _ | Comment _ |
+    Exit -> LSet.empty
 
 (** [use i] returns the variables used by [i]. *)
 let use i =
@@ -111,23 +113,23 @@ let predecessors p =
 
 *)
 let rec liveness_analysis p : liveness_analysis_result =
-    List.fold_left (definition empty_results) p
+    List.fold_left definition empty_results p
 
-and compare_liveness_result resPre resNow def = 
+and compare_liveness_result resPre resNow def =
     if (resPre <> resNow) then definition resNow def else resNow
 
 and definition res d =
   let resNow = match d with
-  | DValue (_, b) -> block res b 
-  | DFunction (_, idList, b) -> block res b (* idList inutile??? *) 
+  | DValue (_, b) -> block res b
+  | DFunction (_, idList, b) -> block res b (* idList inutile??? *)
   | DExternalFunction _ -> res
   in
   compare_liveness_result res resNow d
 
 and block res = function
-  | (_, insList) -> List.fold_left (instruction res) insList
+  | (_, insList) -> List.fold_left instruction res insList
 
-and instruction res function
+and instruction res = function
   | _ -> failwith "TODO"
 
 (** Interference graph. *)

@@ -14,7 +14,7 @@ module Make
     (** A conflict edge imposes a distinct color on its two nodes. *)
     val conflict   : t
     (** A preference edge indicates that two nodes should have the
-	same color if possible. *)
+        same color if possible. *)
     val preference : t
   end)
   (NodeLabel : Graph.NodeLabelSig)
@@ -55,17 +55,17 @@ struct
       i.e. that every pair of conflicting nodes have different
       colors. *)
   let rec check_coloring g c =
-    let someEdge = Graph.pick_edge g EdgeLabel.conflict in  
+    let someEdge = Graph.pick_edge g EdgeLabel.conflict in
       match someEdge with
-      | Some (n1, n2) -> 
+      | Some (n1, n2) ->
         let c1 = color_of_node c n1 in
         let c2 = color_of_node c n2 in
-        if (c1 <> c2) 
-        then 
+        if (c1 <> c2)
+        then
           let g' = Graph.del_edge g n1 EdgeLabel.conflict n2 in
           check_coloring g' c
         else
-          raise InvalidColoring someEdge
+          raise (InvalidColoring c)
       | None -> ()
 
   type pick_result =
@@ -102,10 +102,10 @@ struct
     let g = Graph.merge g n1 n2 in
     (**
 
-	Let us write n the node for n1 and n2 in the new graph.
-	If a node n' is both in preference and in conflict with n,
-	then we remove the preference relation to keep only the
-	conflicts. Otherwise, it would contradict the initial
+        Let us write n the node for n1 and n2 in the new graph.
+        If a node n' is both in preference and in conflict with n,
+        then we remove the preference relation to keep only the
+        conflicts. Otherwise, it would contradict the initial
         constraint.
 
     *)
@@ -160,32 +160,32 @@ let test () =
     let random_graph () =
       let nb_nodes = ExtStd.Random.int_in_range min_nodes max_nodes in
       let ns =
-	List.map
-	  (fun i -> "n" ^ string_of_int i)
-	  (ExtStd.List.range 0 (nb_nodes - 1))
+        List.map
+          (fun i -> "n" ^ string_of_int i)
+          (ExtStd.List.range 0 (nb_nodes - 1))
       in
       let g = List.fold_left (fun g n -> Graph.add_node g [n]) Graph.empty ns in
       List.fold_left (fun g n1 ->
-	List.fold_left (fun g n2 ->
-	  if n1 = n2
-	  || Graph.are_connected g n1 EdgeLabel.C n2
-	  || Graph.are_connected g n1 EdgeLabel.P n2
-	  then
-	    g
-	  else if Random.float 1. < freq_conflict then
-	    Graph.add_edge g n1 EdgeLabel.C n2
-	  else if Random.float 1. < freq_preference then
-	    Graph.add_edge g n1 EdgeLabel.P n2
-	  else
-	    g
-	) g ns
+        List.fold_left (fun g n2 ->
+          if n1 = n2
+          || Graph.are_connected g n1 EdgeLabel.C n2
+          || Graph.are_connected g n1 EdgeLabel.P n2
+          then
+            g
+          else if Random.float 1. < freq_conflict then
+            Graph.add_edge g n1 EdgeLabel.C n2
+          else if Random.float 1. < freq_preference then
+            Graph.add_edge g n1 EdgeLabel.P n2
+          else
+            g
+        ) g ns
       ) g ns
     in
     let show_coloring g coloring =
       Graph.show g (fun n ->
-	try
-	  Option.map Colors.to_string (color_of_node coloring n)
-	with Not_found -> Some "!"
+        try
+          Option.map Colors.to_string (color_of_node coloring n)
+        with Not_found -> Some "!"
       )
     in
     let one_test () =
@@ -198,11 +198,10 @@ let test () =
       if show then show_coloring g coloring;
       (** Check the coloring! *)
       try
-	check_coloring g coloring
+        check_coloring g coloring
       with _ -> show_coloring g coloring; exit 1
     in
     for i = 0 to nb_test - 1 do
       one_test ()
     done
   )
-
