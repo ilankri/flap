@@ -82,14 +82,29 @@ let string_of_results r =
 
 (** [def i] returns the variables defined by [i]. *)
 let def = function
-  | Call (lv, _, _) -> LSet.add (register MipsArch.Ra) (LSet.singleton lv)
+  | Call (lv, _, _) ->
+    (* What about $ra?  *)
+    LSet.add (register MipsArch.return_register) (LSet.singleton lv)
   | Assign (lv, _, _) -> LSet.singleton lv
   | TailCall _ | Ret _ | Jump _ | ConditionalJump _ | Switch _ | Comment _ |
     Exit -> LSet.empty
 
 (** [use i] returns the variables used by [i]. *)
 let use i =
-  failwith "Student! This is your job!"
+  let add_rvalue set = function
+    | `Immediate _ -> set
+    | `Register _ | `Variable _ as rv -> LSet.add rv set
+  in
+  let rvs =
+    match i with
+    | Switch (`Immediate _, _, _) | Jump _ | Comment _ | Exit -> []
+    | Call (_, rv, rvs) | TailCall (rv, rvs) ->
+      rv :: rvs @ List.map register MipsArch.argument_passing_registers
+    | Ret rv -> [rv; register MipsArch.return_address_register]
+    | Assign (_, _, rvs) | ConditionalJump (_, rvs, _, _) -> rvs
+    | Switch (rv, _, _) -> [rv]
+  in
+  List.fold_left add_rvalue LSet.empty rvs
 
 (** [predecessors p] returns a function [pred] such that [pred l]
    returns the predecessors of [l] in the control flow graph. *)
