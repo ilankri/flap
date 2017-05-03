@@ -110,17 +110,17 @@ let use i =
   in
   List.fold_left add_rvalue LSet.empty rvs
 
-(** [predecessors p] returns a function [pred] such that [pred l]
-   returns the predecessors of [l] in the control flow graph. *)
-let predecessors p =
+(** [successors p] returns a function [succ] such that [succ l] returns
+    the successors of [l] in the control flow graph. *)
+let successors (def : RetrolixAST.definition) : label -> LabelSet.t =
   failwith "Student! This is your job!"
 
 let rec definition res d =
   let resNow = match d with
   | DValue (_, b) -> block res b
   | DFunction (_, idList, b) -> block res b (* idList inutile??? *)
-  | DExternalFunction _ -> res 
-  in  
+  | DExternalFunction _ -> res
+  in
   compare_liveness_result res resNow d
 
 and compare_liveness_result resPre resNow def =
@@ -128,7 +128,7 @@ and compare_liveness_result resPre resNow def =
 
 and block res = function
   (* Here we check from the last element in the list in order to converge faster *)
-  | (_, insList) -> List.fold_right instruction insList res 
+  | (_, insList) -> List.fold_right instruction insList res
 
   (* In the instruction, we have to do the following sequence for each
    * labelled_instruction :
@@ -175,7 +175,7 @@ and instruction (_, ins) res = match ins with
 
 *)
 let rec liveness_analysis p : liveness_analysis_result =
-    List.fold_left definition empty_results p
+  List.fold_left definition empty_results p
 
 (** Interference graph. *)
 (** In the interference graph, there will be two kinds of edges: *)
