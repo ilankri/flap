@@ -115,39 +115,20 @@ let use i =
 let predecessors p =
   failwith "Student! This is your job!"
 
-(** [liveness_analysis p] returns the liveness analysis of [p].
-
-   This is a data flow analysis which overapproximates the variables
-   that are alive before (live-in) and after (live-out) each
-   instruction. To do so, we use the following two equations:
-
-   in(n)  = use(n) ∪ (out(n) ∖ def(n))
-   out(n) = ⋃_{s ∈ successors (n)} in(s)
-
-   for each node n of the control flow graph, i.e. for each label
-   of the program.
-
-   As these equations are mutually recursive, they must be solved
-   using a fixpoint.
-
-*)
-let rec liveness_analysis p : liveness_analysis_result =
-    List.fold_left definition empty_results p
+let rec definition res d =
+  let resNow = match d with
+  | DValue (_, b) -> block res b
+  | DFunction (_, idList, b) -> block res b (* idList inutile??? *)
+  | DExternalFunction _ -> res 
+  in  
+  compare_liveness_result res resNow d
 
 and compare_liveness_result resPre resNow def =
     if (resPre <> resNow) then definition resNow def else resNow
 
-and definition res d =
-  let resNow = match d with
-  | DValue (_, b) -> block res b
-  | DFunction (_, idList, b) -> block res b (* idList inutile??? *)
-  | DExternalFunction _ -> res
-  in
-  compare_liveness_result res resNow d
-
 and block res = function
   (* Here we check from the last element in the list in order to converge faster *)
-  | (_, insList) -> List.fold_right instruction insList res
+  | (_, insList) -> List.fold_right instruction insList res 
 
   (* In the instruction, we have to do the following sequence for each
    * labelled_instruction :
@@ -175,6 +156,26 @@ and instruction (_, ins) res = match ins with
   | Comment _ -> res
   (** exit *)
   | Exit -> res
+
+
+(** [liveness_analysis p] returns the liveness analysis of [p].
+
+   This is a data flow analysis which overapproximates the variables
+   that are alive before (live-in) and after (live-out) each
+   instruction. To do so, we use the following two equations:
+
+   in(n)  = use(n) ∪ (out(n) ∖ def(n))
+   out(n) = ⋃_{s ∈ successors (n)} in(s)
+
+   for each node n of the control flow graph, i.e. for each label
+   of the program.
+
+   As these equations are mutually recursive, they must be solved
+   using a fixpoint.
+
+*)
+let rec liveness_analysis p : liveness_analysis_result =
+    List.fold_left definition empty_results p
 
 (** Interference graph. *)
 (** In the interference graph, there will be two kinds of edges: *)
