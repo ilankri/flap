@@ -45,6 +45,8 @@ end)
    LabelOrd -> LSet
  * *)
 type liveness_analysis_result = {
+  live_use : LSet.t LabelMap.t;
+  live_def : LSet.t LabelMap.t;
   live_in  : LSet.t LabelMap.t;
   live_out : LSet.t LabelMap.t;
 }
@@ -53,10 +55,12 @@ let find_default d k m =
   try LabelMap.find k m with Not_found -> d
 
 let empty_results =
-  {
-    live_in  = LabelMap.empty;
-    live_out = LabelMap.empty;
-  }
+{
+  live_use = LabelMap.empty;
+  live_def = LabelMap.empty;
+  live_in  = LabelMap.empty;
+  live_out = LabelMap.empty;
+}
 
 let string_of_lvalue = function
   | `Register (RId r) -> "$" ^ r
@@ -143,9 +147,16 @@ and definition res d =
 
 and block res = function
   (* Here we check from the last element in the list in order to converge faster *)
-  | (_, insList) -> List.fold_left instruction res (List.rev insList)
+  | (_, insList) -> List.fold_right instruction insList res
 
-and instruction res (_, ins) = match ins with
+  (* In the instruction, we have to do the following sequence for each
+   * labelled_instruction :
+   * 1. Find the register used and put them in live_use
+   * 2. Find the register def and put them in live_def
+   * 3. Calculate live_in : live_use + (live_out - live_def)
+   * 4. Calculate live_out: live_in of previous step
+   * *)
+and instruction (_, ins) res = match ins with
   (** l ← call r (r1, ⋯, rN) *)
   | Call (lvalue, rvalue, rvList) -> failwith "TODO"
   (** tailcall r (r1, ⋯, rN) *)
