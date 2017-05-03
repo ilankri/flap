@@ -125,13 +125,29 @@ and definition res d =
   compare_liveness_result res resNow d
 
 and block res = function
-  | (_, insList) -> List.fold_left (instruction res) insList
+  | (_, insList) -> List.fold_right (instruction res) insList
 
 and instruction res function
-  | _ -> failwith "TODO"
+  (** l ← call r (r1, ⋯, rN) *)
+  | Call (lvalue, rvalue,  rvList) -> failwith "TODO"
+  (** tailcall r (r1, ⋯, rN) *)
+  | TailCall (rv, rvList) -> failwith "TODO"
+  (** ret r *)
+  | Ret (rv) -> failwith "TODO"
+  (** l ← op r1, ⋯, rN *)
+  | Assign (lv, op, rvList) -> failwith "TODO"
+  (** jump ℓ *)
+  | Jump (l) -> failwith "TODO"
+  (** jumpif condition r1, r2 → ℓ1, ℓ2 *)
+  | ConditionalJump (c, rvList, l1, l2) -> failwith "TODO"
+  (** switch r -> l1, ..., lN orelse l. *)
+  | Switch (rv, lArray, lOp) -> failwith "TODO"
+  (** ;; comment *)
+  | Comment _ -> res
+  (** exit *)
+  | Exit -> res
 
 (** Interference graph. *)
-
 (** In the interference graph, there will be two kinds of edges: *)
 type relation =
   (** If two variables cannot be represented in the same register
