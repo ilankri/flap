@@ -81,13 +81,30 @@ let string_of_results r =
     (string_of_lmap r.live_out)
 
 (** [def i] returns the variables defined by [i]. *)
-
-let def i =
-  failwith "Student! This is your job!"
+let def = function
+  | Call (lv, _, _) ->
+    (* What about $ra?  *)
+    LSet.add (register MipsArch.return_register) (LSet.singleton lv)
+  | Assign (lv, _, _) -> LSet.singleton lv
+  | TailCall _ | Ret _ | Jump _ | ConditionalJump _ | Switch _ | Comment _ |
+    Exit -> LSet.empty
 
 (** [use i] returns the variables used by [i]. *)
 let use i =
-  failwith "Student! This is your job!"
+  let add_rvalue set = function
+    | `Immediate _ -> set
+    | `Register _ | `Variable _ as rv -> LSet.add rv set
+  in
+  let rvs =
+    match i with
+    | Switch (`Immediate _, _, _) | Jump _ | Comment _ | Exit -> []
+    | Call (_, rv, rvs) | TailCall (rv, rvs) ->
+      rv :: rvs @ List.map register MipsArch.argument_passing_registers
+    | Ret rv -> [rv; register MipsArch.return_address_register]
+    | Assign (_, _, rvs) | ConditionalJump (_, rvs, _, _) -> rvs
+    | Switch (rv, _, _) -> [rv]
+  in
+  List.fold_left add_rvalue LSet.empty rvs
 
 (** [predecessors p] returns a function [pred] such that [pred l]
    returns the predecessors of [l] in the control flow graph. *)
@@ -111,25 +128,26 @@ let predecessors p =
 
 *)
 let rec liveness_analysis p : liveness_analysis_result =
-    List.fold_left (definition empty_results) p
+    List.fold_left definition empty_results p
 
-and compare_liveness_result resPre resNow def = 
+and compare_liveness_result resPre resNow def =
     if (resPre <> resNow) then definition resNow def else resNow
 
 and definition res d =
   let resNow = match d with
-  | DValue (_, b) -> block res b 
-  | DFunction (_, idList, b) -> block res b (* idList inutile??? *) 
+  | DValue (_, b) -> block res b
+  | DFunction (_, idList, b) -> block res b (* idList inutile??? *)
   | DExternalFunction _ -> res
   in
   compare_liveness_result res resNow d
 
 and block res = function
-  | (_, insList) -> List.fold_right (instruction res) insList
+  (* Here we check from the last element in the list in order to converge faster *)
+  | (_, insList) -> List.fold_left instruction res (List.rev insList)
 
-and instruction res function
+and instruction res (_, ins) = match ins with
   (** l ← call r (r1, ⋯, rN) *)
-  | Call (lvalue, rvalue,  rvList) -> failwith "TODO"
+  | Call (lvalue, rvalue, rvList) -> failwith "TODO"
   (** tailcall r (r1, ⋯, rN) *)
   | TailCall (rv, rvList) -> failwith "TODO"
   (** ret r *)

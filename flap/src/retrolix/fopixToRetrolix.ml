@@ -45,8 +45,6 @@ let as_bool (S.Id id) =
   | "false" -> rfalse
   | _ -> assert false
 
-let register reg = T.(`Register (RId (MipsArch.string_of_register reg)))
-
 let rec get_globals set = function
   | S.DefineValue (x, _) -> push set x
   | _ -> set
@@ -203,7 +201,7 @@ and function_body fst_four_formals e proc_call_conv =
   in
   let out, callee_epilogue =
     if proc_call_conv then
-      (register MipsArch.return_register, callee_epilogue lvs)
+      (T.register MipsArch.return_register, callee_epilogue lvs)
     else (fresh_variable (), [])
   in
   callee_prologue @
@@ -239,7 +237,7 @@ and caller_epilogue lvs out =
   comment "Restore caller-saved registers" ::
   restore_registers MipsArch.caller_saved_registers lvs @
   comment "Retrieve return value" ::
-  [load out (register MipsArch.return_register)]
+  [load out (T.register MipsArch.return_register)]
 
 and fun_call out f actuals proc_call_conv =
   let fst_four_actuals, extra_actuals =
@@ -354,7 +352,7 @@ and expression out = T.(function
 and retrieve_fst_four_actuals fst_four_formals =
   let instrs, _, _ =
     ExtStd.List.asymmetric_map2
-      (fun formal ai -> load (`Variable (identifier formal)) (register ai))
+      (fun formal ai -> load (`Variable (identifier formal)) (T.register ai))
       fst_four_formals
       MipsArch.argument_passing_registers
   in
@@ -365,12 +363,12 @@ and comment s = labelled (T.Comment s)
 and load lv rv = labelled (T.Assign (lv, T.Load, [rv]))
 
 and save_registers regs =
-  let save_register reg lv = load lv (register reg) in
+  let save_register reg lv = load lv (T.register reg) in
   let lvs = List.map (fun _ -> fresh_variable ()) regs in
   (lvs, List.map2 save_register regs lvs)
 
 and restore_registers regs lvs =
-  let restore_register reg lv = load (register reg) lv in
+  let restore_register reg lv = load (T.register reg) lv in
   List.map2 restore_register regs lvs
 
 and inst_jump_to_label l =
@@ -379,7 +377,7 @@ and inst_jump_to_label l =
 and pass_fst_four_actuals fst_four_actuals =
   let instrs, _, _ =
     ExtStd.List.asymmetric_map2
-      (fun ai actual -> expression (register ai) actual)
+      (fun ai actual -> expression (T.register ai) actual)
       MipsArch.argument_passing_registers fst_four_actuals
   in
   List.flatten instrs
@@ -473,5 +471,5 @@ let preprocess p env =
 let translate p env =
   (*let p, env = preprocess p env in *)
   let p, env = translate' p env in
-  (* let p = RetrolixRegisterAllocation.translate p in *)
+  let p = RetrolixRegisterAllocation.translate p in
   (p, env)
