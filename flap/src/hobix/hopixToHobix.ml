@@ -94,7 +94,7 @@ let seq s1 s2 =
 let htrue =
   HobixAST.(Variable (Id "true"))
 
-(** [seqs [s1; ...; sN] is
+(** [seqs [s1; ...; sN]] is
 
     val _ = s1;
     ...
@@ -308,7 +308,7 @@ and expand_patterns ps = ListMonad.(
 
 (** [expands_or_patterns branches] returns a sequence of branches
     equivalent to [branches] except that their patterns do not contain
-    any disjunction. {ListMonad} can be useful to implement this
+    any disjunction. {!ListMonad} can be useful to implement this
     transformation. *)
 and expands_or_patterns branches =
   let expand_branch (HopixAST.Branch (p, e)) =

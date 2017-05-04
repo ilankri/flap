@@ -35,7 +35,8 @@ else
  OCAMLBUILDFLAGS = $(OCAMLBUILDFLAGS_COMMON)
 endif
 
-OCAMLBUILD = ocamlbuild -use-ocamlfind -use-menhir $(OCAMLBUILDFLAGS)
+OCAMLBUILD = ocamlbuild -use-ocamlfind -use-menhir $(OCAMLBUILDFLAGS)	\
+		-docflag "-charset" -docflag "utf-8"
 
 OCAMLDOC = ocamldoc
 HEADACHE = headache
@@ -119,12 +120,11 @@ headers:
 clean:
 	@ $(OCAMLBUILD) -clean
 	find . -name '*~' -exec rm '{}' \;
-	rm -fr *~ $(TARGET) $(PACKAGE) $(PACKAGE).tar.gz
+	rm -fr *~ $(TARGET) $(PACKAGE) $(PACKAGE).tar.gz doc/
 
 doc: byte
 	$(OCAMLBUILD) $(TARGET).docdir/index.html
 	mkdir -p doc/html
-	rm -f $(TARGET).docdir/style.css 2> /dev/null
 	mv $(TARGET).docdir/* doc/html
 	rm $(TARGET).docdir
 
