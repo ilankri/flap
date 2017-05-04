@@ -112,8 +112,27 @@ let use i =
 
 (** [successors p] returns a function [succ] such that [succ l] returns
     the successors of [l] in the control flow graph. *)
-let successors (def : RetrolixAST.definition) : label -> LabelSet.t =
-  failwith "Student! This is your job!"
+let successors = function
+  | DValue (_, (_, instrs)) | DFunction (_, _, (_, instrs)) ->
+    fun label -> (
+        match List.assoc label instrs with
+        | Ret _ | Exit -> LabelSet.empty
+        | Jump l -> LabelSet.singleton l
+        | ConditionalJump (_, _, l, l') ->
+          LabelSet.add l (LabelSet.singleton l')
+        | Call _ | TailCall _ | Assign _ | Switch _ | Comment _ ->
+          try
+            let cur_instr_index =
+              ExtStd.List.index_of (fun (l, _) -> l = label) instrs
+            in
+            let next_label, _ = List.nth instrs (cur_instr_index + 1) in
+            LabelSet.singleton next_label
+          with
+          | Failure "nth" ->    (* [label] has no successor.  *)
+            LabelSet.empty
+          | Not_found -> assert false
+      )
+  | DExternalFunction _ -> fun _ -> LabelSet.empty
 
 let rec definition res d =
   let resNow = match d with
