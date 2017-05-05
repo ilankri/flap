@@ -38,15 +38,13 @@ type location = lvalue
 module LSet = Set.Make (struct
     type t = location
     let compare = compare
-end)
+  end)
 
 (**
  * For each IN and OUT, we have a Map in structure :
    LabelOrd -> LSet
  * *)
 type liveness_analysis_result = {
-  live_use : LSet.t LabelMap.t;
-  live_def : LSet.t LabelMap.t;
   live_in  : LSet.t LabelMap.t;
   live_out : LSet.t LabelMap.t;
 }
@@ -55,12 +53,10 @@ let find_default d k m =
   try LabelMap.find k m with Not_found -> d
 
 let empty_results =
-{
-  live_use = LabelMap.empty;
-  live_def = LabelMap.empty;
-  live_in  = LabelMap.empty;
-  live_out = LabelMap.empty;
-}
+  {
+    live_in  = LabelMap.empty;
+    live_out = LabelMap.empty;
+  }
 
 let string_of_lvalue = function
   | `Register (RId r) -> "$" ^ r
@@ -73,8 +69,8 @@ let string_of_lset s =
 
 let string_of_lmap m =
   String.concat "\n" (
-      List.map (fun (l, s) ->
-          Printf.sprintf "  %s : %s\n" (string_of_label l) (string_of_lset s)
+    List.map (fun (l, s) ->
+        Printf.sprintf "  %s : %s\n" (string_of_label l) (string_of_lset s)
       ) (LabelMap.bindings m)
   )
 
@@ -120,7 +116,14 @@ let successors = function
         | Jump l -> LabelSet.singleton l
         | ConditionalJump (_, _, l, l') ->
           LabelSet.add l (LabelSet.singleton l')
-        | Call _ | TailCall _ | Assign _ | Switch _ | Comment _ ->
+        | Switch (_, ls, l) ->
+          let acc =
+            match l with
+            | None -> LabelSet.empty
+            | Some l -> LabelSet.singleton l
+          in
+          Array.fold_right LabelSet.add ls acc
+        | Call _ | TailCall _ | Assign _  | Comment _ ->
           try
             let cur_instr_index =
               ExtStd.List.index_of (fun (l, _) -> l = label) instrs
@@ -136,26 +139,27 @@ let successors = function
 
 let rec definition res d =
   let resNow = match d with
-  | DValue (_, b) -> block res b
-  | DFunction (_, idList, b) -> block res b (* idList inutile??? *)
-  | DExternalFunction _ -> res
+    | DValue (_, b) -> block res b
+    | DFunction (_, idList, b) -> block res b (* idList inutile??? *)
+    | DExternalFunction _ -> res
   in
   compare_liveness_result res resNow d
 
+(* FIXME: Do not use [<>] to compare liveness analysis results.  Use
+   instead [equal] functions provided by modules [Map] and [Set].  *)
 and compare_liveness_result resPre resNow def =
-    if (resPre <> resNow) then definition resNow def else resNow
+  if (resPre <> resNow) then definition resNow def else resNow
 
 and block res = function
-  (* Here we check from the last element in the list in order to converge faster *)
+  (* Here we check from the last element in the list in order to
+     converge faster *)
   | (_, insList) -> List.fold_right instruction insList res
 
-  (* In the instruction, we have to do the following sequence for each
-   * labelled_instruction :
-   * 1. Find the register used and put them in live_use
-   * 2. Find the register def and put them in live_def
-   * 3. Calculate live_in : live_use + (live_out - live_def)
-   * 4. Calculate live_out: live_in of previous step
-   * *)
+(* In the instruction, we have to do the following sequence for each
+ * labelled_instruction :
+ * 1. Calculate live_in : use + (live_out - def)
+ * 2. Calculate live_out: live_in of previous step
+ * *)
 and instruction (_, ins) res = match ins with
   (** l ← call r (r1, ⋯, rN) *)
   | Call (lvalue, rvalue, rvList) -> failwith "TODO"
@@ -179,18 +183,18 @@ and instruction (_, ins) res = match ins with
 
 (** [liveness_analysis p] returns the liveness analysis of [p].
 
-   This is a data flow analysis which overapproximates the variables
-   that are alive before (live-in) and after (live-out) each
-   instruction. To do so, we use the following two equations:
+    This is a data flow analysis which overapproximates the variables
+    that are alive before (live-in) and after (live-out) each
+    instruction. To do so, we use the following two equations:
 
-   in(n)  = use(n) ∪ (out(n) ∖ def(n))
-   out(n) = ⋃_{s ∈ successors (n)} in(s)
+    in(n)  = use(n) ∪ (out(n) ∖ def(n))
+    out(n) = ⋃_{s ∈ successors (n)} in(s)
 
-   for each node n of the control flow graph, i.e. for each label
-   of the program.
+    for each node n of the control flow graph, i.e. for each label
+    of the program.
 
-   As these equations are mutually recursive, they must be solved
-   using a fixpoint.
+    As these equations are mutually recursive, they must be solved
+    using a fixpoint.
 
 *)
 let rec liveness_analysis p : liveness_analysis_result =
@@ -212,31 +216,41 @@ type relation =
 (** The node of the interference graph are lvalues and its edges are
     labelled by [relation]. *)
 module IGraphColoring = GraphColoring.Make
-  (struct
-    type t = relation
-    let compare = compare
-    let all = [ Conflict; Preference ]
-    let preference = Preference
-    let conflict = Conflict
-    let to_string = function
-      | Conflict -> "<>"
-      | Preference -> "="
-   end)
-  (struct
-    type t = lvalue
-    let compare = compare
-    let to_string : t -> string = string_of_lvalue
-   end)
-  (struct
-    type t = register
-    let all = MipsArch.(List.map (fun r -> RId (string_of_register' r)) all_registers)
-    let cardinal = List.length all
-    let to_string (RId r) = r
-   end)
+    (struct
+      type t = relation
+      let compare = compare
+      let all = [ Conflict; Preference ]
+      let preference = Preference
+      let conflict = Conflict
+      let to_string = function
+        | Conflict -> "<>"
+        | Preference -> "="
+    end)
+    (struct
+      type t = lvalue
+      let compare = compare
+      let to_string : t -> string = string_of_lvalue
+    end)
+    (struct
+      type t = register
+      let all =
+        MipsArch.(List.map (fun r -> RId (string_of_register' r)) all_registers)
+      let cardinal = List.length all
+      let to_string (RId r) = r
+    end)
 
 module IGraph = IGraphColoring.Graph
 
 type interference_graph = IGraph.t
+
+(** Extend [igraph] with [var] and its relations with the variables in
+    [live_out_vars] via the function [relate].  *)
+let add_var igraph var live_out_vars relate =
+  LSet.fold (fun live_out_var igraph ->
+      let igraph = IGraph.add_node igraph [live_out_var] in
+      let rel = relate var live_out_var in
+      IGraph.add_edge igraph var rel live_out_var
+    ) live_out_vars (IGraph.add_node igraph [var])
 
 (**
 
@@ -251,8 +265,39 @@ type interference_graph = IGraph.t
    that is not the same as c.
 
 *)
+let add_relations igraph (label, instr) live_out =
+  let live_out_vars = LabelMap.find label live_out in
+  match instr with
+  | Assign (var, Load, [var']) ->
+    let relate _ live_out_var =
+      match var' with
+      | `Immediate _ -> Conflict
+      | `Variable _ | `Register _ ->
+        let as_lvalue = function
+          | `Immediate _ -> assert false
+          | `Register _ | `Variable _ as rv -> rv
+        in
+        if as_lvalue var' = live_out_var then Preference else Conflict
+    in
+    add_var igraph var live_out_vars relate
+  | Assign _ | Call _ | TailCall _ | Ret _ | Jump _ | ConditionalJump _ |
+    Switch _ | Comment _ | Exit as instr ->
+    LSet.fold (fun var igraph ->
+        add_var igraph var live_out_vars (fun _ _ -> Conflict)
+      ) (def instr) igraph
+
 let interference_graph p liveness : interference_graph =
-   failwith "Student! This is your job!"
+  let aux igraph instrs live_out =
+    List.fold_left (fun igraph instr ->
+        add_relations igraph instr live_out
+      ) igraph instrs
+  in
+  List.fold_left (fun igraph def ->
+      match def with
+      | DValue (_, (_, instrs)) | DFunction (_, _, (_, instrs)) ->
+        aux igraph instrs liveness.live_out
+      | DExternalFunction _ -> igraph
+    ) IGraph.empty p
 
 (** Graph coloring. *)
 
@@ -267,19 +312,19 @@ let register_allocation coloring p =
 let translate p =
   let liveness = liveness_analysis p in
   if Options.get_verbose_mode () then RetrolixPrettyPrinter.(
-    let get_decoration space m l =
-      let s = try LabelMap.find l m with Not_found -> LSet.empty in
-      [PPrint.string ("{ " ^ string_of_lset s ^ " }")]
-      @ (if space then [PPrint.empty] else [])
-    in
-    let decorations = {
+      let get_decoration space m l =
+        let s = try LabelMap.find l m with Not_found -> LSet.empty in
+        [PPrint.string ("{ " ^ string_of_lset s ^ " }")]
+        @ (if space then [PPrint.empty] else [])
+      in
+      let decorations = {
         pre = get_decoration false liveness.live_in;
         post = get_decoration true liveness.live_out
-    }
-    in
-    let p = to_string (program ~decorations) p in
-    Printf.eprintf "Liveness:\n%s\n" p;
-  );
+      }
+      in
+      let p = to_string (program ~decorations) p in
+      Printf.eprintf "Liveness:\n%s\n" p;
+    );
   let igraph   = interference_graph p liveness in
   let coloring = colorize_graph igraph in
   register_allocation coloring p
