@@ -1,3 +1,3 @@
 #!/bin/sh
 
-./flap --gcc true -u true -s $1 -t $2 $3
+./flap --gcc true --retromips true -u true -s $1 -t $2 $3

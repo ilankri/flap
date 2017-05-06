@@ -70,7 +70,7 @@ and expression =
   | Read of expression located
   (** A reference assignment e.g : x := e *)
   | Write of expression located * expression located
-  (** A loop e.g : while e1 { e2 } *)
+  (** A loop e.g : while e1 \{ e2 \} *)
   | While of expression located * expression located
 
 and pattern =

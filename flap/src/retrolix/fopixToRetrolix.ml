@@ -220,7 +220,8 @@ and declaration env = T.(function
       let locals = locals env ec in
       DValue (x, (locals, ec))
 
-    | S.DefineFunction (S.FunId f, xs, e) -> define_function env f xs e true
+    | S.DefineFunction (S.FunId f, xs, e) ->
+      define_function env f xs e (Options.get_retromips ())
 
     | S.ExternalFunction (S.FunId f) ->
       DExternalFunction (FId f)
@@ -322,7 +323,8 @@ and expression out = T.(function
     | S.FunCall (S.FunId f, es) when is_binop f ->
       assign out (binop f) es
 
-    | S.FunCall (f, actuals) -> fun_call out f actuals true
+    | S.FunCall (f, actuals) ->
+      fun_call out f actuals (Options.get_retromips ())
 
     | S.UnknownFunCall (ef, actuals) ->
       failwith "Students! This is your job!"

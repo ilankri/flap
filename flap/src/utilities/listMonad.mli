@@ -13,12 +13,12 @@
     What if we want to represent computations that have zero, one
     or many results? For instance, imagine the following algorithm:
 
-    pick x in {1..10}
-    pick y in {1..10}
+    pick x in \{1..10\}
+    pick y in \{1..10\}
     return (x + y)
 
     This algorithm is non deterministic because "pick" takes one of
-    the integers in the set {1..10}. Imagine that we want to know
+    the integers in the set \{1..10\}. Imagine that we want to know
     all possible executions of this program. How to do that?
 
     Before answering that question, you may wonder why it would be
@@ -29,7 +29,7 @@
     combinaisons and filters. In other words, the previous program
     represents what a mathematician would write:
 
-    { x + y | x ∈ [1..10], y ∈ [1.10] }
+    \{ x + y | x ∈ [1..10], y ∈ [1.10] \}
 
     Nice, isn't it?
 
