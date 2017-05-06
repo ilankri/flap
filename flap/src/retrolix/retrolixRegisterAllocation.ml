@@ -44,7 +44,10 @@ end)
  * For each IN and OUT, we have a Map in structure :
    LabelOrd -> LSet
  * *)
-type liveness_analysis_result = {
+type liveness_analysis_result =
+{
+  live_def : LSet.t LabelMap.t;
+  live_use : LSet.t LabelMap.t;
   live_in  : LSet.t LabelMap.t;
   live_out : LSet.t LabelMap.t;
 }
@@ -54,6 +57,8 @@ let find_default d k m =
 
 let empty_results =
 {
+  live_def = LabelMap.empty;
+  live_use = LabelMap.empty;
   live_in  = LabelMap.empty;
   live_out = LabelMap.empty;
 }
@@ -114,7 +119,7 @@ let predecessors p =
 let rec definition res d =
   let resNow = match d with
   | DValue (_, b) -> block res b
-  | DFunction (_, idList, b) -> block res b (* idList inutile??? *)
+  | DFunction (_, _, b) -> block res b
   | DExternalFunction _ -> res 
   in  
   compare_liveness_result res resNow d
@@ -124,34 +129,23 @@ and compare_liveness_result resPre resNow def =
 
 and block res = function
   (* Here we check from the last element in the list in order to converge faster *)
-  | (_, insList) -> List.fold_right instruction insList res 
+  | (_, insList) -> let res' = List.fold_right prepare_def_and_use insList res
+  in List.fold_right instruction insList res'
 
   (* In the instruction, we have to do the following sequence for each
    * labelled_instruction :
-   * 1. Find the register used and put them in live_use
-   * 2. Find the register def and put them in live_def
+   * 1. Find the register def and put them in live_def
+   * 2. Find the register used and put them in live_use
    * 3. Calculate live_out: live_in of previous step
    * 4. Calculate live_in : live_use + (live_out - live_def)
    * *)
-and instruction (_, ins) res = match ins with
-  (** l ← call r (r1, ⋯, rN) *)
-  | Call (lvalue, rvalue, rvList) -> failwith "TODO"
-  (** tailcall r (r1, ⋯, rN) *)
-  | TailCall (rv, rvList) -> failwith "TODO"
-  (** ret r *)
-  | Ret (rv) -> failwith "TODO"
-  (** l ← op r1, ⋯, rN *)
-  | Assign (lv, op, rvList) -> failwith "TODO"
-  (** jump ℓ *)
-  | Jump (l) -> failwith "TODO"
-  (** jumpif condition r1, r2 → ℓ1, ℓ2 *)
-  | ConditionalJump (c, rvList, l1, l2) -> failwith "TODO"
-  (** switch r -> l1, ..., lN orelse l. *)
-  | Switch (rv, lArray, lOp) -> failwith "TODO"
-  (** ;; comment *)
-  | Comment _ -> res
-  (** exit *)
-  | Exit -> res
+and prepare_def_and_use (l, ins) res =
+    let live_def' = LabelMap.add l (def ins) res.live_def in
+    let live_use' = LabelMap.add l (use ins) res.live_use in
+    { res with live_def = live_def'; live_use = live_use' }
+
+and instruction (l, ins) res = 
+    failwith "TODO"
 
 
 (** [liveness_analysis p] returns the liveness analysis of [p].
