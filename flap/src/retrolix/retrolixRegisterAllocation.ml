@@ -45,8 +45,6 @@ end)
    LabelOrd -> LSet
  * *)
 type liveness_analysis_result = {
-  live_use : LSet.t LabelMap.t;
-  live_def : LSet.t LabelMap.t;
   live_in  : LSet.t LabelMap.t;
   live_out : LSet.t LabelMap.t;
 }
@@ -56,8 +54,6 @@ let find_default d k m =
 
 let empty_results =
 {
-  live_use = LabelMap.empty;
-  live_def = LabelMap.empty;
   live_in  = LabelMap.empty;
   live_out = LabelMap.empty;
 }
@@ -124,7 +120,7 @@ let rec definition res d =
   compare_liveness_result res resNow d
 
 and compare_liveness_result resPre resNow def =
-    if (resPre <> resNow) then definition resNow def else resNow
+  if (resPre <> resNow) then definition resNow def else resNow
 
 and block res = function
   (* Here we check from the last element in the list in order to converge faster *)
@@ -134,8 +130,8 @@ and block res = function
    * labelled_instruction :
    * 1. Find the register used and put them in live_use
    * 2. Find the register def and put them in live_def
-   * 3. Calculate live_in : live_use + (live_out - live_def)
-   * 4. Calculate live_out: live_in of previous step
+   * 3. Calculate live_out: live_in of previous step
+   * 4. Calculate live_in : live_use + (live_out - live_def)
    * *)
 and instruction (_, ins) res = match ins with
   (** l ← call r (r1, ⋯, rN) *)
@@ -174,7 +170,7 @@ and instruction (_, ins) res = match ins with
    using a fixpoint.
 
 *)
-let rec liveness_analysis p : liveness_analysis_result =
+let liveness_analysis p : liveness_analysis_result =
     List.fold_left definition empty_results p
 
 (** Interference graph. *)
