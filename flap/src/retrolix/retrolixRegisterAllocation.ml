@@ -88,7 +88,6 @@ let string_of_results r =
 (** [def i] returns the variables defined by [i]. *)
 let def = function
   | Call (lv, _, _) ->
-    (* What about $ra?  *)
     LSet.add (register MipsArch.return_register) (LSet.singleton lv)
   | Assign (lv, _, _) -> LSet.singleton lv
   | TailCall _ | Ret _ | Jump _ | ConditionalJump _ | Switch _ | Comment _ |
@@ -113,34 +112,27 @@ let use i =
 
 (** [successors p] returns a function [succ] such that [succ l] returns
     the successors of [l] in the control flow graph. *)
-let successors = function
-  | DValue (_, (_, instrs)) | DFunction (_, _, (_, instrs)) ->
-    fun label -> (
-        match List.assoc label instrs with
-        | Ret _ | Exit -> LabelSet.empty
-        | Jump l -> LabelSet.singleton l
-        | ConditionalJump (_, _, l, l') ->
-          LabelSet.add l (LabelSet.singleton l')
-        | Switch (_, ls, l) ->
-          let acc =
-            match l with
-            | None -> LabelSet.empty
-            | Some l -> LabelSet.singleton l
-          in
-          Array.fold_right LabelSet.add ls acc
-        | Call _ | TailCall _ | Assign _  | Comment _ ->
-          try
-            let cur_instr_index =
-              ExtStd.List.index_of (fun (l, _) -> l = label) instrs
-            in
-            let next_label, _ = List.nth instrs (cur_instr_index + 1) in
-            LabelSet.singleton next_label
-          with
-          | Failure "nth" ->    (* [label] has no successor.  *)
-            LabelSet.empty
-          | Not_found -> assert false
-      )
-  | DExternalFunction _ -> fun _ -> LabelSet.empty
+let successors label (_, instrs) =
+  match List.assoc label instrs with
+  | Ret _ | Exit -> LabelSet.empty
+  | Jump l -> LabelSet.singleton l
+  | ConditionalJump (_, _, l, l') ->
+    LabelSet.add l (LabelSet.singleton l')
+  | Switch (_, ls, l) ->
+    let acc = match l with
+    | None -> LabelSet.empty
+    | Some l -> LabelSet.singleton l in
+      Array.fold_right LabelSet.add ls acc
+    | Call _ | TailCall _ | Assign _ | Comment _ ->
+      try
+        let cur_instr_index =
+        ExtStd.List.index_of (fun (l, _) -> l = label) instrs in
+        let next_label, _ = List.nth instrs (cur_instr_index + 1) in
+        LabelSet.singleton next_label
+      with
+      | Failure "nth" ->    (* [label] has no successor.  *)
+        LabelSet.empty
+      | Not_found -> assert false
 
 let rec definition res d =
   let resNow = match d with
@@ -153,18 +145,23 @@ let rec definition res d =
 (* FIXME: Do not use [<>] to compare liveness analysis results.  Use
    instead [equal] functions provided by modules [Map] and [Set].  *)
 and compare_liveness_result resPre resNow def =
-  if (resPre <> resNow) then definition resNow def else resNow
+  let map_eq s1 s2 = LSet.equal s1 s2 in
+  let compare_result_eq pre now = 
+     (let inIsEqual = LabelMap.equal map_eq pre.live_in now.live_in in
+     let outIsEqual = LabelMap.equal map_eq pre.live_out now.live_out in
+     inIsEqual && outIsEqual) in
+  if (compare_result_eq resPre resNow) then resNow else definition resNow def
 
 and block res = function
   (* Here we check from the last element in the list in order to converge faster *)
-  | (_, insList) -> let res' = List.fold_right prepare_def_and_use insList res
-  in List.fold_right instruction insList res'
+  | (_, insList) as b -> let res' = List.fold_right prepare_def_and_use insList res
+  in List.fold_right (instruction b) insList res'
 
   (* In the instruction, we have to do the following sequence for each
    * labelled_instruction :
    * 1. Find the register def and put them in live_def
    * 2. Find the register used and put them in live_use
-   * 3. Calculate live_out: live_in of previous step
+   * 3. Calculate live_out: live_in of successors
    * 4. Calculate live_in : live_use + (live_out - live_def)
    * *)
 and prepare_def_and_use (l, ins) res =
@@ -172,8 +169,33 @@ and prepare_def_and_use (l, ins) res =
     let live_use' = LabelMap.add l (use ins) res.live_use in
     { res with live_def = live_def'; live_use = live_use' }
 
-and instruction (l, ins) res = 
-    failwith "TODO"
+and instruction b (l, ins) res = 
+    let locationOutSet = calc_out l b res in
+    let live_out' = LabelMap.add l locationOutSet res.live_out in
+    let res' = { res with live_out = live_out' } in
+    let locationInSet = calc_in l res' in
+    let live_in' = LabelMap.add l locationInSet res.live_in in
+    { res' with live_in = live_in' }
+
+and location_set_union liveMap l lSet =
+    try
+      LSet.union lSet (LabelMap.find l liveMap)
+    with
+    | Not_found -> lSet
+
+and calc_out l b res =
+    let succ = successors l b in
+    if (LabelSet.cardinal succ) > 0 
+    then 
+       LabelSet.fold (location_set_union res.live_out) succ LSet.empty
+    else
+       LSet.empty
+
+and calc_in l res =
+    let outSet = location_set_union res.live_out l LSet.empty in
+    let defSet = location_set_union res.live_def l LSet.empty in
+    let useSet = location_set_union res.live_use l LSet.empty in
+    LSet.union useSet (LSet.diff outSet defSet)
 
 (** [liveness_analysis p] returns the liveness analysis of [p].
 
