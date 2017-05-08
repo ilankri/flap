@@ -46,6 +46,8 @@ module LSet = Set.Make (struct
  * *)
 type liveness_analysis_result =
 {
+  (* live_def and live_use are here for quick reference only for calculation. 
+   * When compare equal, we don't compare live_def and live_use *)
   live_def : LSet.t LabelMap.t;
   live_use : LSet.t LabelMap.t;
   live_in  : LSet.t LabelMap.t;
@@ -110,8 +112,8 @@ let use i =
   in
   List.fold_left add_rvalue LSet.empty rvs
 
-(** [successors p] returns a function [succ] such that [succ l] returns
-    the successors of [l] in the control flow graph. *)
+(** [successors l block] returns a set of labels that curret label l will
+ * execute NEXT in the control flow graph. *)
 let successors label (_, instrs) =
   match List.assoc label instrs with
   | Ret _ | Exit -> LabelSet.empty
@@ -142,7 +144,7 @@ let rec definition res d =
   in  
   compare_liveness_result res resNow d
 
-(* FIXME: Do not use [<>] to compare liveness analysis results.  Use
+(* Do not use [<>] to compare liveness analysis results.  Use
    instead [equal] functions provided by modules [Map] and [Set].  *)
 and compare_liveness_result resPre resNow def =
   let map_eq s1 s2 = LSet.equal s1 s2 in
