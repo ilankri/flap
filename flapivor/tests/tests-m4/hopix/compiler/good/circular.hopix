@@ -1,4 +1,4 @@
-type ilist = Node (int, cell (ilist ())) | Nil
+type ilist = Node (int, cell (ilist)) | Nil
 
 val alt = ref (Nil)
 
