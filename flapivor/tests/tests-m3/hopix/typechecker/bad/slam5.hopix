@@ -1,6 +1,6 @@
 type list ('a) =
 | Nil
-| Cons ('a, list ())
+| Cons ('a, list)
 
 fun nil['a] (x : unit) : list ('a) = Nil['a]
 
