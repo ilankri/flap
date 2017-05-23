@@ -196,8 +196,9 @@ simple_ty:
 ty:
   | t = simple_ty { t }
   (* We force the right associativity of the type operator '->'.  *)
-  | t1 = located(simple_ty) ARROW t2 = located(ty)
-      { TyCon (TCon "->", [t1; t2]) }
+  | ts = separated_nonempty_list(TIMES, located(simple_ty)) ARROW
+    t = located(ty)
+      { TyArrow (ts, t) }
 
 (*
  * For
