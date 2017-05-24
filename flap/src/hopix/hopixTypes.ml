@@ -12,6 +12,8 @@ exception WrongNbArgsTyCons of Position.position * type_constructor * int * int
 
 exception AlreadyBoundDataCons of Position.position * constructor
 
+exception InvalidApp of Position.position
+
 let ty_cons_err error pos (TCon s) = error pos "type constructor" s
 
 let ty_var_err error pos (TId s) = error pos "type variable" s
@@ -31,6 +33,9 @@ let wrong_nb_args_err xarity iarity pos what which =
 let already_bound_err pos what which =
   type_error pos (Printf.sprintf "Already bound %s %s." what which)
 
+let invalid_app_err pos =
+  type_error pos "This expression must have a functional type to be applied."
+
 let report_error = function
   | UnboundTypeConstructor (pos, tc) -> ty_cons_err unbound_err pos tc
   | UnboundTypeVariable (pos, tv) -> ty_var_err unbound_err pos tv
@@ -38,6 +43,7 @@ let report_error = function
   | WrongNbArgsTyCons (pos, tc, xarity, iarity) ->
     ty_cons_err (wrong_nb_args_err xarity iarity) pos tc
   | AlreadyBoundDataCons (pos, dc) -> data_cons_err already_bound_err pos dc
+  | InvalidApp pos -> invalid_app_err pos
   | exn -> raise exn
 
 (** Abstract syntax for types.

@@ -170,6 +170,9 @@ let typecheck tenv ast : typing_environment =
         )
     end
 
+  and type_scheme_of_expression' tenv e =
+    located (type_scheme_of_expression tenv) e
+
   (** [type_scheme_of_expression tenv pos e] computes a type scheme
       for [e] if it exists. Besides, this type scheme must be a
       monotype if no type instanciation is provided in the enclosing
@@ -201,7 +204,16 @@ let typecheck tenv ast : typing_environment =
        —————————————————————————————————————————————————————
        Γ ⊢ e[τ₁, …, τn] (e₁, …, em) : τ[α₁ ↦ τ₁] … [αn ↦ τn] *)
     | Apply (a, types, args) ->
-      failwith "Students! This is your job!"
+      let t =
+        let a, pos = Position.destruct a in
+        apply pos tenv (type_scheme_of_expression tenv pos a) types args
+      in
+      let t =
+        match types with
+        | [] -> type_of_monotype (check_expression_monotype tenv t a)
+        | _ -> t
+      in
+      monotype (output_type_of_function t)
 
     (* With else branch:
 
@@ -243,11 +255,22 @@ let typecheck tenv ast : typing_environment =
       in
       List.iter f eelist; monotype elsety
 
-    (* Γ₀ = Γ(α₁ … α)    ∀i Γᵢ₋₁ ⊢ pᵢ ⇒ Γᵢ, τᵢ    Γ ⊢ e : τ
-       ———————————————————————————————————————————————————————
-       Γ ⊢ \[α₁ … α(p₁, …, p) => e : ∀α₁ … α.τ₁⋆ … ⋆τ → τ *)
-    | Fun fdef ->
-      failwith "Students! This is your job!"
+    (* Γ₀ = Γ(α₁, …, αₖ)    ∀i Γᵢ₋₁ ⊢ pᵢ ⇒ Γᵢ, τᵢ    Γₙ ⊢ e : τ
+       —————————————————————————————————————————————————————————
+       Γ ⊢ \[α₁, …, αₖ](p₁, …, pₙ) => e : ∀α₁ … αₖ.τ₁⋆ … ⋆τₙ → τ *)
+    | Fun (FunctionDefinition (tvs, ps, e)) ->
+      let tenv = bind_type_variables pos tenv (List.map Position.value tvs) in
+      let tenv, ts =
+        List.fold_right (fun p (tenv, ts) ->
+            let p, pos = Position.destruct p in
+            let tenv, t = pattern tenv pos p in
+            let t = type_of_monotype t in
+            check_well_formed_type pos tenv t;
+            (tenv, t :: ts)
+          ) ps (tenv, [])
+      in
+      let t = type_scheme_of_expression' tenv e in
+      mk_type_scheme (ATyArrow (ts, type_of_monotype t))
 
     (* (K : ∀α₁ … α.τ₁'⋆ … αk⋆τk' → τ) ∈ Γ
        ∀i Γ ⊢ eᵢ : τᵢ'[α₁ ↦ τ₁] … [αk ↦ τk]
@@ -257,16 +280,16 @@ let typecheck tenv ast : typing_environment =
       let tyFromK = lookup_type_scheme_of_constructor k tenv in
       let rmPosTypes = List.map (fun a -> (aty_of_ty' a)) types in
       let tau = instantiate_type_scheme tyFromK rmPosTypes in
-      let tyListFromTau = 
-      (match tau with
-      | ATyArrow(alist, _) -> alist
-      | _ -> assert false )
-      in 
-      let f t e = 
-      begin
-      let atyFromE = located (type_scheme_of_expression tenv) e  in 
-      check_expected_type (Position.position e) (type_of_monotype atyFromE) t
-      end in
+      let tyListFromTau =
+        (match tau with
+         | ATyArrow(alist, _) -> alist
+         | _ -> assert false)
+      in
+      let f t e =
+        begin
+          let atyFromE = located (type_scheme_of_expression tenv) e  in
+          check_expected_type (Position.position e) (type_of_monotype atyFromE) t
+        end in
       List.iter2 f tyListFromTau args;
       monotype tau
 
@@ -330,7 +353,20 @@ let typecheck tenv ast : typing_environment =
       is an arrow. The input types of this arrow must correspond to
       the types of the expressions [args]. *)
   and apply pos tenv s types args =
-    failwith "Students! This is your job!"
+    let t =
+      let atypes = List.map (internalize_ty tenv) types in
+      instantiate_type_scheme s atypes
+    in
+    match t with
+    | ATyArrow (xtypes, _) ->
+      List.iter2 (fun xty arg ->
+          let arg, pos = Position.destruct arg in
+          let ity = type_scheme_of_expression tenv pos arg in
+          (* let ty = internalize_ty tenv ty in *)
+          check_expected_type pos xty (type_of_monotype ity)
+        ) xtypes args;
+      t
+    | ATyVar _ | ATyCon _ -> raise (InvalidApp pos)
 
   and type_of_literal pos = function
     (*
