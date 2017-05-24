@@ -291,7 +291,7 @@ let typecheck tenv ast : typing_environment =
           check_expected_type (Position.position e) (type_of_monotype atyFromE) t
         end in
       List.iter2 f tyListFromTau args;
-      monotype tau
+      monotype (output_type_of_function tau)
 
     (* Γ ⊢ e : σ'    ∀i Γ ⊢ pᵢ ⇒ Γᵢ, σ'    ∀i Γᵢ ⊢ eᵢ : σ
        ——————————————————————————————————————————————————
