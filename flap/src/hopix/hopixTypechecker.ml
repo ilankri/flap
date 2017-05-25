@@ -95,7 +95,10 @@ let typecheck tenv ast : typing_environment =
     let fids, fdefs = List.split recdefs in
     let ftys = List.map (located (extract_function_type_scheme tenv)) fdefs in
     let fids = List.map Position.value fids in
-    let tenv = List.fold_right2 bind_value fids ftys tenv in
+    let tenv =
+      List.fold_left2 (fun tenv fid fty -> bind_value fid fty tenv)
+        tenv fids ftys
+    in
     List.iter (fun fdef ->
         ignore (located (check_function_definition tenv) fdef)) fdefs;
     tenv
@@ -499,5 +502,3 @@ let typecheck tenv ast : typing_environment =
 
 let print_typing_environment =
   HopixTypes.print_typing_environment
-
-let print_new_type_bindings = HopixTypes.print_new_type_bindings

@@ -99,57 +99,52 @@ let interactive_loop () =
 
   let rec step
     : Target.runtime -> Compiler.environment -> Source.typing_environment
-      -> Target.runtime * Compiler.environment * Source.typing_environment =
+    -> Target.runtime * Compiler.environment * Source.typing_environment =
     fun runtime cenvironment tenvironment ->
       try
         match read () with
-        | "+debug" ->
-          Options.set_verbose_mode true;
-          step runtime cenvironment tenvironment
+          | "+debug" ->
+            Options.set_verbose_mode true;
+            step runtime cenvironment tenvironment
 
-        | "-debug" ->
-          Options.set_verbose_mode false;
-          step runtime cenvironment tenvironment
+          | "-debug" ->
+            Options.set_verbose_mode false;
+            step runtime cenvironment tenvironment
 
-        | input ->
-          let ast = Compiler.Source.parse_string input in
-          let tenvironment =
-            if Options.get_unsafe () then
-              tenvironment
-            else
-              Compiler.Source.(
-                let new_tenv = typecheck tenvironment ast in
-                if Options.get_show_types () then
-                  print_endline (print_new_type_bindings new_tenv tenvironment);
-                new_tenv
-              )
-          in
-          let cast, cenvironment = Compiler.translate ast cenvironment in
-          if Options.get_verbose_mode () then
-            print_endline (Target.print_ast cast);
-          let runtime = Compiler.Target.(
+          | input ->
+            let ast = Compiler.Source.parse_string input in
+            let tenvironment =
+              if Options.get_unsafe () then
+                tenvironment
+              else
+                Compiler.Source.typecheck tenvironment ast
+            in
+            let cast, cenvironment = Compiler.translate ast cenvironment in
+            if Options.get_verbose_mode () then
+              print_endline (Target.print_ast cast);
+            let runtime = Compiler.Target.(
               eval runtime (fun r -> evaluate r cast) print_observable
             )
-          in
-          step runtime cenvironment tenvironment
+            in
+            step runtime cenvironment tenvironment
       with
-      | e when !Sys.interactive -> raise e (* display exception at toplevel *)
-      | Error.Error (positions, msg) ->
-        output_string stdout (Error.print_error positions msg);
-        step runtime cenvironment tenvironment
-      | End_of_file ->
-        (runtime, cenvironment, tenvironment)
-      | e ->
-        print_endline (Printexc.get_backtrace ());
-        print_endline (Printexc.to_string e);
-        step runtime cenvironment tenvironment
+        | e when !Sys.interactive -> raise e (* display exception at toplevel *)
+        | Error.Error (positions, msg) ->
+          output_string stdout (Error.print_error positions msg);
+          step runtime cenvironment tenvironment
+        | End_of_file ->
+          (runtime, cenvironment, tenvironment)
+        | e ->
+	  print_endline (Printexc.get_backtrace ());
+          print_endline (Printexc.to_string e);
+          step runtime cenvironment tenvironment
   in
   Error.resume_on_error ();
   ignore (step
             (Target.initial_runtime ())
             (Compiler.initial_environment ())
             (Source.initial_typing_environment ())
-         )
+  )
 
 (* ------------- **)
 (*   Batch mode   *)
@@ -178,7 +173,7 @@ let batch_compilation () =
     Compiler.Source.(
       let tenv = typecheck (initial_typing_environment ()) ast in
       if Options.get_show_types () then (
-        print_endline (print_typing_environment tenv)
+	print_endline (print_typing_environment tenv)
       )
     );
   let cast, _ = Compiler.(translate ast (initial_environment ())) in
@@ -193,16 +188,16 @@ let batch_compilation () =
   if Options.get_running_mode () then Compiler.Target.(
     ignore (
       try
-        let print =
-          if Options.get_verbose_eval () then
-            print_observable
-          else
-            fun _ _ -> ""
-        in
+	let print =
+	  if Options.get_verbose_eval () then
+	    print_observable
+	  else
+	    fun _ _ -> ""
+	in
         eval (initial_runtime ()) (fun r -> evaluate r cast) print
       with
         | e ->
-          print_endline (Printexc.get_backtrace ());
+	  print_endline (Printexc.get_backtrace ());
           print_endline (Printexc.to_string e);
           exit 1
     )

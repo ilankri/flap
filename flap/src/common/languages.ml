@@ -64,13 +64,6 @@ module type Language = sig
       representation of [tenv]. *)
   val print_typing_environment : typing_environment -> string
 
-  (** [print_new_type_bindings new_tenv old_tenv] returns
-      a human-readable representation of type bindings defined in
-      [new_tenv] but not in [old_tenv] where [new_tenv] is an extension
-      of [old_tenv].  *)
-  val print_new_type_bindings :
-    typing_environment -> typing_environment -> string
-
 end
 
 (** We store all the language implementations in the following

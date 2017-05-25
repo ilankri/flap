@@ -414,16 +414,10 @@ let initial_typing_environment () =
 let print_binding (Id x, Scheme (_, s)) =
   x ^ " : " ^ print_aty s
 
-let print_new_type_bindings new_tenv old_tenv =
-  let rec print_last_n_bindings acc n bindings =
-    if n = 0 then acc else
-      match bindings with
-      | [] -> assert false
-      | binding :: bindings ->
-        print_last_n_bindings (print_binding binding :: acc) (n - 1) bindings
-  in
-  let n = List.length new_tenv.values - List.length old_tenv.values in
-  String.concat "\n" (print_last_n_bindings [] n new_tenv.values)
-
 let print_typing_environment tenv =
-  print_new_type_bindings tenv (initial_typing_environment ())
+  let excluded = initial_typing_environment () in
+  let values = List.filter (fun (x, _) ->
+    not (List.mem_assoc x excluded.values)
+  ) (List.rev tenv.values)
+  in
+  String.concat "\n" (List.map print_binding values)
