@@ -41,7 +41,7 @@ let output_type_of_function = function
   | ATyArrow (_, ty) -> ty
   | _ -> raise NotAFunction
 
-let output_ty_list_of_function = function
+let input_types_of_function = function
   | ATyArrow (tyl, _) -> tyl
   | _ -> raise NotAFunction
 
@@ -126,21 +126,22 @@ let rec substitute phi = function
 let type_error = Error.error "typechecking"
 
 type error =
-  | UnboundTypeConstructor of Position.position * type_constructor
-  | UnboundTypeVariable of Position.position * type_variable
-  | UnboundIdentifier of Position.position * identifier
-  | UnboundDataConstructor of Position.position * constructor
-  | WrongArityTypeConstructor of
-      Position.position * type_constructor * int * int
-  | AlreadyBoundDataConstructor of Position.position * constructor
-  | InvalidApplication of Position.position
-  | MissingTypeAnnotation of Position.position
-  | TypeMismatch of Position.position * aty * aty
-  | TooPolymorphicType of Position.position
-  | POrError of Position.position
-  | AlreadyBoundTypeVariable of Position.position * type_variable
-  | InvalidInstantiation of int * int
-
+  | UnboundTyCons of Position.t * type_constructor
+  | UnboundTyVar of Position.t * type_variable
+  | UnboundId of Position.t * identifier
+  | UnboundDataCons of Position.t * constructor
+  | WrongArityTyCons of Position.t * type_constructor * int * int
+  | WrongArityDataCons of Position.t * constructor * int * int
+  | WrongArityFunction of Position.t * int * int
+  | AlreadyBoundDataCons of Position.t * constructor
+  | AlreadyBoundTyVar of Position.t * type_variable
+  | InvalidApplication of Position.t
+  | MissingTypeAnnotation of Position.t
+  | TypeMismatch of Position.t * aty * aty
+  | TooPolymorphicType of Position.t
+  | POrError of Position.t
+  | InvalidTypeInstantiation of Position.t * int * int
+  | NonLinearPattern of Position.t * identifier
 exception TypeError of error
 
 let raise_type_error err = raise (TypeError err)
@@ -165,16 +166,16 @@ let already_bound_err pos what which =
   type_error pos (Printf.sprintf "Already bound %s %s." what which)
 
 let report_error = function
-  | UnboundTypeConstructor (pos, tc) -> ty_cons_err unbound_err pos tc
-  | UnboundTypeVariable (pos, tv) -> ty_var_err unbound_err pos tv
-  | UnboundIdentifier (pos, id) -> id_err unbound_err pos id
-  | UnboundDataConstructor (pos, dc) -> data_cons_err unbound_err pos dc
-  | WrongArityTypeConstructor (pos, tc, xarity, iarity) ->
+  | UnboundTyCons (pos, tc) -> ty_cons_err unbound_err pos tc
+  | UnboundTyVar (pos, tv) -> ty_var_err unbound_err pos tv
+  | UnboundId (pos, id) -> id_err unbound_err pos id
+  | UnboundDataCons (pos, dc) -> data_cons_err unbound_err pos dc
+  | WrongArityTyCons (pos, tc, xarity, iarity) ->
     ty_cons_err (wrong_arity_err xarity iarity) pos tc
-  | AlreadyBoundTypeVariable (pos, tv) ->
-    ty_var_err already_bound_err pos tv
-  | AlreadyBoundDataConstructor (pos, dc) ->
-    data_cons_err already_bound_err pos dc
+  | WrongArityDataCons (pos, dc, xarity, iarity) ->
+    data_cons_err (wrong_arity_err xarity iarity) pos dc
+  | AlreadyBoundTyVar (pos, tv) -> ty_var_err already_bound_err pos tv
+  | AlreadyBoundDataCons (pos, dc) -> data_cons_err already_bound_err pos dc
   | InvalidApplication pos ->
     type_error pos "This expression must have a functional type to be applied."
   | MissingTypeAnnotation pos -> type_error pos "A type annotation is missing."
@@ -191,16 +192,28 @@ let report_error = function
       Printf.sprintf "All patterns of a disjunctive pattern must bind \
                       the same set of identifiers."
     )
-  | InvalidInstantiation (xarity, iarity) ->
-    type_error Position.dummy (
+  | InvalidTypeInstantiation (pos, xarity, iarity) ->
+    type_error pos (
       Printf.sprintf
         "Invalid type instantiation: expected %d type(s) and not %d."
         xarity iarity
     )
+  | WrongArityFunction (pos, xarity, iarity) ->
+    type_error pos
+      (Printf.sprintf "This function has arity %d and not %d." xarity iarity)
+  | NonLinearPattern (pos, id) ->
+    id_err (fun pos what which ->
+        type_error pos (
+          Printf.sprintf
+            "The %s %s is bound several times in this pattern."  what which
+        )
+      ) pos id
+
+exception InvalidInstantiation of int * int
 
 let instantiate_type_scheme (Scheme (ts, ty)) types =
   if List.(length ts <> length types) then
-    raise_type_error (InvalidInstantiation (List.length ts, List.length types));
+    raise (InvalidInstantiation (List.length ts, List.length types));
   let substitution = List.combine ts types in
   substitute substitution ty
 
@@ -274,31 +287,23 @@ let is_type_variable_defined pos env tv =
 
 let lookup_type_info_of_ty_cons pos tc env =
   try List.assoc tc env.type_constructors with
-  | Not_found -> raise_type_error (UnboundTypeConstructor (pos, tc))
-
-let find_double ls =
-  let ls = List.sort compare ls in
-  let rec aux = function
-    | [] | [_] -> None
-    | x :: y :: ys ->
-      if x = y then Some x else aux (y :: ys)
-  in
-  aux ls
+  | Not_found -> raise_type_error (UnboundTyCons (pos, tc))
 
 let check_ty_cons_arity pos tc xarity iarity =
   if xarity <> iarity then
-    raise_type_error (WrongArityTypeConstructor (pos, tc, xarity, iarity))
+    raise_type_error (WrongArityTyCons (pos, tc, xarity, iarity))
 
 let check_ty_cons_data_cons pos data_constructors =
-  match find_double data_constructors with
-  | None -> ()
-  | Some dc ->
-    raise_type_error (AlreadyBoundDataConstructor (pos, dc))
+  try
+    let dc = ExtStd.List.find_duplicate data_constructors in
+    raise_type_error (AlreadyBoundDataCons (pos, dc))
+  with
+  | Not_found -> ()
 
 let rec check_well_formed_type pos env = function
   | ATyVar tv ->
     if not (is_type_variable_defined pos env tv) then
-      raise_type_error (UnboundTypeVariable (pos, tv))
+      raise_type_error (UnboundTyVar (pos, tv))
   | ATyCon (tc, ts) ->
     let tc_info = lookup_type_info_of_ty_cons pos tc env in
     check_ty_cons_arity pos tc tc_info.arity (List.length ts);
@@ -328,7 +333,7 @@ let print_tenv env =
 
 let bind_type_variable pos env tv =
   if List.mem tv env.type_variables then
-    raise_type_error (AlreadyBoundTypeVariable (pos, tv));
+    raise_type_error (AlreadyBoundTyVar (pos, tv));
   { env with type_variables = tv :: env.type_variables }
 
 let bind_type_variables pos env ts =
@@ -344,7 +349,7 @@ let lookup_type_scheme_of_value pos x env =
   try
     List.assoc x env.values
   with Not_found ->
-    raise_type_error (UnboundIdentifier (pos, x))
+    raise_type_error (UnboundId (pos, x))
 
 (** Not sure if useful or not...
     let lookup_type_scheme_of_type_constructors pos k env =
@@ -390,7 +395,7 @@ let bind_type_definition x ts tdef env =
 let lookup_type_scheme_of_constructor pos x env =
   try
     List.assoc x env.constructors
-  with Not_found -> raise_type_error (UnboundDataConstructor (pos, x))
+  with Not_found -> raise_type_error (UnboundDataCons (pos, x))
 
 let initial_typing_environment () =
   empty_typing_environment |>

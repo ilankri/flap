@@ -18,12 +18,12 @@ module List = struct
   let asymmetric_map2 f =
     let rec aux accu xs ys =
       match xs, ys with
-        | xs, [] ->
-          (List.rev accu, xs, [])
-        | [], ys ->
-          (List.rev accu, [], ys)
-        | x :: xs, y :: ys ->
-          aux (f x y :: accu) xs ys
+      | xs, [] ->
+        (List.rev accu, xs, [])
+      | [], ys ->
+        (List.rev accu, [], ys)
+      | x :: xs, y :: ys ->
+        aux (f x y :: accu) xs ys
     in
     aux []
 
@@ -42,8 +42,8 @@ module List = struct
       in
       aux 0 l
 
-   (** [all_distinct ls] returns true if all the elements of [ls]
-       are distinct. *)
+  (** [all_distinct ls] returns true if all the elements of [ls]
+      are distinct. *)
   let all_distinct ls =
     let ls = List.sort compare ls in
     let rec aux = function
@@ -51,6 +51,17 @@ module List = struct
       | x :: y :: ys -> x <> y && aux (y :: ys)
     in
     aux ls
+
+  (** [find_duplicate l] returns a duplicate element in [l]. Raise
+      [Not_found] if there is no such element.  *)
+  let find_duplicate l =
+    let l = List.sort compare l in
+    let rec aux = function
+      | [] | [_] -> raise Not_found
+      | x :: y :: ys ->
+        if x = y then x else aux (y :: ys)
+    in
+    aux l
 
   let all_equal ls =
     let rec aux = function
@@ -61,8 +72,8 @@ module List = struct
 
   let unique_value ls =
     match uniq ls with
-      | [x] -> Some x
-      | _ -> None
+    | [x] -> Some x
+    | _ -> None
 
   let foldmap f init =
     let rec aux (accu, ys) = function
@@ -84,7 +95,7 @@ module List = struct
         let accu, y = f accu x z in
         aux (accu, y :: ys) (xs, zs)
       | _, _ ->
-	raise FoldMap2
+        raise FoldMap2
     in
     aux (init, []) (l1, l2)
 
@@ -96,21 +107,21 @@ module List = struct
     aux l
 
   module Monad : sig
-      type 'a t
-      val return : 'a -> 'a t
-      val ( >>= ) : 'a t -> ('a -> 'b t) -> 'b t
-      val take_one : 'a list -> 'a t
-      val fail : 'a t
-      val and_try : 'a t -> 'a t -> 'a t
-      val run : 'a t -> 'a list
+    type 'a t
+    val return : 'a -> 'a t
+    val ( >>= ) : 'a t -> ('a -> 'b t) -> 'b t
+    val take_one : 'a list -> 'a t
+    val fail : 'a t
+    val and_try : 'a t -> 'a t -> 'a t
+    val run : 'a t -> 'a list
   end = struct
-      type 'a t = 'a list
-      let return x = [x]
-      let ( >>= ) x f = List.(flatten (map f x))
-      let fail = []
-      let and_try a b = a @ b
-      let run x = x
-      let take_one x = x
+    type 'a t = 'a list
+    let return x = [x]
+    let ( >>= ) x f = List.(flatten (map f x))
+    let fail = []
+    let and_try a b = a @ b
+    let run x = x
+    let take_one x = x
   end
 
 end
@@ -121,7 +132,7 @@ let update
     (k : 'k) (m : 'c)
     (default : 'v)
     (f : 'v -> 'v)
-: 'c =
+  : 'c =
   try
     let v = find k m in
     add k (f v) m
@@ -140,5 +151,5 @@ module Option = struct
   let map f = function
     | None -> None
     | Some x -> Some (f x)
-    
+
 end

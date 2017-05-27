@@ -2,11 +2,34 @@
 open HopixAST
 open HopixTypes
 
-let initial_typing_environment = HopixTypes.initial_typing_environment
+let initial_typing_environment = initial_typing_environment
 
 type typing_environment = HopixTypes.typing_environment
 
 let located f x = f (Position.position x) (Position.value x)
+
+let rec vars_of_pattern' p = vars_of_pattern (Position.value p)
+
+and vars_of_pattern = function
+  | PTypeAnnotation (p, _) -> vars_of_pattern' p
+  | PVariable x -> [Position.value x]
+  | PTaggedValue (_, ps) | PAnd ps ->
+    List.fold_left (fun acc p -> vars_of_pattern' p @ acc) [] ps
+  | POr (p :: _) -> vars_of_pattern' p
+  | POr [] -> assert false      (* By syntax.  *)
+  | PWildcard | PLiteral _ -> []
+
+let check_linear_pattern pos p =
+  try
+    let id = ExtStd.List.find_duplicate (vars_of_pattern p) in
+    raise_type_error (NonLinearPattern (pos, id))
+  with
+  | Not_found -> ()
+
+let instantiate_type_scheme pos s ts =
+  try instantiate_type_scheme s ts with
+  | InvalidInstantiation (xarity, iarity) ->
+    raise_type_error (InvalidTypeInstantiation (pos, xarity, iarity))
 
 (** [check_program_is_fully_annotated ast] traverses the [ast] of the
     program and for each definition, it makes sure that bound
@@ -96,8 +119,12 @@ let typecheck tenv ast : typing_environment =
     let ftys = List.map (located (extract_function_type_scheme tenv)) fdefs in
     let fids = List.map Position.value fids in
     let tenv =
-      List.fold_left2 (fun tenv fid fty -> bind_value fid fty tenv)
-        tenv fids ftys
+      try
+        List.fold_left2 (fun tenv fid fty ->
+            bind_value fid fty tenv
+          ) tenv fids ftys
+      with
+      | Invalid_argument _ -> assert false (* By syntax.  *)
     in
     List.iter (fun fdef ->
         ignore (located (check_function_definition tenv) fdef)) fdefs;
@@ -163,6 +190,11 @@ let typecheck tenv ast : typing_environment =
       | Scheme ([], ity) -> check_expected_type pos xty ity; s
       | _ -> raise_type_error (TooPolymorphicType pos)
     end
+
+  and check_pattern_type pos xty ity =
+    try ignore (unify_types xty ity) with
+    | UnificationFailed (xty, ity) ->
+      raise_type_error (TypeMismatch (pos, xty, ity))
 
   and type_scheme_of_expression' tenv e =
     located (type_scheme_of_expression tenv) e
@@ -249,18 +281,27 @@ let typecheck tenv ast : typing_environment =
     | Tagged (k, types, args) ->
       let tyFromK = located lookup_type_scheme_of_constructor k tenv in
       let rmPosTypes = List.map (fun a -> internalize_ty tenv a) types in
-      let tau = instantiate_type_scheme tyFromK rmPosTypes in
+      let tau = instantiate_type_scheme pos tyFromK rmPosTypes in
       let tyListFromTau =
         match tau with
         | ATyArrow (alist, _) -> alist
         | _ -> assert false
       in
-      let f t e =
-        let Scheme (_, atyFromE) = type_scheme_of_expression' tenv e in
-        check_expected_type
-          (Position.position e) atyFromE t
+      let check_args () =
+        try
+          List.iter2 (fun t e ->
+              let Scheme (_, atyFromE) = type_scheme_of_expression' tenv e in
+              check_expected_type
+                (Position.position e) atyFromE t
+            ) tyListFromTau args
+        with
+        | Invalid_argument _ ->
+          let xarity = List.length tyListFromTau in
+          let iarity = List.length args in
+          let k = Position.value k in
+          raise_type_error (WrongArityDataCons (pos, k, xarity, iarity))
       in
-      List.iter2 f tyListFromTau args;
+      check_args ();
       monotype (output_type_of_function tau)
 
     (* Γ ⊢ e : σ'    ∀i Γ ⊢ pᵢ ⇒ Γᵢ, σ'    ∀i Γᵢ ⊢ eᵢ : σ
@@ -315,15 +356,24 @@ let typecheck tenv ast : typing_environment =
   and apply pos tenv s types args =
     let t =
       let atypes = List.map (internalize_ty tenv) types in
-      instantiate_type_scheme s atypes
+      instantiate_type_scheme pos s atypes
     in
     match t with
     | ATyArrow (xtypes, _) ->
-      List.iter2 (fun xty arg ->
-          let pos = Position.position arg in
-          let Scheme (_, ity) = type_scheme_of_expression' tenv arg in
-          check_expected_type pos xty ity;
-        ) xtypes args;
+      let check_args () =
+        try
+          List.iter2 (fun xty arg ->
+              let pos = Position.position arg in
+              let Scheme (_, ity) = type_scheme_of_expression' tenv arg in
+              check_expected_type pos xty ity;
+            ) xtypes args
+        with
+        | Invalid_argument _ ->
+          let xargc = List.length xtypes in
+          let iargc = List.length args in
+          raise_type_error (WrongArityFunction (pos, xargc, iargc))
+      in
+      check_args ();
       t
     | ATyVar _ | ATyCon _ -> raise_type_error (InvalidApplication pos)
 
@@ -357,7 +407,11 @@ let typecheck tenv ast : typing_environment =
   (** [pattern tenv pos p] computes a new environment completed with
       the variables introduced by the pattern [p] as well as the type
       of this pattern. *)
-  and pattern tenv pos = function
+  and pattern tenv pos p =
+    check_linear_pattern pos p;
+    pattern' tenv pos p
+
+  and pattern' tenv pos = function
     (*
        ———————————————————————
        Γ ⊢ x : τ ⇒ Γ'(x : τ), τ *)
@@ -380,24 +434,29 @@ let typecheck tenv ast : typing_environment =
        Γ₀ ⊢ K (p₁, …, pn) ⇒ Γn, τ
 
        Note that 'α₁ … αm' do nothing *)
-    | PTaggedValue (k, ps) ->
-      (* FIXME + fix check_program_is_fully_annotated -> case of tagged
-         pattern with no args, e.g. -> Nil, None *)
+    | PTaggedValue (k, ps) as p ->
       let (Scheme (_, tau)) as atyScheme =
         located lookup_type_scheme_of_constructor k tenv
       in
-      let checkEachPMatch accu p tvInK =
-        let e, pAty = located (pattern accu) p in
-        check_expected_type (Position.position p) pAty tvInK;
-        e
+      let tenv', ts =
+        List.fold_right (fun p (tenv, ts) ->
+            let tenv, t = located (pattern tenv) p in
+            (tenv, t :: ts)
+          ) ps (tenv, [])
       in
-      let tausInK = output_ty_list_of_function tau in
-      let tenv' = List.fold_left2 checkEachPMatch tenv ps tausInK in
+      let Scheme (_, tau) = refresh_type_scheme atyScheme in
+      let subst =
+        try unify_types tau (ATyArrow (ts, ATyVar (fresh ()))) with
+        | UnificationFailed (xty, ity) ->
+          raise_type_error (TypeMismatch (pos, xty, ity))
+      in
+      let tau = substitute subst tau in
+      let tausInK = input_types_of_function tau in
       tenv', output_type_of_function tau
 
-    (* ∀i Γ ⊢ pᵢ ⇒ Γᵢ, σᵢ    σ₁ = … = σn    Γ₁ = … = Γn
+    (* ∀i Γ ⊢ pᵢ ⇒ Γᵢ, τᵢ    τ₁ = … = τn    Γ₁ = … = Γn
        ————————————————————————————————————————————————
-       Γ ⊢ p₁ | … | pn ⇒ Γ₁, σ₁
+       Γ ⊢ p₁ | … | pn ⇒ Γ₁, τ₁
        A verifier avec Idir... difference avec PAnd?
     *)
     | POr ps ->
@@ -412,7 +471,7 @@ let typecheck tenv ast : typing_environment =
             | None -> Some gammai in
           match prevAty with
           | Some x ->
-            check_expected_type (Position.position p) pAty x;
+            check_pattern_type (Position.position p) pAty x;
             (prevEnv, Some pAty)
           | None -> (prevEnv, Some pAty)
         ) in
@@ -422,15 +481,16 @@ let typecheck tenv ast : typing_environment =
         | Some x, Some y -> x, y
         | _ -> assert false (** Never reached case *)
       end
-    (* ∀i Γᵢ₋₁ ⊢ pᵢ ⇒ Γᵢ, σᵢ   σ₁ = … = σn
+
+    (* ∀i Γᵢ₋₁ ⊢ pᵢ ⇒ Γᵢ, τᵢ   τ₁ = … = τn
        ———————————————————————————————————
-       Γ₀ ⊢ p₁ & … & pn ⇒ Γn, σn           *)
-    | PAnd ps ->
+       Γ₀ ⊢ p₁ & … & pn ⇒ Γn, τn           *)
+    | PAnd ps as p ->
       let checkEachPEqual (prevEnv, prevAty) p =
         let e, pAty = located (pattern prevEnv) p in
         match prevAty with
         | Some x ->
-          check_expected_type (Position.position p) pAty x;
+          check_pattern_type (Position.position p) pAty x;
           (e, Some pAty)
         | None -> (e, Some pAty)
       in
@@ -447,7 +507,7 @@ let typecheck tenv ast : typing_environment =
     | PTypeAnnotation (p, ty) ->
       let tenv', tau' = located (pattern tenv) p in
       let aty = internalize_ty tenv ty in
-      check_expected_type (Position.position ty) tau' aty;
+      check_pattern_type pos aty tau';
       tenv', aty
 
     (*
@@ -455,10 +515,10 @@ let typecheck tenv ast : typing_environment =
        Γ ⊢ n ⇒ Γ, int    Γ ⊢ n ⇒ Γ, char    Γ ⊢ n ⇒ Γ, string *)
     | PLiteral l -> tenv, located type_of_literal l
 
-  (** [branches tenv sty oty bs] checks that the patterns of the
+  (** [branches tenv sty bs] checks that the patterns of the
       branches [bs] have type [sty] and that the bodies of these
-      branches all have the same type oty. *)
-  and branches tenv sty (* oty *) bs =
+      branches all have the same type. *)
+  and branches tenv sty bs =
     let oty =
       List.fold_left (fun oty b ->
           located (branch tenv sty oty) b
@@ -484,8 +544,7 @@ let typecheck tenv ast : typing_environment =
     check_program_is_fully_annotated ast;
     program ast
   with
-  | TypeError err -> HopixTypes.report_error err
+  | TypeError err -> report_error err
 
 
-let print_typing_environment =
-  HopixTypes.print_typing_environment
+let print_typing_environment = print_typing_environment

@@ -1,4 +1,4 @@
-nil :  -> list('a)
+nil : unit -> list('a)
 cons : 'a * list('a) -> list('a)
 map : ('a -> 'b) * list('a) -> list('b)
 append : list('a) * list('a) -> list('a)
