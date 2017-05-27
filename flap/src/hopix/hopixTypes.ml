@@ -289,6 +289,12 @@ let check_ty_cons_arity pos tc xarity iarity =
   if xarity <> iarity then
     raise_type_error (WrongArityTypeConstructor (pos, tc, xarity, iarity))
 
+let check_ty_cons_data_cons pos data_constructors =
+  match find_double data_constructors with
+  | None -> ()
+  | Some dc ->
+    raise_type_error (AlreadyBoundDataConstructor (pos, dc))
+
 let rec check_well_formed_type pos env = function
   | ATyVar tv ->
     if not (is_type_variable_defined pos env tv) then
@@ -296,6 +302,7 @@ let rec check_well_formed_type pos env = function
   | ATyCon (tc, ts) ->
     let tc_info = lookup_type_info_of_ty_cons pos tc env in
     check_ty_cons_arity pos tc tc_info.arity (List.length ts);
+    check_ty_cons_data_cons pos tc_info.data_constructors
   | ATyArrow (ts, t) ->
     List.iter (check_well_formed_type pos env) ts;
     check_well_formed_type pos env t
@@ -356,17 +363,18 @@ let bind_type_definition x ts tdef env =
   let pre_env =
     let env = bind_type_variables Position.dummy env ts in
     let type_constructors =
-      match find_double data_constructors with
-      | None -> (x, { arity; data_constructors }) :: env.type_constructors
-      | Some dc ->
-        raise_type_error (AlreadyBoundDataConstructor (Position.dummy, dc))
+      (x, { arity; data_constructors }) :: env.type_constructors
     in
     { env with type_constructors; constructors = [] }
   in
   let constructor_definition (k, tys) =
     let atys = List.map (internalize_ty pre_env) tys in
+    let aty =
+      let ts = List.map (fun v -> Position.unknown_pos (TyVar v)) ts in
+      internalize_ty pre_env (Position.unknown_pos (TyCon (x, ts)))
+    in
     let scheme =
-      mk_type_scheme (atys --> ATyCon (x, List.map (fun v -> ATyVar v) ts))
+      mk_type_scheme (atys --> aty)
     in
     (Position.value k, scheme)
   in
@@ -417,7 +425,7 @@ let print_binding (Id x, Scheme (_, s)) =
 let print_typing_environment tenv =
   let excluded = initial_typing_environment () in
   let values = List.filter (fun (x, _) ->
-    not (List.mem_assoc x excluded.values)
-  ) (List.rev tenv.values)
+      not (List.mem_assoc x excluded.values)
+    ) (List.rev tenv.values)
   in
   String.concat "\n" (List.map print_binding values)
