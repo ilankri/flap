@@ -1,3 +1,0 @@
-fun zero (x) = x ? 0 => true | _ => false
-
-val main = if zero (13) then print_string ("true") else print_string ("false")

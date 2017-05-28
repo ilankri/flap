@@ -41,14 +41,15 @@ OCAMLBUILD = ocamlbuild -use-ocamlfind -use-menhir $(OCAMLBUILDFLAGS)	\
 OCAMLDOC = ocamldoc
 HEADACHE = headache
 
-RLWRAP = rlwrap
-
 # Macros to run tests locally.
 check_cmd = LOCAL_TEST=yes $(MAKE) -C ../flapivor/tests/$(1) check
 check_log_cmd = VERBOSE=1 $(call check_cmd,$(1)) > ../log/local-$(1).log
+install_tests_cmd =						\
+	cp examples/*.hopix examples/*.expected			\
+	../flapivor/tests/tests-$(1)/hopix/compiler/good
 
 # Test suite variables.
-SUITES = m1 m2 m3 m4 flap
+SUITES = m1 m2 m3 m4 hobix fopix retrolix
 TESTS = $(addprefix tests-,$(SUITES))
 
 #########
@@ -56,7 +57,7 @@ TESTS = $(addprefix tests-,$(SUITES))
 #########
 
 .PHONY: configure all-generic byte opt doc clean dist install uninstall	\
-	headers clear byte-debug all-debug check $(TESTS) run
+	headers clear byte-debug all-debug check $(TESTS) install-tests
 
 all-generic: configure clear $(STARGET) $(TARGET)
 
@@ -104,9 +105,10 @@ else
 	$(call check_cmd,$@)
 endif
 
-# Run flap quickly.
-run: all-debug
-	$(RLWRAP) ./$(TARGET) -i true -T true -V true -VV true -s hopix
+install-tests:
+	$(call install_tests_cmd,hobix)
+	$(call install_tests_cmd,fopix)
+	$(call install_tests_cmd,retrolix)
 
 #######################
 # Administrative part #
