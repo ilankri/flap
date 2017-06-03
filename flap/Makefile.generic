@@ -49,7 +49,7 @@ install_tests_cmd =						\
 	../flapivor/tests/tests-$(1)/hopix/compiler/good
 
 # Test suite variables.
-SUITES = m1 m2 m3 m4 hobix fopix retrolix
+SUITES = m1 m2 m3 m4 hobix fopix retrolix mips
 TESTS = $(addprefix tests-,$(SUITES))
 
 #########
@@ -109,6 +109,7 @@ install-tests:
 	$(call install_tests_cmd,hobix)
 	$(call install_tests_cmd,fopix)
 	$(call install_tests_cmd,retrolix)
+	$(call install_tests_cmd,mips)
 
 #######################
 # Administrative part #

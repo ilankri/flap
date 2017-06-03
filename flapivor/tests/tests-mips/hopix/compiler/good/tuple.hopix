@@ -1,0 +1,22 @@
+fun one['a]   (x : 'a, y : 'a, z : 'a, t : 'a, u : 'a, v : 'a, w : 'a) : 'a = x
+fun two['a]   (x : 'a, y : 'a, z : 'a, t : 'a, u : 'a, v : 'a, w : 'a) : 'a = y
+fun three['a] (x : 'a, y : 'a, z : 'a, t : 'a, u : 'a, v : 'a, w : 'a) : 'a = z
+fun four['a]  (x : 'a, y : 'a, z : 'a, t : 'a, u : 'a, v : 'a, w : 'a) : 'a = t
+fun five['a]  (x : 'a, y : 'a, z : 'a, t : 'a, u : 'a, v : 'a, w : 'a) : 'a = u
+fun six['a]   (x : 'a, y : 'a, z : 'a, t : 'a, u : 'a, v : 'a, w : 'a) : 'a = v
+fun seven['a] (x : 'a, y : 'a, z : 'a, t : 'a, u : 'a, v : 'a, w : 'a) : 'a = w
+
+val main =
+  print_int (one[int]   (1, 2, 3, 4, 5, 6, 7));
+  print_string (" ");
+  print_int (two[int]   (1, 2, 3, 4, 5, 6, 7));
+  print_string (" ");
+  print_int (three[int] (1, 2, 3, 4, 5, 6, 7));
+  print_string (" ");
+  print_int (four[int]  (1, 2, 3, 4, 5, 6, 7));
+  print_string (" ");
+  print_int (five[int]  (1, 2, 3, 4, 5, 6, 7));
+  print_string (" ");
+  print_int (six[int]   (1, 2, 3, 4, 5, 6, 7));
+  print_string (" ");
+  print_int (seven[int] (1, 2, 3, 4, 5, 6, 7))
