@@ -237,7 +237,7 @@ let unify_types ty1 ty2 =
           (eliminate_x a, eliminate_x b)
         ) pbs)
       in
-      (x, ty) :: phi
+      (x, substitute phi ty) :: phi
     | (ty, ATyVar x) :: pbs ->
       unify ((ATyVar x, ty) :: pbs)
     | (ATyArrow (ins1, out1), ATyArrow (ins2, out2)) :: pbs ->
