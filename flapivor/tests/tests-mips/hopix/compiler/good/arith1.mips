@@ -1,0 +1,226 @@
+#include <sys/regdef.h>
+.globl main
+.data
+__global__main:
+.word 1
+.text
+main:    addiu sp, sp, -136
+l144:    # Pass actuals
+l143:    # Pass actuals
+l142:    # Pass actuals
+l140:    li fp, 10
+         move a0, fp
+l141:    li fp, 2
+         move a1, fp
+l124:    # Save caller-saved registers
+l114:    sw t0, 52(sp)
+l115:    sw t1, 48(sp)
+l116:    sw t2, 44(sp)
+l117:    sw t3, 40(sp)
+l118:    sw t4, 36(sp)
+l119:    sw t5, 32(sp)
+l120:    sw t6, 28(sp)
+l121:    sw t7, 24(sp)
+l122:    sw t8, 20(sp)
+l123:    sw t9, 16(sp)
+l139:    # Function call
+l138:    jal diff_sq
+l137:    # Restore caller-saved registers
+l127:    lw fp, 52(sp)
+         move t0, fp
+l128:    lw fp, 48(sp)
+         move t1, fp
+l129:    lw fp, 44(sp)
+         move t2, fp
+l130:    lw fp, 40(sp)
+         move t3, fp
+l131:    lw fp, 36(sp)
+         move t4, fp
+l132:    lw fp, 32(sp)
+         move t5, fp
+l133:    lw fp, 28(sp)
+         move t6, fp
+l134:    lw fp, 24(sp)
+         move t7, fp
+l135:    lw fp, 20(sp)
+         move t8, fp
+l136:    lw fp, 16(sp)
+         move t9, fp
+l126:    # Retrieve return value
+l125:    move a0, v0
+l98:     # Save caller-saved registers
+l88:     sw t0, 92(sp)
+l89:     sw t1, 88(sp)
+l90:     sw t2, 84(sp)
+l91:     sw t3, 80(sp)
+l92:     sw t4, 76(sp)
+l93:     sw t5, 72(sp)
+l94:     sw t6, 68(sp)
+l95:     sw t7, 64(sp)
+l96:     sw t8, 60(sp)
+l97:     sw t9, 56(sp)
+l113:    # Function call
+l112:    jal succ
+l111:    # Restore caller-saved registers
+l101:    lw fp, 92(sp)
+         move t0, fp
+l102:    lw fp, 88(sp)
+         move t1, fp
+l103:    lw fp, 84(sp)
+         move t2, fp
+l104:    lw fp, 80(sp)
+         move t3, fp
+l105:    lw fp, 76(sp)
+         move t4, fp
+l106:    lw fp, 72(sp)
+         move t5, fp
+l107:    lw fp, 68(sp)
+         move t6, fp
+l108:    lw fp, 64(sp)
+         move t7, fp
+l109:    lw fp, 60(sp)
+         move t8, fp
+l110:    lw fp, 56(sp)
+         move t9, fp
+l100:    # Retrieve return value
+l99:     move a0, v0
+l72:     # Save caller-saved registers
+l62:     sw t0, 132(sp)
+l63:     sw t1, 128(sp)
+l64:     sw t2, 124(sp)
+l65:     sw t3, 120(sp)
+l66:     sw t4, 116(sp)
+l67:     sw t5, 112(sp)
+l68:     sw t6, 108(sp)
+l69:     sw t7, 104(sp)
+l70:     sw t8, 100(sp)
+l71:     sw t9, 96(sp)
+l87:     # Function call
+l86:     jal print_int
+l85:     # Restore caller-saved registers
+l75:     lw fp, 132(sp)
+         move t0, fp
+l76:     lw fp, 128(sp)
+         move t1, fp
+l77:     lw fp, 124(sp)
+         move t2, fp
+l78:     lw fp, 120(sp)
+         move t3, fp
+l79:     lw fp, 116(sp)
+         move t4, fp
+l80:     lw fp, 112(sp)
+         move t5, fp
+l81:     lw fp, 108(sp)
+         move t6, fp
+l82:     lw fp, 104(sp)
+         move t7, fp
+l83:     lw fp, 100(sp)
+         move t8, fp
+l84:     lw fp, 96(sp)
+         move t9, fp
+l74:     # Retrieve return value
+l73:     lui v1, %hi(__global__main)
+         sw v0, %lo(__global__main)(v1)
+l145:    li a0, 0
+         j exit
+succ:    addiu sp, sp, -64
+l12:     # Save callee-saved registers
+l1:      sw ra, 60(sp)
+l2:      sw s0, 48(sp)
+l3:      sw s1, 44(sp)
+l4:      sw s2, 40(sp)
+l5:      sw s3, 36(sp)
+l6:      sw s4, 32(sp)
+l7:      sw s5, 28(sp)
+l8:      sw s6, 24(sp)
+l9:      sw s7, 20(sp)
+l11:     # Retrieve first four actuals
+l10:     sw a0, 16(sp)
+l28:     # Function body
+l25:     lw fp, 16(sp)
+         sw fp, 56(sp)
+l26:     li fp, 1
+         sw fp, 52(sp)
+l27:     lw v1, 56(sp)
+         lw fp, 52(sp)
+         add v0, v1, fp
+l22:     # Restore callee-saved registers
+l13:     lw fp, 60(sp)
+         move ra, fp
+l14:     lw fp, 48(sp)
+         move s0, fp
+l15:     lw fp, 44(sp)
+         move s1, fp
+l16:     lw fp, 40(sp)
+         move s2, fp
+l17:     lw fp, 36(sp)
+         move s3, fp
+l18:     lw fp, 32(sp)
+         move s4, fp
+l19:     lw fp, 28(sp)
+         move s5, fp
+l20:     lw fp, 24(sp)
+         move s6, fp
+l21:     lw fp, 20(sp)
+         move s7, fp
+l24:     # Return
+l23:     addiu sp, sp, 64
+         jr ra
+diff_sq: addiu sp, sp, -84
+l41:     # Save callee-saved registers
+l29:     sw ra, 80(sp)
+l30:     sw s0, 76(sp)
+l31:     sw s1, 72(sp)
+l32:     sw s2, 68(sp)
+l33:     sw s3, 64(sp)
+l34:     sw s4, 60(sp)
+l35:     sw s5, 56(sp)
+l36:     sw s6, 52(sp)
+l37:     sw s7, 48(sp)
+l40:     # Retrieve first four actuals
+l38:     sw a0, 20(sp)
+l39:     sw a1, 16(sp)
+l61:     # Function body
+l54:     lw fp, 20(sp)
+         sw fp, 40(sp)
+l55:     lw fp, 20(sp)
+         sw fp, 36(sp)
+l56:     lw fp, 44(sp)
+         lw v1, 40(sp)
+         lw fp, 36(sp)
+         mul fp, v1, fp
+         sw fp, 44(sp)
+l57:     lw fp, 16(sp)
+         sw fp, 28(sp)
+l58:     lw fp, 16(sp)
+         sw fp, 24(sp)
+l59:     lw fp, 32(sp)
+         lw v1, 28(sp)
+         lw fp, 24(sp)
+         mul fp, v1, fp
+         sw fp, 32(sp)
+l60:     lw v1, 44(sp)
+         lw fp, 32(sp)
+         sub v0, v1, fp
+l51:     # Restore callee-saved registers
+l42:     lw fp, 80(sp)
+         move ra, fp
+l43:     lw fp, 76(sp)
+         move s0, fp
+l44:     lw fp, 72(sp)
+         move s1, fp
+l45:     lw fp, 68(sp)
+         move s2, fp
+l46:     lw fp, 64(sp)
+         move s3, fp
+l47:     lw fp, 60(sp)
+         move s4, fp
+l48:     lw fp, 56(sp)
+         move s5, fp
+l49:     lw fp, 52(sp)
+         move s6, fp
+l50:     lw fp, 48(sp)
+         move s7, fp
+l53:     # Return
+l52:     addiu sp, sp, 84
+         jr ra

@@ -1,0 +1,5 @@
+fun succ (x : int) : int = x + 1
+
+fun diff_sq (x : int, y : int) : int = x * x - y * y
+
+val main = print_int (succ (diff_sq (10, 2)))

@@ -7,10 +7,13 @@ let list_of_listoption = function
 
 let prefixid_of_binop b = Id ("`" ^ b)
 
+(* [map_pos x y] extends the decoration from [y] to [x].  *)
+let map_pos x y = Position.map (fun _ -> x) y
+
 let seq_expr es =
   let wrap acc e =
     (* Pb: Is it risky to use a valid id like "nothing"?  *)
-    Position.(unknown_pos (Define(unknown_pos (Id "nothing"), e, acc)))
+    map_pos (Define (map_pos (Id "nothing") e, e, acc)) e
   in
   let e, acc =
     match es with
@@ -142,7 +145,7 @@ expr_with_return_type(EXPR):
     {
       match t with
       | None -> exp
-      | Some t -> Position.unknown_pos (TypeAnnotation(exp, t))
+      | Some t -> map_pos (TypeAnnotation (exp, t)) exp
     }
 
 and_var_id_list(X):
@@ -153,8 +156,12 @@ var_id_list(X):
     typ_list = option(bracket_comma_nonempty_list(located(type_variable)))
     pat_list = paren_comma_nonempty_list(located(pattern))
     e = expr_with_return_type(X)
-    { (id, Position.unknown_pos
-    ( FunctionDefinition( list_of_listoption(typ_list), pat_list, e))) }
+      {
+        let fdef =
+          FunctionDefinition (list_of_listoption typ_list, pat_list, e)
+        in
+        (id, map_pos fdef e)
+      }
 
 (*
  * For terminals
@@ -248,7 +255,7 @@ simple_expr:
 
 binop_expr(right_expr):
   | e1 = located(simple_expr) b = located(binop) e2 = located(right_expr)
-      { Apply (Position.unknown_pos (Variable b), [], [e1; e2]) }
+      { Apply (map_pos (Variable b) b, [], [e1; e2]) }
 
 (* expr { ; expr } *)
 seq_expr:

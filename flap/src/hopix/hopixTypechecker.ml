@@ -292,7 +292,7 @@ let typecheck tenv ast : typing_environment =
           List.iter2 (fun t e ->
               let Scheme (_, atyFromE) = type_scheme_of_expression' tenv e in
               check_expected_type
-                (Position.position e) atyFromE t
+                (Position.position e) t atyFromE
             ) tyListFromTau args
         with
         | Invalid_argument _ ->
@@ -444,15 +444,18 @@ let typecheck tenv ast : typing_environment =
             (tenv, t :: ts)
           ) ps (tenv, [])
       in
-      let Scheme (_, tau) = refresh_type_scheme atyScheme in
-      let subst =
-        try unify_types tau (ATyArrow (ts, ATyVar (fresh ()))) with
-        | UnificationFailed (xty, ity) ->
-          raise_type_error (TypeMismatch (pos, xty, ity))
+      let check_ptagged xsc ts =
+        let Scheme (_, xty) = refresh_type_scheme xsc in
+        let ity = ATyArrow (ts, ATyVar (fresh ())) in
+        let subst =
+          try unify_types xty ity  with
+          | UnificationFailed (xty, ity) ->
+            raise_type_error (TypeMismatch (pos, xty, ity))
+        in
+        substitute subst xty
       in
-      let tau = substitute subst tau in
-      let tausInK = input_types_of_function tau in
-      tenv', output_type_of_function tau
+      let t = check_ptagged atyScheme ts in
+      (tenv', output_type_of_function t)
 
     (* ∀i Γ ⊢ pᵢ ⇒ Γᵢ, τᵢ    τ₁ = … = τn    Γ₁ = … = Γn
        ————————————————————————————————————————————————
@@ -532,7 +535,7 @@ let typecheck tenv ast : typing_environment =
     | Branch (p, e) ->
       let envP, tyP = located (pattern tenv) p in
       let Scheme (_, atyE) = type_scheme_of_expression' envP e in
-      check_expected_type (Position.position p) tyP sty;
+      check_pattern_type (Position.position p) tyP sty;
       match oty with
       | Some x ->
         check_expected_type (Position.position e) x atyE;

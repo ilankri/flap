@@ -1,5 +1,0 @@
-fun succ (x) = x + 1
-
-fun diff_sq (x, y) = x * x - y * y
-
-val main = print_int (succ (diff_sq (10, 2)))

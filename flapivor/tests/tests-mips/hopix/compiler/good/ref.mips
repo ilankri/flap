@@ -1,0 +1,170 @@
+#include <sys/regdef.h>
+.globl main
+.data
+__global__main:
+.word 1
+.text
+main: addiu sp, sp, -184
+l114: # Pass actuals
+l113: # Pass actuals
+l111: # Pass actuals
+l110: li fp, 1
+      move a0, fp
+l94:  # Save caller-saved registers
+l84:  sw t0, 84(sp)
+l85:  sw t1, 80(sp)
+l86:  sw t2, 76(sp)
+l87:  sw t3, 72(sp)
+l88:  sw t4, 68(sp)
+l89:  sw t5, 64(sp)
+l90:  sw t6, 60(sp)
+l91:  sw t7, 56(sp)
+l92:  sw t8, 52(sp)
+l93:  sw t9, 44(sp)
+l109: # Function call
+l108: jal block_create
+l107: # Restore caller-saved registers
+l97:  lw fp, 84(sp)
+      move t0, fp
+l98:  lw fp, 80(sp)
+      move t1, fp
+l99:  lw fp, 76(sp)
+      move t2, fp
+l100: lw fp, 72(sp)
+      move t3, fp
+l101: lw fp, 68(sp)
+      move t4, fp
+l102: lw fp, 64(sp)
+      move t5, fp
+l103: lw fp, 60(sp)
+      move t6, fp
+l104: lw fp, 56(sp)
+      move t7, fp
+l105: lw fp, 52(sp)
+      move t8, fp
+l106: lw fp, 44(sp)
+      move t9, fp
+l96:  # Retrieve return value
+l95:  sw v0, 20(sp)
+l83:  # Pass actuals
+l80:  lw fp, 20(sp)
+      move a0, fp
+l81:  li fp, 0
+      move a1, fp
+l82:  li fp, 42
+      move a2, fp
+l64:  # Save caller-saved registers
+l54:  sw t0, 128(sp)
+l55:  sw t1, 124(sp)
+l56:  sw t2, 120(sp)
+l57:  sw t3, 116(sp)
+l58:  sw t4, 112(sp)
+l59:  sw t5, 108(sp)
+l60:  sw t6, 104(sp)
+l61:  sw t7, 100(sp)
+l62:  sw t8, 96(sp)
+l63:  sw t9, 88(sp)
+l79:  # Function call
+l78:  jal block_set
+l77:  # Restore caller-saved registers
+l67:  lw fp, 128(sp)
+      move t0, fp
+l68:  lw fp, 124(sp)
+      move t1, fp
+l69:  lw fp, 120(sp)
+      move t2, fp
+l70:  lw fp, 116(sp)
+      move t3, fp
+l71:  lw fp, 112(sp)
+      move t4, fp
+l72:  lw fp, 108(sp)
+      move t5, fp
+l73:  lw fp, 104(sp)
+      move t6, fp
+l74:  lw fp, 100(sp)
+      move t7, fp
+l75:  lw fp, 96(sp)
+      move t8, fp
+l76:  lw fp, 88(sp)
+      move t9, fp
+l66:  # Retrieve return value
+l65:  sw v0, 16(sp)
+l53:  lw fp, 20(sp)
+      move a0, fp
+l112: li fp, 0
+      move a1, fp
+l37:  # Save caller-saved registers
+l27:  sw t0, 172(sp)
+l28:  sw t1, 168(sp)
+l29:  sw t2, 164(sp)
+l30:  sw t3, 160(sp)
+l31:  sw t4, 156(sp)
+l32:  sw t5, 152(sp)
+l33:  sw t6, 148(sp)
+l34:  sw t7, 144(sp)
+l35:  sw t8, 140(sp)
+l36:  sw t9, 132(sp)
+l52:  # Function call
+l51:  jal block_get
+l50:  # Restore caller-saved registers
+l40:  lw fp, 172(sp)
+      move t0, fp
+l41:  lw fp, 168(sp)
+      move t1, fp
+l42:  lw fp, 164(sp)
+      move t2, fp
+l43:  lw fp, 160(sp)
+      move t3, fp
+l44:  lw fp, 156(sp)
+      move t4, fp
+l45:  lw fp, 152(sp)
+      move t5, fp
+l46:  lw fp, 148(sp)
+      move t6, fp
+l47:  lw fp, 144(sp)
+      move t7, fp
+l48:  lw fp, 140(sp)
+      move t8, fp
+l49:  lw fp, 132(sp)
+      move t9, fp
+l39:  # Retrieve return value
+l38:  move a0, v0
+l11:  # Save caller-saved registers
+l1:   sw t0, 180(sp)
+l2:   sw t1, 136(sp)
+l3:   sw t2, 92(sp)
+l4:   sw t3, 48(sp)
+l5:   sw t4, 40(sp)
+l6:   sw t5, 36(sp)
+l7:   sw t6, 32(sp)
+l8:   sw t7, 28(sp)
+l9:   sw t8, 24(sp)
+l10:  sw t9, 176(sp)
+l26:  # Function call
+l25:  jal print_int
+l24:  # Restore caller-saved registers
+l14:  lw fp, 180(sp)
+      move t0, fp
+l15:  lw fp, 136(sp)
+      move t1, fp
+l16:  lw fp, 92(sp)
+      move t2, fp
+l17:  lw fp, 48(sp)
+      move t3, fp
+l18:  lw fp, 40(sp)
+      move t4, fp
+l19:  lw fp, 36(sp)
+      move t5, fp
+l20:  lw fp, 32(sp)
+      move t6, fp
+l21:  lw fp, 28(sp)
+      move t7, fp
+l22:  lw fp, 24(sp)
+      move t8, fp
+l23:  lw fp, 176(sp)
+      move t9, fp
+l13:  # Retrieve return value
+l12:  lui v1, %hi(__global__main)
+      sw v0, %lo(__global__main)(v1)
+l115: li a0, 0
+      j exit
