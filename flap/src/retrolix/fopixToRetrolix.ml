@@ -274,14 +274,6 @@ and expression out = T.(function
     | S.Variable (S.Id x) ->
       [labelled (Assign (out, Load, [ `Variable (Id x) ]))]
 
-    (* | S.Variable (S.Id id as x) -> *)
-    (*   let rv = *)
-    (*     match id with *)
-    (*     | "false" | "true" -> as_bool x *)
-    (*     | _ -> `Variable (Id id) *)
-    (*   in *)
-    (*   [load out rv] *)
-
     | S.Define (S.Id x, e1, e2) ->
       (** Hey student! The following code is wrong in general,
           hopefully, you will implement [preprocess] in such a way that
