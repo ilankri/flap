@@ -7,6 +7,6 @@ fun singleton['a] (l : list ('a)) : bool =
 
 val main =
   if singleton[int] (Nil[int]) then
-    print_string ("true")
+    print_int (1)
   else
-    print_string ("false")
+    print_int (0)

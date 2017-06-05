@@ -1,1 +1,1 @@
--r true --retromips true -s hopix -t retrolix
+-r true -s hopix -t retrolix
