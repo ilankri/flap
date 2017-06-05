@@ -149,7 +149,7 @@ let semantics op =
   in
   fun i j -> op (as_int32 i) (as_int32 j)
 
-let mk_instr binop = fun rdest r1 r2 ->
+let mk_instr_by_op binop = fun rdest r1 r2 ->
   match binop with
   | S.Add -> T.Add (rdest, r1, r2)
   | S.Mul -> T.Mul (rdest, r1, r2)
@@ -263,7 +263,7 @@ let rec translate (p : S.t) (env : environment) : T.t * environment =
       | S.Assign (lv, binop, [rv1; rv2]) ->
         load_rvalue stacksize env lv tmp2 (fun rdest ->
             mk_operation stacksize env rdest rv1 rv2
-              (semantics binop) (mk_instr binop rdest) @ (
+              (semantics binop) (mk_instr_by_op binop rdest) @ (
               match lv with
               | `Register _ -> []
               | `Variable x -> store_variable stacksize env x rdest)
@@ -273,16 +273,35 @@ let rec translate (p : S.t) (env : environment) : T.t * environment =
 
       | S.Jump (S.Label l) -> [T.J (T.Label l)]
 
-      | S.ConditionalJump (c, [rv1; rv2], l1, l2) ->
-        let label (S.Label l) = T.Label l in
-        load_rvalue stacksize env rv1 tmp1 (fun r ->
-            load_rvalue stacksize env rv2 tmp2 (fun s -> [
-                  mk_instr (S.Bool c) r r s;
-                  T.Beqz (r, label l2);
-                  T.J (label l1)
-                ]
+      (* | S.ConditionalJump (c, [rv1; rv2], l1, l2) -> *)
+      (*   let label (S.Label l) = T.Label l in *)
+      (*   load_rvalue stacksize env rv1 tmp1 (fun r -> *)
+      (*       load_rvalue stacksize env rv2 tmp2 (fun s -> [ *)
+      (*             mk_instr (S.Bool c) r r s; *)
+      (*             T.Beqz (r, label l2); *)
+      (*             T.J (label l1) *)
+      (*           ] *)
+      (*         ) *)
+      (*     ) *)
+
+      | S.ConditionalJump (c, rvl, l1, l2) ->
+        let extract_op c r1 r2 l1 l2 = match c with
+          | S.GT -> [T.Bgt (r1,r2,l1); T.J l2]
+          | S.LT -> [T.Bgt (r1,r2,l2); T.J l1]
+          | S.GTE -> [T.Bge (r1,r2,l1); T.J l2]
+          | S.LTE -> [T.Bge (r1,r2,l2); T.J l1]
+          | S.EQ -> [T.Seq (r1,r1,r2); T.Beqz (r1,l2); T.J l1]
+        in
+        begin match rvl with
+          | [r1; r2] ->
+            load_rvalue stacksize env r1 tmp1 (fun r1 ->
+                load_rvalue stacksize env r2 tmp2 (fun r2 ->
+                    let label (S.Label l) = T.Label l in
+                    extract_op c tmp1 tmp2 (label l1) (label l2)
+                  )
               )
-          )
+          | _ -> assert false
+        end
 
       | S.Switch (_, _, _) -> failwith "TODO"
 
