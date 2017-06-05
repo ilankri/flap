@@ -35,16 +35,6 @@ let fresh_id =
 
 let identifier (S.Id x) = T.Id x
 
-let rtrue = `Immediate (T.LInt Int32.one)
-
-let rfalse = `Immediate (T.LInt Int32.zero)
-
-let as_bool (S.Id id) =
-  match id with
-  | "true" -> rtrue
-  | "false" -> rfalse
-  | _ -> assert false
-
 let rec get_globals set = function
   | S.DefineValue (x, _) -> push set x
   | _ -> set
