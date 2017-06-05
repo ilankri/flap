@@ -179,15 +179,24 @@ let extract_global xs = function
   | S.DValue (S.Id x, _) -> (T.Label (global_variable_label x)) :: xs
   | _ -> xs
 
-(** First, push the rvalues [rs] on the stack and then jump to the
-    label [f].  *)
-let call stacksize env (S.FId f) rs =
+(** First, push the rvalues [rs] on the stack and then jump to the code
+    of [f].  *)
+let call stacksize env f rs =
   let push i rv =
     load_rvalue stacksize env rv tmp1 (fun rsrc ->
         [T.Sw (rsrc, sp_offset_address (i + arg_reg_count))]
       )
   in
-  List.flatten (List.mapi push rs) @ [T.Jal (T.Label f)]
+  let jump = function
+    | `Immediate (S.LFun _ as f) ->
+      load_rvalue stacksize env (`Immediate f) tmp1 (fun r ->
+          [T.Jalr r]
+        )
+    | `Variable _ | `Register _ ->
+      load_rvalue stacksize env f tmp1 (fun r -> [T.Jalr r])
+    | `Immediate (S.LInt _ | S.LChar _ | S.LString _) -> assert false
+  in
+  List.flatten (List.mapi push rs) @ jump f
 
 (** [mk_operation stacksize env rdest r1 r2 semantics make] compiles
     the application of an operation of two rvalues [r1] and [r2] whose
@@ -234,11 +243,7 @@ let rec translate (p : S.t) (env : environment) : T.t * environment =
       instructions. [stacksize] is the size of the current stack
       frame and [locals] the list of local variables. *)
   and instruction stacksize locals env l = T.(function
-      | S.Call (_, f, rs) ->
-        begin match f with
-          | `Immediate (S.LFun f) -> call stacksize env f rs
-          | _ -> assert false
-        end
+      | S.Call (_, f, rs) -> call stacksize env f rs
 
       | S.TailCall (_, _) -> failwith "TODO"
 
@@ -268,7 +273,16 @@ let rec translate (p : S.t) (env : environment) : T.t * environment =
 
       | S.Jump (S.Label l) -> [T.J (T.Label l)]
 
-      | S.ConditionalJump (c, rvl, l1, l2) -> failwith "TODO" 
+      | S.ConditionalJump (c, [rv1; rv2], l1, l2) ->
+        let label (S.Label l) = T.Label l in
+        load_rvalue stacksize env rv1 tmp1 (fun r ->
+            load_rvalue stacksize env rv2 tmp2 (fun s -> [
+                  mk_instr (S.Bool c) r r s;
+                  T.Beqz (r, label l2);
+                  T.J (label l1)
+                ]
+              )
+          )
 
       | S.Switch (_, _, _) -> failwith "TODO"
 
