@@ -81,12 +81,44 @@ struct
       returns a node that may be spilled. Otherwise, the graph is
       empty. *)
   let pick g : pick_result =
-    failwith "Students! This is your job!"
-
+    let pick_preference g = Graph.pick_edge g EdgeLabel.preference in
+    let res = Graph.min_degree g EdgeLabel.conflict EdgeLabel.preference in
+    match res with
+    | Some (d, nl) -> 
+       if (d < Colors.cardinal) then SimplifiableNode nl
+       else 
+       begin match pick_preference g with
+       | Some (l1, l2) -> PreferenceNodes (l1, l2)   
+       | None -> MaybeSpillNode nl
+       end
+    | None -> 
+       begin match pick_preference g with
+       | Some (l1, l2) -> PreferenceNodes (l1, l2)   
+       | None -> EmptyGraph
+       end
 
   (** [colorize g] returns a coloring for [g]. *)
   let rec colorize (g : Graph.t) : t =
-    failwith "Students! This is your job!"
+     let remove_nodes_from pkresult g = match pkresult with
+     | EmptyGraph -> g
+     | SimplifiableNode n -> Graph.del_node g n
+     | MaybeSpillNode n -> Graph.del_node g n
+     | PreferenceNodes (n1, n2) -> Graph.del_node (Graph.del_node g n1) n2
+     in
+     let assign_remaining_color coloringMap node g =
+     match node with
+     | EmptyGraph -> failwith "TODO"
+     | SimplifiableNode n -> failwith "TODO"
+     | MaybeSpillNode n -> failwith "TODO"
+     | PreferenceNodes (n1, n2) -> failwith "Advance algo implementation needed for preference nodes"
+     in
+     let pick_res = pick g in
+     let g' = remove_nodes_from pick_res g in
+     let coloring = colorize g' in
+       (**try **)
+         assign_remaining_color coloring pick_res g'
+       (**with NoMoreColor -> give_up coloring n *)
+
   (** [briggs g n1 n2] returns true iff in [g'] the graph in which n1 and
       n2 are merged, the number of neighbours of the new node for n1 and n2
       has a number of non simplifiable node which is strictly less than the
