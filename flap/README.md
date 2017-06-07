@@ -17,10 +17,9 @@
 * Register allocation (only the liveness analysis is implemented)
 
 ## To be fixed
-Compilation of operations on blocks in Retrolix/MIPS: there is maybe
-a problem with procedure call conventions because operations on blocks
-are OK up to Retrolix but some programs that use operations on blocks
-are successfully executed on MIPS architecture.
+Compilation of operations on blocks in Retrolix/MIPS: there maybe a problem 
+with procedure call conventions because operations on blocksare OK up to Retrolix 
+but some programs that use operations on blocks are successfully executed on MIPS architecture.
 
 ## To be implemented
 * Graph coloring of interference graph (to complete register allocation)
@@ -49,6 +48,7 @@ HOBIX:
 * HopixToHobix > Lankri
 
 FOPIX:
+* HobixToFobix > Lankri + Hsieh
 * Cloture conversion > Lankri
 
 RETROLIX:
@@ -56,6 +56,7 @@ RETROLIX:
 * Convention d'appel > Lankri
 * Registres allocation > Hsieh + Lankri
 * Liveness anaylsis > Hsieh + Lankri
+* FobixToRetrolix > Lankri + Hsieh
 
 MIPS:
 * RetrolixToMips > Lankri + Hsieh
