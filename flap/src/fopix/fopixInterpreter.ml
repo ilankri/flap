@@ -279,16 +279,16 @@ and expression runtime = function
     end
 
   | FunCall (FunId "equal_string", [e1; e2]) ->
-     begin match expression runtime e1, expression runtime e2 with
-     | VString s1, VString s2 -> VBool (String.compare s1 s2 = 0)
-     | _ -> assert false (* By typing. *)
-     end
+    begin match expression runtime e1, expression runtime e2 with
+      | VString s1, VString s2 -> VBool (String.compare s1 s2 = 0)
+      | _ -> assert false (* By typing. *)
+    end
 
   | FunCall (FunId "equal_char", [e1; e2]) ->
-     begin match expression runtime e1, expression runtime e2 with
-     | VChar s1, VChar s2 -> VBool (Char.compare s1 s2 = 0)
-     | _ -> assert false (* By typing. *)
-     end
+    begin match expression runtime e1, expression runtime e2 with
+      | VChar s1, VChar s2 -> VBool (Char.compare s1 s2 = 0)
+      | _ -> assert false (* By typing. *)
+    end
 
   | FunCall (FunId "print_int", [e]) ->
     begin match expression runtime e with
@@ -315,12 +315,12 @@ and expression runtime = function
     end
 
   | FunCall (FunId (("`&&" | "`||") as binop), [e1; e2]) ->
-     begin match expression runtime e1, binop with
-     | VBool true, "`&&" | VBool false, "`||" -> expression runtime e2
-     | VBool false, "`&&" -> VBool false
-     | VBool true, "`||" -> VBool true
-     | _, _ -> assert false (* By typing. *)
-     end
+    begin match expression runtime e1, binop with
+      | VBool true, "`&&" | VBool false, "`||" -> expression runtime e2
+      | VBool false, "`&&" -> VBool false
+      | VBool true, "`||" -> VBool true
+      | _, _ -> assert false (* By typing. *)
+    end
 
   | FunCall (FunId s, [e1; e2]) when is_binary_primitive s ->
     evaluation_of_binary_symbol runtime s e1 e2
@@ -342,7 +342,11 @@ and expression runtime = function
     in
     expression runtime body
 
-  | UnknownFunCall (_, _) -> error' ("UnknownFunCall is not implemented.")
+  | UnknownFunCall (e, es) -> (
+      match expression runtime  e with
+      | VFun f -> expression runtime (FunCall (f, es))
+      | _ -> assert false
+    )
 
 and binop
   : type a b. a coercion -> b wrapper -> _ -> (a -> a -> b) -> _ -> _ -> value

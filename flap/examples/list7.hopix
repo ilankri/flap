@@ -1,0 +1,16 @@
+type list ('a) = Nil | Cons ('a, list ('a))
+
+fun hd (l : list (int)) : int =
+  l ?
+  | Nil => 0
+  | Cons (h : int, _ : list (int)) => h
+
+fun tl (l : list (int)) : list (int) =
+  l ?
+  | Nil => Nil[int]
+  | Cons (_ : int, t : list (int)) => t
+
+val main =
+  val l = Cons[int] (1, Cons[int] (2, Nil[int]));
+  print_int (hd (l));
+  print_int (hd (tl (l)))

@@ -72,11 +72,11 @@ let error pos msg =
 
 let make_fresh_variable =
   let r = ref 0 in
-  fun () -> incr r; T.Id (Printf.sprintf "_%d" !r)
+  fun () -> incr r; T.Id (Printf.sprintf "_fopix_%d" !r)
 
 let make_fresh_function_identifier =
   let r = ref 0 in
-  fun () -> incr r; T.FunId (Printf.sprintf "_%d" !r)
+  fun () -> incr r; T.FunId (Printf.sprintf "_fopix_f%d" !r)
 
 let define e f =
   let x = make_fresh_variable () in
@@ -108,6 +108,19 @@ let read_block e i =
 
 let lint i =
   T.(Literal (LInt (Int32.of_int i)))
+
+let is_primitive x =
+  FopixInterpreter.is_binary_primitive x || x = "print_int" ||
+  x = "print_string"
+
+let unwrap_rec_defs rdefs =
+  List.split (
+    List.map (fun (f, e) ->
+        match e with
+        | S.Fun (formals, body) -> (f, (formals, body))
+        | _ -> assert false
+      ) rdefs
+  )
 
 let free_variables =
   let module M =
@@ -147,7 +160,13 @@ let free_variables =
       let c = match c with None -> [] | Some c -> [c] in
       unions fvs (a :: Array.to_list b @ c)
   in
-  fun e -> M.elements (fvs e)
+  fun e ->
+    M.elements (
+      M.filter (fun (S.Id x) ->
+          not (is_primitive x) &&
+          not (x = "true" || x = "false" || x = "nothing")
+        ) (fvs e)
+    )
 
 (**
 
@@ -184,53 +203,107 @@ let translate (p : S.t) env =
     List.(flatten (map definition defs)), env
 
   and definition = function
-    | S.DeclareExtern id ->
-      [T.ExternalFunction (function_identifier id)]
+    | S.DeclareExtern id -> [T.ExternalFunction (function_identifier id)]
     | S.DefineValue (x, e) ->
       let fs, e = expression Dict.empty e in
       fs @ [T.DefineValue (identifier x, e)]
     | S.DefineRecFuns rdefs ->
       let fs, defs = define_recursive_functions rdefs in
-      let define_function (f, (formals, body)) =
-        T.DefineFunction (f, formals, body)
-      in
-      fs @ List.map define_function defs
+      fs @ List.map (fun (x, e) -> T.DefineValue (x, e)) defs
 
   and define_recursive_functions rdefs =
-    let expression (_, e) =
-      match e with
-      | S.Fun (formals, body) ->
-        let fs, body = expression Dict.empty body in
-        (fs, (List.map identifier formals, body))
-      | S.Literal _ | S.Variable _ | S.Define _ | S.DefineRec _ | S.Apply _ |
-        S.IfThenElse _ | S.AllocateBlock _ | S.WriteBlock _ | S.ReadBlock _ |
-        S.Switch _ | S.While _ ->
-        assert false
+    let fs, defs = unwrap_rec_defs rdefs in
+    let fdefs, es = mk_closures fs defs in
+    (fdefs, List.combine (List.map identifier fs) es)
+
+  and alloc_closure fvs_count =
+    let closure = make_fresh_variable () in
+    (closure, T.DefineValue (closure, allocate_block (lint (fvs_count + 1))))
+
+  and fill_closure closure fvs formals body renaming =
+    let offsets = List.map lint (ExtStd.List.range 1 (List.length fvs)) in
+    let fenv = make_fresh_variable () in
+    let fdefs, body =
+      let env =
+        List.fold_left2 (fun env fv offset ->
+            Dict.insert fv (read_block (T.Variable fenv) offset) env
+          ) env fvs offsets
+      in
+      expression env body
     in
-    let fs, es = List.split (List.map expression rdefs) in
-    let ids = List.map (fun (id, _) -> function_identifier id) rdefs in
-    (List.flatten fs, List.combine ids es)
+    let f = make_fresh_function_identifier () in
+    let fdef =
+      T.DefineFunction (f, fenv :: List.map identifier formals, body)
+    in
+    let fill_closure =
+      let closure = T.Variable closure in
+      let store_free_variable offset fv =
+        let fv = try List.assoc fv renaming with Not_found -> fv in
+        write_block closure offset (T.Variable fv)
+      in
+      seqs (
+        write_block closure (lint 0) (T.Literal (T.LFun f)) ::
+        List.map2 store_free_variable offsets (List.map identifier fvs) @
+        [closure]
+      )
+    in
+    (fdef :: fdefs, fill_closure)
+
+  and mk_closure formals body =
+    let fvs = free_variables (S.Fun (formals, body)) in
+    let closure, closure_def = alloc_closure (List.length fvs) in
+    let fdefs, e = fill_closure closure fvs formals body [] in
+    (closure_def :: fdefs, e)
+
+  and mk_closures fs defs =
+    let fvs = List.map (fun (formals, body) ->
+        free_variables (S.Fun (formals, body))
+      ) defs
+    in
+    let closures, closure_defs =
+      List.split (List.map (fun fvs -> alloc_closure (List.length fvs)) fvs)
+    in
+    let renaming = List.combine (List.map identifier fs) closures in
+    let closures = List.combine closures fvs in
+    let fdefs, es =
+      List.split (
+        List.map2 (fun (closure, fvs) (formals, body) ->
+            fill_closure closure fvs formals body renaming
+          ) closures defs
+      )
+    in
+    (closure_defs @ List.flatten fdefs, es)
 
   and expression env = function
-    | S.Literal l ->
-      [], T.Literal (literal l)
+    | S.Literal l -> ([], T.Literal (literal l))
+
     | S.While (cond, e) ->
       let cfs, cond = expression env cond in
       let efs, e = expression env e in
-      cfs @ efs, T.While (cond, e)
-    | S.Variable x ->
+      (cfs @ efs, T.While (cond, e))
+
+    | S.Variable (S.Id id as x) ->
       let xc =
-        match Dict.lookup x env with
-        | None -> T.Variable (identifier x)
-        | Some e -> e
+        if is_primitive id then
+          T.Literal (T.LFun (function_identifier x))
+        else
+          match Dict.lookup x env with
+          | None -> T.Variable (identifier x)
+          | Some e -> e
       in
       ([], xc)
+
     | S.Define (x, a, b) ->
       let afs, a = expression env a in
       let bfs, b = expression env b in
       (afs @ bfs, T.Define (identifier x, a, b))
+
     | S.DefineRec (rdefs, a) ->
-      failwith "Students! This is your job!"
+      let fs, defs = unwrap_rec_defs rdefs in
+      let fdefs, es = mk_closures fs defs in
+      let fdefs', a = expression env a in
+      (fdefs @ fdefs', defines (List.combine (List.map identifier fs) es) a)
+
     | S.Apply (a, bs) ->
       let idfs, id = expression env a in
       let fsWithExprs =  List.map (expression env) bs in
@@ -242,32 +315,34 @@ let translate (p : S.t) env =
       in
       begin
         match id with
-        | T.Variable (T.Id x) -> idfs@fs, T.FunCall(T.FunId x, es)
-        | _ ->
-          failwith "Apply should only have a string id as its first expression"
+        | T.Literal (T.LFun f) -> idfs@fs, T.FunCall(f, es)
+        | e ->
+          idfs @ fs, T.UnknownFunCall (read_block e (lint 0), e :: es)
       end
+
     | S.IfThenElse (a, b, c) ->
       let afs, a = expression env a in
       let bfs, b = expression env b in
       let cfs, c = expression env c in
-      afs @ bfs @ cfs, T.IfThenElse (a, b, c)
+      (afs @ bfs @ cfs, T.IfThenElse (a, b, c))
 
-    | S.Fun (x, e) ->
-      failwith "Students! This is your job!"
+    | S.Fun (x, e) -> mk_closure x e
+
     | S.AllocateBlock a ->
       let afs, a = expression env a in
       (afs, allocate_block a)
+
     | S.WriteBlock (a, b, c) ->
       let afs, a = expression env a in
       let bfs, b = expression env b in
       let cfs, c = expression env c in
-      afs @ bfs @ cfs,
-      T.FunCall (T.FunId "write_block", [a; b; c])
+      (afs @ bfs @ cfs, T.FunCall (T.FunId "write_block", [a; b; c]))
+
     | S.ReadBlock (a, b) ->
       let afs, a = expression env a in
       let bfs, b = expression env b in
-      afs @ bfs,
-      T.FunCall (T.FunId "read_block", [a; b])
+      (afs @ bfs, T.FunCall (T.FunId "read_block", [a; b]))
+
     | S.Switch (a, bs, default) ->
       let afs, a = expression env a in
       let bsfs, bs = List.(split (map (expression env) (Array.to_list bs))) in
@@ -275,8 +350,7 @@ let translate (p : S.t) env =
         | None -> [], None
         | Some e -> let bs, e = expression env e in bs, Some e
       in
-      afs @ List.flatten bsfs @ dfs,
-      T.Switch (a, Array.of_list bs, default)
+      (afs @ List.flatten bsfs @ dfs, T.Switch (a, Array.of_list bs, default))
 
   and expressions env = function
     | [] ->

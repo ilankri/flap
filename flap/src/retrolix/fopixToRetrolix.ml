@@ -35,16 +35,6 @@ let fresh_id =
 
 let identifier (S.Id x) = T.Id x
 
-let rtrue = `Immediate (T.LInt Int32.one)
-
-let rfalse = `Immediate (T.LInt Int32.zero)
-
-let as_bool (S.Id id) =
-  match id with
-  | "true" -> rtrue
-  | "false" -> rfalse
-  | _ -> assert false
-
 let rec get_globals set = function
   | S.DefineValue (x, _) -> push set x
   | _ -> set
@@ -255,7 +245,7 @@ and fun_call out f actuals proc_call_conv =
   as_rvalues extra_actuals (fun extra_actuals ->
       caller_prologue @
       comment "Function call" ::
-      [labelled (T.Call (out, `Immediate (literal (S.LFun f)), extra_actuals))]
+      [labelled (T.Call (out, f, extra_actuals))]
     ) @
   caller_epilogue
 
@@ -273,14 +263,6 @@ and expression out = T.(function
 
     | S.Variable (S.Id x) ->
       [labelled (Assign (out, Load, [ `Variable (Id x) ]))]
-
-    (* | S.Variable (S.Id id as x) -> *)
-    (*   let rv = *)
-    (*     match id with *)
-    (*     | "false" | "true" -> as_bool x *)
-    (*     | _ -> `Variable (Id id) *)
-    (*   in *)
-    (*   [load out rv] *)
 
     | S.Define (S.Id x, e1, e2) ->
       (** Hey student! The following code is wrong in general,
@@ -308,14 +290,14 @@ and expression out = T.(function
 
     | S.IfThenElse (c, t, f) ->
       let closeLabel = [labelled (Comment "Exit If")] in
-      let jumpToClose = [labelled (Jump (first_label closeLabel))] in
-      let insTrue = (expression out t) @ jumpToClose in
-      let insFalse = (expression out f) @ jumpToClose in
+      let jumpToClose = Jump (first_label closeLabel) in
+      let insTrue = (expression out t) @ [labelled jumpToClose] in
+      let insFalse = (expression out f) @ [labelled jumpToClose] in
       (condition (first_label insTrue) (first_label insFalse) c) @
       insTrue @ insFalse @ closeLabel
 
     | S.FunCall (S.FunId "`&&", [e1; e2]) ->
-     expression out (S.(IfThenElse (e1, e2, Variable (Id "false"))))
+      expression out (S.(IfThenElse (e1, e2, Variable (Id "false"))))
 
     | S.FunCall (S.FunId "`||", [e1; e2]) ->
       expression out (S.(IfThenElse (e1, Variable (Id "true"), e2)))
@@ -324,10 +306,13 @@ and expression out = T.(function
       assign out (binop f) es
 
     | S.FunCall (f, actuals) ->
+      let f = `Immediate (literal (S.LFun f)) in
       fun_call out f actuals (Options.get_retromips ())
 
     | S.UnknownFunCall (ef, actuals) ->
-      failwith "Students! This is your job!"
+      let code_ptr = fresh_variable () in
+      expression code_ptr ef @
+      fun_call out code_ptr actuals (Options.get_retromips ())
 
     | S.Switch (e, cases, default) ->
       let closeLabel = [labelled (Comment "Exit Switch")] in
@@ -429,7 +414,10 @@ and literal = T.(function
     | S.LInt x ->
       LInt x
     | S.LFun (S.FunId f) ->
-      LFun (FId (rename_predefine_function f))
+      let f =
+        if Options.get_retromips () then rename_predefine_function f else f
+      in
+      LFun (FId f)
     | S.LChar c ->
       LChar c
     | S.LString s ->
@@ -473,5 +461,5 @@ let preprocess p env =
 let translate p env =
   (*let p, env = preprocess p env in *)
   let p, env = translate' p env in
-  let p = RetrolixRegisterAllocation.translate p in
+  (* let p = RetrolixRegisterAllocation.translate p in *)
   (p, env)

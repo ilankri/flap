@@ -4,7 +4,6 @@ val y = 321
 
 fun print_int2 (x : int, y : int) : unit =
   print_int (x);
-  print_string ("\n");
   print_int (y)
 
 val main = print_int2 (x, y)

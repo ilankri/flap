@@ -3,12 +3,12 @@
 
 void print_int(int n)
 {
-  printf("Int: %d\n", n);
+  printf("%d", n);
 }
 
 void print_str(char* str)
 {
-  printf("Str:%s\n", str);
+  printf("%s", str);
 }
 
 int* block_create(int size)

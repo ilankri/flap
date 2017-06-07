@@ -56,7 +56,7 @@ let index_of_constructor env k =
     an identifier that has never been seen before. *)
 let fresh_identifier =
   let r = ref 0 in
-  fun () -> incr r; HobixAST.Id ("_" ^ string_of_int !r)
+  fun () -> incr r; HobixAST.Id ("_hobix_" ^ string_of_int !r)
 
 (** [def w (fun x -> e)] returns an abstract syntax tree of
     the form:
