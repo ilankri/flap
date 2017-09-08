@@ -42,3 +42,6 @@ checkout = git clone 'git@moule.informatique.univ-paris-diderot.fr:abderrazak/co
 
 [students/diaby-ebourefe]
 checkout = git clone 'git@moule.informatique.univ-paris-diderot.fr:diaby/compilation-m1-2016.git' diaby-ebourefe
+
+[students/lagha-belaid]
+checkout = git clone 'git@moule.informatique.univ-paris-diderot.fr:hamilaki/compilation-m1-2016.git' lagha-belaid
