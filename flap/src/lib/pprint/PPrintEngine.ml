@@ -57,7 +57,7 @@ end
 
 class channel_output channel = object
   method char = output_char channel
-  method substring = output channel
+  method substring = fun s -> output channel (Bytes.of_string s)
 end
 
 class buffer_output buffer = object
