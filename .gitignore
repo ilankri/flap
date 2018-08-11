@@ -2,6 +2,7 @@ _build/
 *.byte
 *.native
 
+/*.log
 /flap
 /flap.docdir
 /myocamlbuild_config.ml

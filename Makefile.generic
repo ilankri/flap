@@ -43,7 +43,7 @@ HEADACHE = headache
 
 # Macros to run tests locally.
 check_cmd = $(MAKE) -C tests/$(1) check
-check_log_cmd = VERBOSE=1 $(call check_cmd,$(1)) > ../log/local-$(1).log
+check_log_cmd = VERBOSE=1 $(call check_cmd,$(1)) > $(1).log
 install_tests_cmd = cp examples/*.hopix examples/*.expected	\
 			tests/$(1)/hopix/compiler/good
 
