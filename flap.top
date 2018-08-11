@@ -9,7 +9,6 @@
 #directory "_build/src";;
 #directory "_build/src/common";;
 #directory "_build/src/utilities";;
-#directory "_build/src/lib/pprint";;
 #directory "_build/src/hopix";;
 #directory "_build/src/hobix";;
 #directory "_build/src/fopix";;

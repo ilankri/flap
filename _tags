@@ -1,4 +1,4 @@
-true : package(unix), package(str)
+true : package(unix), package(str), package(pprint)
 
 <src>            : include
 <src/common>     : include
@@ -8,4 +8,3 @@ true : package(unix), package(str)
 <src/fopix>      : include
 <src/retrolix>   : include
 <src/mips>       : include
-<src/lib/pprint> : include
