@@ -1,0 +1,8 @@
+.PHONY: docker-build
+
+docker-build:
+	docker build -t flap .
+
+# Local Variables:
+# mode: makefile-gmake
+# End:

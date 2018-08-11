@@ -1,0 +1,12 @@
+# -*- makefile-gmake -*-
+
+###########################
+## Package configuration ##
+###########################
+.PHONY: all
+
+all: all-generic
+
+VERSION	  = 16.2
+TARGET	  = flap
+TARGETEXT = flap
