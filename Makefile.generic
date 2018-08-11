@@ -48,7 +48,7 @@ install_tests_cmd = cp examples/*.hopix examples/*.expected	\
 			tests/$(1)/hopix/compiler/good
 
 # Test suite variables.
-TESTS = m1 m2 m3 m4 hobix fopix retrolix mips
+TESTS = hopix hobix fopix retrolix mips
 
 #########
 # Rules #
