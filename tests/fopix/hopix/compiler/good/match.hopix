@@ -1,3 +1,0 @@
-fun zero (x : int) : bool = x ? 0 => true | _ : int => false
-
-val main = if zero (13) then print_int (1) else print_int (0)

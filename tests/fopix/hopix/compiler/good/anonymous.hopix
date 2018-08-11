@@ -1,3 +1,0 @@
-val main =
-  val y = 13;
-  print_int ((\(x : int) => x + y) (12))

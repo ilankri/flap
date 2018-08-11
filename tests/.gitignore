@@ -4,3 +4,5 @@ bad-counter
 bad-ok-counter
 good-counter
 good-ok-counter
+**/good/Makefile
+**/bad/Makefile

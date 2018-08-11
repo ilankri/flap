@@ -1,5 +1,0 @@
-fun even (x : int) : bool = if x = 0 then true else odd (x - 1)
-
-and odd (x : int) : bool = if x = 0 then false else even (x - 1)
-
-val main = if even (22) then print_int (1) else print_int (0)

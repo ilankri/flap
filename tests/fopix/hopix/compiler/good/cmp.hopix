@@ -1,9 +1,0 @@
-fun print_bool (b : bool) : unit =
-  if b then print_int (1) else print_int (0)
-
-val main =
-  print_bool (3 < 3);
-  print_bool (3 > 3);
-  print_bool (3 = 3);
-  print_bool (3 <= 3);
-  print_bool (3 >= 3)

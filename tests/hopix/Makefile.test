@@ -2,11 +2,17 @@
 .PHONY: check bad good clean all clean-silent annnounce expected
 all:
 
-FLAP_PATH = ../../../../../../flap
+FLAP_PATH = ../../../..
 
 -include $(FLAP_PATH)/Makefile.local
 
-PROGRAM = $(FLAP_PATH)/$(TARGET) $(OPTIONS)
+FLAP = $(shell if test -f program; then cat program; else echo ""; fi)
+
+ifeq ($(strip $(FLAP)),)
+	FLAP = $(TARGET)
+endif
+
+PROGRAM = $(FLAP_PATH)/$(FLAP) $(OPTIONS)
 
 -include ../../extension
 

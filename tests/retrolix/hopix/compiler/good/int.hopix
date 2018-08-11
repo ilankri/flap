@@ -1,1 +1,0 @@
-val main = print_int (1000000)

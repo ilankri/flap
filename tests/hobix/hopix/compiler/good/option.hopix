@@ -1,8 +1,0 @@
-type option ('a) = None | Some ('a)
-
-fun as_some (x : option (int)) : int =
-  x ?
-  | None => 0
-  | Some (x : int) => x
-
-val main = print_int (as_some (Some[int] (7)))
