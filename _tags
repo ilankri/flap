@@ -8,3 +8,7 @@ true : package(unix), package(str), package(pprint)
 <src/fopix>      : include
 <src/retrolix>   : include
 <src/mips>       : include
+<src/javix>      : include
+<src/anfix>      : include
+<src/kontix>     : include
+<src/jakix>      : include

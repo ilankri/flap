@@ -12,6 +12,9 @@ module List = struct
 
   include List
 
+  (** [flat_map f l] is equivalent to [flatten (map f l)].  *)
+  let flat_map f l = flatten (map f l)
+
   let rec range start stop =
     if stop < start then [] else start :: range (start + 1) stop
 

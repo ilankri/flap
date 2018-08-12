@@ -1,4 +1,4 @@
-#!/usr/bin/ocaml -init
+#!ocaml -init
 (* To get a usable toplevel with flap modules:
    - First compile flap in bytecode: "make byte" or "make byte-debug"
    - Then launch: ocaml -init flap.top
@@ -6,6 +6,7 @@
    directly via: ./flap.top
 *)
 
+#use "topfind";;
 #directory "_build/src";;
 #directory "_build/src/common";;
 #directory "_build/src/utilities";;
@@ -14,11 +15,17 @@
 #directory "_build/src/fopix";;
 #directory "_build/src/retrolix";;
 #directory "_build/src/mips";;
+#directory "_build/src/javix";;
+#directory "_build/src/anfix";;
+#directory "_build/src/kontix";;
+#directory "_build/src/jakix";;
 #load "str.cma";;
 #load "unix.cma";;
+#require "pprint";;
 #load_rec "flap.cmo";;
 let () = Error.resume_on_error ();;
 let () = Options.(set_mode Interactive);;
 let () = Options.(set_source_language "hopix");;
 let () = print_string
 "Flap modules loaded.\n\n"
+;;

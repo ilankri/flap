@@ -46,11 +46,11 @@ let set_verbose_mode, get_verbose_mode = Ref.as_functions false
 let set_dry_mode, get_dry_mode         = Ref.as_functions false
 let set_benchmark, get_benchmark       = Ref.as_functions false
 let set_unsafe, get_unsafe             = Ref.as_functions false
-let set_gcc, get_gcc		       = Ref.as_functions false
+let set_gcc, get_gcc                   = Ref.as_functions false
 let set_show_types, get_show_types     = Ref.as_functions false
 let set_infer_types, get_infer_types   = Ref.as_functions false
 let set_check_types, get_check_types   = Ref.as_functions true
 let set_verbose_eval, get_verbose_eval = Ref.as_functions false
 let set_retromips, get_retromips       = Ref.as_functions false
 
-
+let compilation_unit_name = ref "Flap"

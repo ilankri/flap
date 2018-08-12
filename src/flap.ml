@@ -31,7 +31,11 @@ and initialize_languages () =
   HobixInitialization.initialize ();
   FopixInitialization.initialize ();
   RetrolixInitialization.initialize ();
-  MipsInitialization.initialize ()
+  MipsInitialization.initialize ();
+  JavixInitialization.initialize ();
+  AnfixInitialization.initialize ();
+  KontixInitialization.initialize ();
+  JakixInitialization.initialize ()
 
 (** Given the source language and the target language returns
     the right compiler (as a first-class module). *)
@@ -135,7 +139,7 @@ let interactive_loop () =
         | End_of_file ->
           (runtime, cenvironment, tenvironment)
         | e ->
-	  print_endline (Printexc.get_backtrace ());
+          print_endline (Printexc.get_backtrace ());
           print_endline (Printexc.to_string e);
           step runtime cenvironment tenvironment
   in
@@ -173,7 +177,7 @@ let batch_compilation () =
     Compiler.Source.(
       let tenv = typecheck (initial_typing_environment ()) ast in
       if Options.get_show_types () then (
-	print_endline (print_typing_environment tenv)
+        print_endline (print_typing_environment tenv)
       )
     );
   let cast, _ = Compiler.(translate ast (initial_environment ())) in
@@ -188,16 +192,16 @@ let batch_compilation () =
   if Options.get_running_mode () then Compiler.Target.(
     ignore (
       try
-	let print =
-	  if Options.get_verbose_eval () then
-	    print_observable
-	  else
-	    fun _ _ -> ""
-	in
+        let print =
+          if Options.get_verbose_eval () then
+            print_observable
+          else
+            fun _ _ -> ""
+        in
         eval (initial_runtime ()) (fun r -> evaluate r cast) print
       with
         | e ->
-	  print_endline (Printexc.get_backtrace ());
+          print_endline (Printexc.get_backtrace ());
           print_endline (Printexc.to_string e);
           exit 1
     )
