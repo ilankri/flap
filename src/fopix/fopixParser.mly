@@ -84,12 +84,12 @@ expression:
   FunCall (FunId b, [l; r])
 }
 | e=located(expression) LBRACKET i=located(expression) RBRACKET {
-  FunCall (FunId "block_get", [e; i])
+  FunCall (FunId "read_block", [e; i])
 }
 | e=located(expression)
   LBRACKET i=located(expression) RBRACKET
   ASSIGNS v=located(expression) {
-  FunCall (FunId "block_set", [e; i; v])
+  FunCall (FunId "write_block", [e; i; v])
 }
 | e1=located(expression) SEMICOLON e2=located(expression) {
   Define (Id "_", e1, e2)

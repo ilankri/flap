@@ -61,16 +61,37 @@ and untuple ptr i ids e = match ids with
           [ptr; T.Literal (T.LInt (Int32.of_int i))]),
           untuple ptr (i+1) ids e)
 
+and is_built_in = function
+  | "allocate_block" | "read_block" | "write_block" | "print_string" -> true
+  | _ -> false
+
+and built_in_arity = function
+  | "allocate_block" | "print_string" -> 1
+  | "read_block" -> 2
+  | "write_block" -> 3
+  | _ -> assert false
+
 and tailexpr = function
   | S.TLet (x,e1,e2) -> T.Define (T.Id x, basicexpr e1, tailexpr e2)
   | S.TIfThenElse (e1,e2,e3) ->
-     T.IfThenElse (basicexpr e1, tailexpr e2, tailexpr e3)
+      T.IfThenElse (basicexpr e1, tailexpr e2, tailexpr e3)
+  | S.TFunCall (S.FunName f as e, el) when is_built_in f ->
+      if built_in_arity f = List.length el then
+        T.FunCall (as_fun_id e, List.map basicexpr el)
+      else
+        let T.FunId fun_id = as_fun_id e in
+      T.FunCall (
+        T.FunId ("__cont_" ^ fun_id),
+        [T.Variable (T.Id "K"); T.Variable (T.Id "E")] @ List.map basicexpr el)
+
   | S.TFunCall (e,el) ->
       T.FunCall (
         as_fun_id e,
         [T.Variable (T.Id "K"); T.Variable (T.Id "E")] @ List.map basicexpr el)
   | S.TContCall e ->
-     T.FunCall (T.FunId "K", [T.Variable (T.Id "E"); basicexpr e])
+      T.UnknownFunCall (
+        T.Variable (T.Id "K"), [T.Variable (T.Id "E"); basicexpr e]
+      )
   | S.TPushCont (f,ids,e) ->
       T.Define (T.Id "E", tuple (List.map (fun x -> T.Id x)
                                    (["K"; "E"]@ids)),
@@ -103,10 +124,18 @@ and basicexpr = function
   | S.IfThenElse (e1,e2,e3) ->
      T.IfThenElse (basicexpr e1, basicexpr e2, basicexpr e3)
   | S.BinOp (o,e1,e2) -> T.FunCall (binop o, [basicexpr e1; basicexpr e2])
-  | S.BlockNew e -> T.FunCall (T.FunId "allocate_block", [basicexpr e])
+  | S.BlockNew e ->
+      T.FunCall (T.FunId "__cont_allocate_block",
+                 [T.Variable (T.Id "K"); T.Variable (T.Id "E"); basicexpr e])
   | S.BlockGet (e1,e2) ->
-      T.FunCall (T.FunId "read_block", [basicexpr e1; basicexpr e2])
+      T.FunCall (T.FunId "__cont_read_block",
+                 [T.Variable (T.Id "K"); T.Variable (T.Id "E");
+                  basicexpr e1; basicexpr e2])
   | S.BlockSet (e1,e2,e3) ->
-      T.FunCall (T.FunId "write_block",
-                 [basicexpr e1; basicexpr e2; basicexpr e3])
-  | S.Print s -> T.FunCall (T.FunId "print_string", [T.Literal (T.LString s)])
+      T.FunCall (T.FunId "__cont_write_block",
+                 [T.Variable (T.Id "K"); T.Variable (T.Id "E");
+                  basicexpr e1; basicexpr e2; basicexpr e3])
+  | S.Print s ->
+      T.FunCall (T.FunId "__cont_print_string",
+                 [T.Variable (T.Id "K"); T.Variable (T.Id "E");
+                  T.Literal (T.LString s)])

@@ -1,0 +1,7 @@
+def init_array(n) = allocate_block(n)
+
+val res =
+  val a = init_array(10) in
+  a[0] := 12;
+  a[0]
+  end

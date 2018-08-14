@@ -1,0 +1,6 @@
+def f(n) = n * 2
+
+val y =
+  val x = f(2) in
+  x + x
+  end

@@ -44,11 +44,11 @@ HEADACHE = headache
 # Macros to run tests locally.
 check_cmd = $(MAKE) -C tests/$(1) check
 check_log_cmd = VERBOSE=1 $(call check_cmd,$(1)) > $(1).log
-install_tests_cmd = cp examples/*.hopix examples/*.expected	\
-			tests/hopix/compiler-$(1)/good
+install_tests_cmd = cp examples/$(1)/*.$(1) examples/$(1)/*.expected	\
+			tests/$(1)/$(2)/good
 
 # Test suite variables.
-TESTS = hopix
+TESTS = hopix fopix
 
 #########
 # Rules #
@@ -93,10 +93,10 @@ endif
 all-debug: byte-debug $(TARGET)
 
 # Run all the test suites locally.
-check: install-tests $(TESTS)
+check: $(TESTS)
 
 # Run individually a test suite locally.
-$(TESTS): all-debug
+$(TESTS): all-debug install-tests
 ifeq ($(LOG), yes)
 	$(call check_log_cmd,$@)
 else
@@ -104,10 +104,15 @@ else
 endif
 
 install-tests:
-	$(call install_tests_cmd,hobix)
-	$(call install_tests_cmd,fopix)
-	$(call install_tests_cmd,retrolix)
-	$(call install_tests_cmd,mips)
+	$(call install_tests_cmd,hopix,compiler-hobix)
+	$(call install_tests_cmd,hopix,compiler-fopix)
+	$(call install_tests_cmd,hopix,compiler-retrolix)
+	$(call install_tests_cmd,hopix,compiler-mips)
+	$(call install_tests_cmd,fopix,interpreter)
+	$(call install_tests_cmd,fopix,compiler-javix)
+	$(call install_tests_cmd,fopix,compiler-anfix)
+	$(call install_tests_cmd,fopix,compiler-kontix)
+	$(call install_tests_cmd,fopix,compiler-jakix)
 
 #######################
 # Administrative part #

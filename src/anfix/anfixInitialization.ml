@@ -7,5 +7,6 @@ module RealFopixToAnfix = struct
 end
 
 let initialize () =
+  Languages.register (module Anfix);
   Compilers.register (module Compilers.Identity (Anfix) : Compilers.Compiler);
   Compilers.register (module RealFopixToAnfix : Compilers.Compiler)
