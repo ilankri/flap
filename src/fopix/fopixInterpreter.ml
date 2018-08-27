@@ -202,7 +202,6 @@ and is_binary_primitive = function
   | "`&&" | "`||" -> true
   | _ -> false
 
-(* FIXME: __cont_* -> use the cont and env params *)
 and expression runtime = function
   | Literal l ->
     literal l
@@ -259,8 +258,7 @@ and expression runtime = function
     in
     expression runtime e
 
-  | FunCall (FunId "allocate_block", [size]) |
-    FunCall (FunId "__cont_allocate_block", [_; _; size])->
+  | FunCall (FunId "allocate_block", [size]) ->
     let l = expression runtime size in
     begin
       match l with
@@ -270,8 +268,7 @@ and expression runtime = function
       | _ -> error' "'allocate_block' should have a size in type Literal(int)"
     end
 
-  | FunCall (FunId "read_block", [location; index]) |
-    FunCall (FunId "__cont_allocate_block", [_; _; location; index])->
+  | FunCall (FunId "read_block", [location; index]) ->
     begin match value_as_address (expression runtime location) with
       | Some addr ->
         begin match value_as_int (expression runtime index) with
@@ -299,15 +296,13 @@ and expression runtime = function
       | _ -> assert false (* By typing. *)
     end
 
-  | FunCall (FunId "print_string", [e]) |
-    FunCall (FunId "__cont_print_string", [_; _; e])->
+  | FunCall (FunId "print_string", [e]) ->
     begin match expression runtime e with
       | VString s -> print_string s
       | _ -> assert false (* By typing. *)
     end
 
-  | FunCall (FunId "write_block", [location; index; e]) |
-    FunCall (FunId "__cont_allocate_block", [_; _; location; index; e])->
+  | FunCall (FunId "write_block", [location; index; e]) ->
     begin
       match (expression runtime location), (expression runtime index) with
       | VAddress addr, VInt i ->

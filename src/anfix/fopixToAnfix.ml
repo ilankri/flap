@@ -76,7 +76,7 @@ and expr : S.expression -> T.expression = function
               T.BlockGet (a,i)
             )
         )
-  | S.FunCall (S.FunId "write_block ", [e1; e2; e3]) ->
+  | S.FunCall (S.FunId "write_block", [e1; e2; e3]) ->
       simplify_expr e1 (fun a ->
           simplify_expr e2 (fun i ->
               simplify_expr e3 (fun e ->
