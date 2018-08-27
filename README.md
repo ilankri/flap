@@ -1,6 +1,7 @@
 # Members
-* LANKRI Idir (lankri.idir@gmail.com)
-* HSIEH Yung-Kun (quincy.tw@gmail.com)
+* Yung-Kun Hsieh
+* Belaid Lagha
+* Idir Lankri
 
 # Overview of features
 ## Fully implemented
