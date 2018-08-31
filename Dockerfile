@@ -1,7 +1,8 @@
 FROM ocaml/opam
 
+RUN sudo apt-get update && \
+    sudo apt-get install -y gcc-mips-linux-gnu qemu-user
+RUN opam update && opam install -y ocamlfind menhir pprint
 COPY --chown=opam . flap
 WORKDIR flap
-RUN opam update
-RUN opam install ocamlfind menhir pprint
-RUN eval $(opam config env)
+RUN eval $(opam config env) && make byte-debug flap

@@ -1,9 +1,8 @@
-#!/usr/bin/env bash
+#!/bin/sh
 
-PROG=$1
-MIPS=`echo $1 | sed s/hopix/mips/`
-DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-
-$DIR/flap --gcc true --retromips true -s hopix -t mips $1 && \
-sshpass -p 'root' scp -P 10022 $MIPS root@localhost:prog.S && \
-sshpass -p 'root' ssh -p 10022 root@localhost 'gcc -o prog runtime.o prog.S && ./prog'
+$(dirname $0)/flap --gcc true --retromips true -s hopix -t mips $1 &&   \
+    mv $(printf "%s/%s.%s" $(dirname $1) $(basename -s .hopix $1) mips) \
+       /tmp/prog.S &&                                                   \
+    mips-linux-gnu-gcc -static -mno-shared -o /tmp/prog                 \
+                       $(dirname $0)/lib/runtime.c /tmp/prog.S &&       \
+    qemu-mips /tmp/prog
