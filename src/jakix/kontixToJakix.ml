@@ -259,23 +259,24 @@ let collect_function_info prog env =
   List.fold_left collect_function_info env prog
 
 let rec translate (p : S.t) env : T.t * environment =
-  let defs, main = p in
-  let env1 = collect_function_info defs env in
-  let env2, defs_instrs = (
-    List.fold_left (fun (env,instrs) def ->
-      let instr_list,env = translate_definition def env in
-      (env, (instrs @ instr_list)) ) (env1,[]) defs) in
+  FopixToJavix.translate (KontixToFopix.program p) env
+(* let defs, main = p in *)
+(* let env1 = collect_function_info defs env in *)
+(* let env2, defs_instrs = ( *)
+(*   List.fold_left (fun (env,instrs) def -> *)
+(*     let instr_list,env = translate_definition def env in *)
+(*     (env, (instrs @ instr_list)) ) (env1,[]) defs) in *)
 
-  let main_code = translate_tailexpr main env2 in
-  (* let varSize, stackSize = varAndStack_size p env2 in  *)
-  (* let pre_code = TODO in *)
-  (* let post_code = TODO in *)
-  let code =
-    (* pre_code @ *)
-    main_code @
-    (* post_code @ *)
-    defs_instrs @
-    Dispatcher.code ()
-  in
-  (* (basic_code code varSize stackSize), env' *)
-  (basic_code code 100 1000  ), env2
+(* let main_code = translate_tailexpr main env2 in *)
+(* (\* let varSize, stackSize = varAndStack_size p env2 in  *\) *)
+(* (\* let pre_code = TODO in *\) *)
+(* (\* let post_code = TODO in *\) *)
+(* let code = *)
+(*   (\* pre_code @ *\) *)
+(*   main_code @ *)
+(*   (\* post_code @ *\) *)
+(*   defs_instrs @ *)
+(*   Dispatcher.code () *)
+(* in *)
+(* (\* (basic_code code varSize stackSize), env' *\) *)
+(* (basic_code code 100 1000  ), env2 *)

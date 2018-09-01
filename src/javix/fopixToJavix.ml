@@ -340,32 +340,36 @@ let rec translate_expression (expr : S.expression) (env : environment) :
   | S.FunCall (S.FunId "print_string", [S.Literal (S.LString s)]) ->
       translate_Print s
 
-  | S.FunCall (fun_expr, args) ->
-      (* TODO: Check if the number of arguments is OK.  In fact, it
-         seems impossible to always check this at compile-time without
-         a typechecker.  Basically, the problem is that, for
-         higher-order function, the called function is determined only
-         at runtime.  *)
-      let return_label = new_label "return" in
-      save_vars env @
-      save_return_address return_label @
-      pass_fun_args args env @
-      call_fun fun_expr env @
-      labelled_instrs return_label (
-        T.Comment "Returned form the function call" ::
-        restore_vars env
-      )
+  | S.FunCall (fun_expr, args) -> fun_call (`Immediate fun_expr) args env
+
+  | S.UnknownFunCall (fun_expr, args) -> fun_call (`Unknown fun_expr) args env
 
   | _ -> failwith "TODO"
 
-and call_fun (S.FunId fun_expr) env =
-  (* match fun_expr with *)
-  (* | S.FunName f -> *)
-  unlabelled_instrs [T.Goto (Env.lookup_function_label fun_expr env)]
-  (* | _ -> *)
-  (*     unlabelled_instr (T.Comment "Compute the function to call") :: *)
-  (*     translate_expression fun_expr env @ *)
-  (*     unlabelled_instrs [T.Goto Dispatcher.label] *)
+and fun_call fun_expr args env =
+  (* TODO: Check if the number of arguments is OK.  In fact, it
+     seems impossible to always check this at compile-time without
+     a typechecker.  Basically, the problem is that, for
+     higher-order function, the called function is determined only
+     at runtime.  *)
+  let return_label = new_label "return" in
+  save_vars env @
+  save_return_address return_label @
+  pass_fun_args args env @
+  call_fun fun_expr env @
+  labelled_instrs return_label (
+    T.Comment "Returned form the function call" ::
+    restore_vars env
+  )
+
+and call_fun fun_expr env =
+  match fun_expr with
+  | `Immediate (S.FunId fun_id) ->
+      unlabelled_instrs [T.Goto (Env.lookup_function_label fun_id env)]
+  | `Unknown fun_expr ->
+      unlabelled_instr (T.Comment "Compute the function to call") ::
+      translate_expression fun_expr env @
+      unlabelled_instrs [T.Goto Dispatcher.label]
 
 and pass_fun_args args env =
   unlabelled_instr (T.Comment "Pass function arguments") ::
