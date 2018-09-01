@@ -470,8 +470,10 @@ let translate (p : S.t) (env : environment) : T.t * environment =
 (** Remarks:
   - When using this compiler from fopix to javix, flap will
     produce some .j files.
-    + Compile them to .class via: jasmin Foobar.j
-    + Run them with: java -noverify Foobar
+    {ol
+    {- Compile them to .class via: jasmin Foobar.j}
+    {- Run them with: java -noverify Foobar}
+    }
 
   - Final answer:
     your code should contain a final [Ireturn] that should
@@ -479,17 +481,19 @@ let translate (p : S.t) (env : environment) : T.t * environment =
     an Integer).
 
   - Function Call Convention:
-    + When a function starts, the stack should contain the
+    {ol
+    {- When a function starts, the stack should contain the
       return address (a label encoded as a number, see Labels.encode)
-      then the n arguments of the function.
-    + The function could freely use an modify any variable. So at least
+      then the n arguments of the function.}
+    {- The function could freely use an modify any variable. So at least
       the variables that are reused after this call should have
       their contents saved in stack before the call and restored
-      afterwards.
-    + The function starts by moving its arguments from the stack to
-      some variables.
-    + When the function returns, the result should be on the top
-      of the stack.
+      afterwards.}
+    {- The function starts by moving its arguments from the stack to
+      some variables.}
+    {- When the function returns, the result should be on the top
+      of the stack.}
+    }
 
   - Boxing:
     The stack could contain both unboxed elements (Java int)
