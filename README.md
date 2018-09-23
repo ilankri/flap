@@ -43,5 +43,5 @@ are successfully executed on MIPS architecture.
 
 # How to test the generated code
 
-Run `./docker-run.sh foo.hopix` each time you want to compile and
+Run `./docker-run.sh -mips foo.hopix` each time you want to compile and
 execute `foo.hopix` to MIPS in a Docker container.

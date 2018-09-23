@@ -5,8 +5,8 @@ quiet() {
 }
 
 CONTAINER=$(docker run -td flap)
-docker cp $1 $CONTAINER:/tmp/prog.hopix
-docker exec $CONTAINER ./run.sh lib/runtime.c /tmp/prog.hopix
+docker cp $2 $CONTAINER:/tmp/prog.hopix
+docker exec $CONTAINER ./run$1.sh /tmp/prog.hopix
 status=$?
 $(quiet docker stop $CONTAINER)
 $(quiet docker rm $CONTAINER)
