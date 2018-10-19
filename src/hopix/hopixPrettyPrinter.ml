@@ -90,8 +90,6 @@ and value_definition paren (x, e) =
 		 ++ group (located (if_paren_expression paren) e)))
 
 and ty t = match t with
-  | TyCon (TCon "->", [a; b]) ->
-    group (located (mayparen_ty t) a ++ string "->" ++ located ty b)
   | TyCon (tcon, []) ->
     type_constructor tcon
   | TyCon (tcon, tys) ->
@@ -102,12 +100,13 @@ and ty t = match t with
   | TyVar tvar ->
     type_variable tvar
   | TyArrow (ins, out) ->
-    separate_map (break 1 ^^ string "*" ^^ break 1) (located ty) ins
-    ++ string "->" ++ parens (located ty out)
+    separate_map
+      (break 1 ^^ string "*" ^^ break 1) (located (mayparen_ty t)) ins
+    ++ string "->" ++ located ty out
 
 and mayparen_ty ctx a =
   match ctx, a with
-    | TyCon (TCon "->", _), TyCon (TCon "->", _) ->
+    | TyArrow _, TyArrow _ ->
       parens (ty a)
     | _, _ ->
       ty a
