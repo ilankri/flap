@@ -89,7 +89,7 @@ and binop b =
   | S.Sub -> "`-"
   | S.Mul -> "`*"
   | S.Div -> "`/"
-  | S.Mod -> failwith "TODO"
+  | S.Mod -> ExtStd.failwith_todo __LOC__
   | S.Eq -> "`="
   | S.Le -> "`<="
   | S.Lt -> "`<"

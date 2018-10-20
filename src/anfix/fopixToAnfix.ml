@@ -30,7 +30,7 @@ and definition = function
   | S.DefineValue (S.Id i,e) -> T.DefVal (i,expr e)
   | S.DefineFunction (S.FunId f,a,e) ->
       T.DefFun (f,List.map (fun (S.Id x) -> x) a,expr e)
-  | S.ExternalFunction _ -> failwith "TODO"
+  | S.ExternalFunction _ -> ExtStd.failwith_todo __LOC__
 
 and simplexpr : S.expression -> T.simplexpr = function
   | S.Literal (S.LInt n) -> T.Num (Int32.to_int n)
@@ -91,7 +91,7 @@ and expr : S.expression -> T.expression = function
               T.FunCall (f, xs)
             )
         )
-  | _ -> failwith "TODO"
+  | _ -> ExtStd.failwith_todo __LOC__
 
 (* Simplify the Fopix expression [e] (if necessary) and then build
    a more complex expression by applying [f] to the simplification of

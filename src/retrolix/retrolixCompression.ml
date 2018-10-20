@@ -4,6 +4,5 @@
 open RetrolixAST
 
 
-let compress p =
-  failwith "Student! This is your job!"
+let compress p = ExtStd.failwith_todo __LOC__
 

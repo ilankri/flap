@@ -269,7 +269,7 @@ let unify_types ty1 ty2 =
   phi
 
 let guess_instantiation (Scheme (ts1, ty1)) ts2 ty2 =
-  failwith "Students! This is your job!"
+  ExtStd.failwith_todo __LOC__
 
 type typing_environment = {
   values            : (identifier * aty_scheme) list;

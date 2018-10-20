@@ -344,7 +344,7 @@ let rec translate_expression (expr : S.expression) (env : environment) :
 
   | S.UnknownFunCall (fun_expr, args) -> fun_call (`Unknown fun_expr) args env
 
-  | _ -> failwith "TODO"
+  | _ -> ExtStd.failwith_todo __LOC__
 
 and fun_call fun_expr args env =
   (* TODO: Check if the number of arguments is OK.  In fact, it
@@ -383,7 +383,7 @@ let collect_function_info prog env =
         |> Env.bind_function_formals
           fun_id (List.map (fun (S.Id x) -> x) formals)
     | S.DefineValue _ -> env
-    | S.ExternalFunction _ -> failwith "TODO"
+    | S.ExternalFunction _ -> ExtStd.failwith_todo __LOC__
   in
   List.fold_left collect_function_info env prog
 
@@ -433,14 +433,14 @@ let translate_definition (definition : S.definition) (env : environment) :
       in
       (prolog @ fun_body fun_id body env' @ fun_epilog, env)
 
-  | S.ExternalFunction _ -> failwith "TODO"
+  | S.ExternalFunction _ -> ExtStd.failwith_todo __LOC__
 
 let split_defs p =
   List.fold_right (fun def (vals, defs) ->
       match def with
       | S.DefineValue _ -> (def :: vals, defs)
       | S.DefineFunction _ -> (vals, def :: defs)
-      | S.ExternalFunction _ -> failwith "TODO"
+      | S.ExternalFunction _ -> ExtStd.failwith_todo __LOC__
     ) p ([], [])
 
 let translate_definitions defs env =

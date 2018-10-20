@@ -156,3 +156,5 @@ module Option = struct
     | Some x -> Some (f x)
 
 end
+
+let failwith_todo loc = failwith ("TODO: " ^ loc)

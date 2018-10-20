@@ -108,7 +108,7 @@ let string_of_binop = function
   | S.Sub -> "`-"
   | S.Mul -> "`*"
   | S.Div -> "`/"
-  | S.Mod -> failwith "TODO"
+  | S.Mod -> ExtStd.failwith_todo __LOC__
   | S.Eq -> "`="
   | S.Le -> "`<="
   | S.Lt -> "`<"
@@ -207,12 +207,12 @@ let rec translate_tailexpr (expr: S.tailexpr) (env: environment) :
      let else_codes = translate_tailexpr e_else env in
      Utils.translate_IfThenElse (cond_codes, then_codes, else_codes)
 
-  | S.TPushCont (cont_id, _, e) -> failwith "TODO"
+  | S.TPushCont (cont_id, _, e) -> ExtStd.failwith_todo __LOC__
 
   | S.TFunCall (fun_expr, args) ->
      translate_FunCall fun_expr args env
 
-  | S.TContCall b_expr -> failwith "TODO"
+  | S.TContCall b_expr -> ExtStd.failwith_todo __LOC__
 
 let translate_fun_body fun_id body env : (T.labelled_instruction list) =
   Utils.unlabelled_instr (T.Comment ("Body of the function " ^ fun_id)) ::
@@ -243,7 +243,8 @@ let translate_definition (def:S.definition) (env: environment) :
       let prolog, env' = fun_prolog cont_id (id :: formals) env in
       (prolog @ translate_fun_body cont_id body env' @ Utils.fun_epilog, env)
 
-let varAndStack_size (p: S.t) (env: environment) : int * int = failwith "TODO"
+let varAndStack_size (p: S.t) (env: environment) : int * int =
+  ExtStd.failwith_todo __LOC__
 
 let collect_function_info prog env =
   let collect_function_info env = function

@@ -107,9 +107,9 @@ struct
      in
      let assign_remaining_color coloringMap node g =
      match node with
-     | EmptyGraph -> failwith "TODO"
-     | SimplifiableNode n -> failwith "TODO"
-     | MaybeSpillNode n -> failwith "TODO"
+     | EmptyGraph -> ExtStd.failwith_todo __LOC__
+     | SimplifiableNode n -> ExtStd.failwith_todo __LOC__
+     | MaybeSpillNode n -> ExtStd.failwith_todo __LOC__
      | PreferenceNodes (n1, n2) -> failwith "Advance algo implementation needed for preference nodes"
      in
      let pick_res = pick g in
@@ -123,13 +123,11 @@ struct
       n2 are merged, the number of neighbours of the new node for n1 and n2
       has a number of non simplifiable node which is strictly less than the
       number of available colors. *)
-  and briggs g n1 n2 =
-    failwith "Students! This is your job!"
+  and briggs g n1 n2 = ExtStd.failwith_todo __LOC__
   (** [george g n1 n2] returns true iff each neighbour of n1 that is in
       conflict with n1 and is not simplifiable is also in conflict with n2.
       (or the other way around). *)
-  and george g n1 n2 =
-       failwith "Students! This is your job!"
+  and george g n1 n2 = ExtStd.failwith_todo __LOC__
   and merge g n1 n2 =
     let g = Graph.merge g n1 n2 in
     (**
