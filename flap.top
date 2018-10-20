@@ -26,6 +26,4 @@
 let () = Error.resume_on_error ();;
 let () = Options.(set_mode Interactive);;
 let () = Options.(set_source_language "hopix");;
-let () = print_string
-"Flap modules loaded.\n\n"
-;;
+let () = print_string "Flap modules loaded.\n\n";;

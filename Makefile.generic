@@ -81,7 +81,9 @@ byte-debug:
 
 ifeq ($(strip $(PREFIX)),)
 install uninstall:
-	@echo "Cannot (un)install $(EXECUTABLE): the PREFIX variable is undefined." && false
+	@echo "Cannot (un)install $(EXECUTABLE): "	\
+		"the PREFIX variable is undefined."	\
+	&& false
 else
 install: $(EXECUTABLE)
 	mkdir -p $(PREFIX)/bin/
