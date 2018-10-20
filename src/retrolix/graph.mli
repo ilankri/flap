@@ -10,16 +10,16 @@
 *)
 
 module type EdgeLabelSig = sig
-    include Set.OrderedType
-    (** [all] enumerates all the possible edge labels. *)
-    val all : t list
-    (** [to_string e] converts [e] in a human readable value. *)
-    val to_string : t -> string
+  include Set.OrderedType
+  (** [all] enumerates all the possible edge labels. *)
+  val all : t list
+  (** [to_string e] converts [e] in a human readable value. *)
+  val to_string : t -> string
 end
 
 module type NodeLabelSig = sig
   include Set.OrderedType
-    (** [to_string n] converts [n] in a human readable value. *)
+  (** [to_string n] converts [n] in a human readable value. *)
   val to_string : t -> string
 end
 
@@ -64,7 +64,8 @@ module Make (EdgeLabel : EdgeLabelSig) (NodeLabel : NodeLabelSig) : sig
   (** [neighbours' g [e1;..;eN] n] returns the neighbours of [n] in [g]
       that are connected with edges labelled by [e1; ...; eN]. One neighbour is
       characterized by all its node labels. *)
-  val neighbours' : t -> EdgeLabel.t list -> NodeLabel.t -> NodeLabel.t list list
+  val neighbours' :
+    t -> EdgeLabel.t list -> NodeLabel.t -> NodeLabel.t list list
 
   (** [edges g e] returns all the edges of kind [e] in [g].
       WARNING: This function is inefficient! Use it only for debugging. *)
@@ -96,5 +97,3 @@ module Make (EdgeLabel : EdgeLabelSig) (NodeLabel : NodeLabelSig) : sig
   val dump : t -> string
 
 end
-
-

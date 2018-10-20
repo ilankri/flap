@@ -1,5 +1,5 @@
 type ('k, 'v) dict =
-    ('k * 'v) list
+  ('k * 'v) list
 
 type ('k, 'v) t = ('k, 'v) dict
 
@@ -20,6 +20,6 @@ let of_list d = d
 
 let equal d1 d2 =
   List.for_all (fun (k, v) ->
-    lookup k d2 = Some v
-  ) d1
+      lookup k d2 = Some v
+    ) d1
   && List.(length d1 = length d2)

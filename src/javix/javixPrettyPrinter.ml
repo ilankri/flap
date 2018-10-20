@@ -7,7 +7,7 @@ open PPrintEngine
 open JavixAST
 
 let header p =
-".class public "^ p.classname ^"
+  ".class public "^ p.classname ^"
 .super java/lang/Object
 
 .method public static main([Ljava/lang/String;)V
@@ -84,16 +84,16 @@ and instruction p = function
   | Ireturn -> "ireturn"
   | Comment s -> ";; " ^ s
   | Tableswitch (i,labs,Label dft) ->
-    let labs = List.map (function Label l -> l) labs in
-    "tableswitch "^string_of_int i^"\n\t"^
-    (String.concat "\n\t" labs)^
-    "\n\tdefault: "^dft
+      let labs = List.map (function Label l -> l) labs in
+      "tableswitch "^string_of_int i^"\n\t"^
+      (String.concat "\n\t" labs)^
+      "\n\tdefault: "^dft
   | Checkarray -> "checkcast [Ljava/lang/Object;"
   | Print s ->
-    "getstatic java/lang/System/out Ljava/io/PrintStream;\n\t" ^
-    "ldc \""^String.escaped s^"\"\n\t" ^
-    "invokevirtual java/io/PrintStream/print(Ljava/lang/String;)V\n\t" ^
-    "iconst_0"
+      "getstatic java/lang/System/out Ljava/io/PrintStream;\n\t" ^
+      "ldc \""^String.escaped s^"\"\n\t" ^
+      "invokevirtual java/io/PrintStream/print(Ljava/lang/String;)V\n\t" ^
+      "iconst_0"
 
 and var (Var v) = string_of_int v
 

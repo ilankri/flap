@@ -1,6 +1,6 @@
 %{
 
-  open MipsAST
+open MipsAST
 
 %}
 

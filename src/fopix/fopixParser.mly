@@ -1,6 +1,6 @@
 %{
 
-  open FopixAST
+open FopixAST
 
 %}
 
@@ -81,20 +81,21 @@ expression:
   FunCall (f, es)
 }
 | l=located(expression) b=binop r=located(expression) {
-  FunCall (FunId b, [l; r])
-}
+    FunCall (FunId b, [l; r])
+  }
 | e=located(expression) LBRACKET i=located(expression) RBRACKET {
-  FunCall (FunId "read_block", [e; i])
-}
+    FunCall (FunId "read_block", [e; i])
+  }
 | e=located(expression)
   LBRACKET i=located(expression) RBRACKET
   ASSIGNS v=located(expression) {
-  FunCall (FunId "write_block", [e; i; v])
-}
+    FunCall (FunId "write_block", [e; i; v])
+  }
 | e1=located(expression) SEMICOLON e2=located(expression) {
-  Define (Id "_", e1, e2)
-}
-| SWITCH e=expression IN bs=separated_list(PIPE, expression) ORELSE d=expression END
+    Define (Id "_", e1, e2)
+  }
+| SWITCH e=expression IN bs=separated_list(PIPE, expression) ORELSE
+  d=expression END
 {
   Switch (e, Array.of_list bs, Some d)
 }
@@ -103,8 +104,8 @@ expression:
   Switch (e, Array.of_list bs, None)
 }
 | LPAREN e=expression RPAREN {
-  e
-}
+    e
+  }
 
 %inline binop:
   PLUS  { "`+"  }
@@ -130,13 +131,13 @@ expression:
 }
 
 %inline identifier: x=ID {
-  Id x
-}
+    Id x
+  }
 
 %inline function_identifier: x=ID {
-  FunId x
-}
+    FunId x
+  }
 
 %inline located(X): x=X {
-  x
-}
+    x
+  }

@@ -7,7 +7,7 @@ type t =
     stacksize : int } (* Maximal stack size, cf .limit stack in Jasmin *)
 
 and labelled_instruction =
-    label option * instruction
+  label option * instruction
 
 and instruction =
   | Comment of string (* In Jasmin, comments starts with ; *)
@@ -29,9 +29,9 @@ and instruction =
   | AAstore (* array modification, stack: ...,array,index,value ---> ... *)
   | Ireturn (* exits and returns the int on top of stack *)
   | Tableswitch of int * label list * label
-    (* Tableswitch (n,lablist,labdefault) reads an int k on top of the stack,
-       and jumps to the label number (k-n) in lablist if 0<=k-n<length(lablist),
-       or jumps to labdefault otherwise *)
+  (* Tableswitch (n,lablist,labdefault) reads an int k on top of the stack,
+     and jumps to the label number (k-n) in lablist if 0<=k-n<length(lablist),
+     or jumps to labdefault otherwise *)
   | Checkarray (* checks that the top of stack is an array of java Objects *)
   | Print of string
 

@@ -147,36 +147,36 @@ let evaluate runtime0 (ast : t) =
   let extract_function_definition runtime = function
     | DValue _ -> runtime
     | DFunction (f, formals, body) ->
-      { runtime with functions =
-                       FIdMap.add f { formals; body } runtime.functions
-      }
+        { runtime with functions =
+                         FIdMap.add f { formals; body } runtime.functions
+        }
     | DExternalFunction f ->
-      runtime
+        runtime
   in
   let rec program runtime ds =
     let runtime = List.fold_left extract_function_definition runtime ds in
     List.fold_left definition runtime ds
   and definition runtime = function
     | DValue (x, b) ->
-      let runtime = block runtime b in
-      begin match runtime.return with
+        let runtime = block runtime b in
+        begin match runtime.return with
         | None ->
-          runtime
+            runtime
         | Some v ->
-          { runtime with gvariables = IdMap.add x v runtime.gvariables }
-      end
+            { runtime with gvariables = IdMap.add x v runtime.gvariables }
+        end
     | DFunction (f, xs, b) ->
-      runtime
+        runtime
     | DExternalFunction f ->
-      runtime
+        runtime
   and block runtime b =
     let jump_table = Hashtbl.create 13 in
     let rec make = function
       | [(l, i)] ->
-        Hashtbl.add jump_table l (i, None)
+          Hashtbl.add jump_table l (i, None)
       | (l, i) :: ((l', _) :: _ as is) ->
-        Hashtbl.add jump_table l (i, Some l');
-        make is
+          Hashtbl.add jump_table l (i, Some l');
+          make is
       | [] -> assert false
     in
     make (snd b);
@@ -204,78 +204,83 @@ let evaluate runtime0 (ast : t) =
       | Some l -> jump l runtime
     in
     match i with
-      | Call (x, f, rs) ->
-        let y, runtime = call runtime (rvalue runtime f) (List.map (rvalue runtime) rs) in
+    | Call (x, f, rs) ->
+        let y, runtime =
+          call runtime (rvalue runtime f) (List.map (rvalue runtime) rs)
+        in
         assign runtime x y |> continue
-      | TailCall (f, rs) ->
-        let _, runtime = call runtime (rvalue runtime f) (List.map (rvalue runtime) rs) in
+    | TailCall (f, rs) ->
+        let _, runtime =
+          call runtime (rvalue runtime f) (List.map (rvalue runtime) rs)
+        in
         continue runtime
-      | Ret r ->
+    | Ret r ->
         { runtime with return = Some (rvalue runtime r) }
-      | Assign (x, o, rs) ->
-        assign runtime x (op runtime o (List.map (rvalue runtime) rs)) |> continue
-      | Jump l ->
+    | Assign (x, o, rs) ->
+        assign runtime x (op runtime o (List.map (rvalue runtime) rs))
+        |> continue
+    | Jump l ->
         jump l runtime
-      | ConditionalJump (c, rs, l1, l2) ->
+    | ConditionalJump (c, rs, l1, l2) ->
         if condition c (List.map (rvalue runtime) rs) then
           jump l1 runtime
         else
           jump l2 runtime
-      | Comment _ ->
+    | Comment _ ->
         continue runtime
-      | Switch (r, ls, default) ->
+    | Switch (r, ls, default) ->
         begin match rvalue runtime r with
-          | DInt x ->
+        | DInt x ->
             let x = Int32.to_int x in
             if  x < Array.length ls then
               jump ls.(x) runtime
             else
               begin match default with
-                | None -> failwith "Non exhaustive switch."
-                | Some l -> jump l runtime
+              | None -> failwith "Non exhaustive switch."
+              | Some l -> jump l runtime
               end
-          | _ ->
+        | _ ->
             assert false (* By typing. *)
         end
-      | Exit ->
+    | Exit ->
         runtime
   and rvalue runtime = function
     | `Variable x ->
-      (try
-         IdMap.find x runtime.lvariables
-       with Not_found ->
-         (try
-            IdMap.find x runtime.gvariables
-          with Not_found ->
-            let Id x = x in
-            failwith (Printf.sprintf "Variable %s not found" x)
-         )
-      )
+        (try
+           IdMap.find x runtime.lvariables
+         with Not_found ->
+           (try
+              IdMap.find x runtime.gvariables
+            with Not_found ->
+              let Id x = x in
+              failwith (Printf.sprintf "Variable %s not found" x)
+           )
+        )
     | `Register x ->
-      (try
-         RIdMap.find x runtime.registers
-       with Not_found ->
-         DInt Int32.zero
-      )
+        (try
+           RIdMap.find x runtime.registers
+         with Not_found ->
+           DInt Int32.zero
+        )
     | `Immediate l ->
-      literal l
+        literal l
   and op runtime o vs =
     match o, vs with
     | Load, [ v ] -> v
     | Add, [ DInt x; DInt y ] ->
-      DInt (Int32.add x y)
+        DInt (Int32.add x y)
     | Mul, [ DInt x; DInt y ] ->
-      DInt (Int32.mul x y)
+        DInt (Int32.mul x y)
     | Div, [ DInt x; DInt y ] ->
-      DInt (Int32.div x y)
+        DInt (Int32.div x y)
     | Sub, [ DInt x; DInt y ] ->
-      DInt (Int32.sub x y)
+        DInt (Int32.sub x y)
     | Bool c, vs ->
-      DInt (if condition c vs then Int32.one else Int32.zero)
+        DInt (if condition c vs then Int32.one else Int32.zero)
     | Or, [DInt x; DInt y] -> DInt (Int32.logor x y)
     | And, [DInt x; DInt y] -> DInt (Int32.logand x y)
     | _, _ ->
-      assert false
+        assert false
 
   and condition op vs =
     match op, vs with
@@ -295,38 +300,42 @@ let evaluate runtime0 (ast : t) =
   and assign runtime lvalue v =
     match lvalue with
     | `Variable x ->
-      if IdMap.mem x runtime.lvariables then
-        { runtime with lvariables = IdMap.add x v runtime.lvariables }
-      else
-        { runtime with gvariables = IdMap.add x v runtime.gvariables }
+        if IdMap.mem x runtime.lvariables then
+          { runtime with lvariables = IdMap.add x v runtime.lvariables }
+        else
+          { runtime with gvariables = IdMap.add x v runtime.gvariables }
     | `Register x ->
-      { runtime with registers = RIdMap.add x v runtime.registers }
+        { runtime with registers = RIdMap.add x v runtime.registers }
 
   and call runtime fv vs =
     match fv with
-      | DFun f ->
+    | DFun f ->
         (try
            let fdef = FIdMap.find f runtime.functions in
            let runtime = List.fold_left2 bind_local runtime fdef.formals vs in
            let runtime = block runtime fdef.body in
-           let return = match runtime.return with None -> assert false | Some x -> x in
+           let return =
+             match runtime.return with None -> assert false | Some x -> x
+           in
            (return, runtime)
          with Not_found ->
            let vs =
-              if Options.get_retromips () then
-                let rs =
-                  List.map
-                    (fun r -> `Register (RId (MipsArch.string_of_register r)))
-                    MipsArch.argument_passing_registers
-                in
-                (List.map (rvalue runtime) rs @ vs)
-              else
-                vs
+             if Options.get_retromips () then
+               let rs =
+                 List.map
+                   (fun r -> `Register (RId (MipsArch.string_of_register r)))
+                   MipsArch.argument_passing_registers
+               in
+               (List.map (rvalue runtime) rs @ vs)
+             else
+               vs
            in
            let (return, runtime) = external_function runtime vs f in
            let runtime =
              if Options.get_retromips () then (
-               let r = (`Register (RId (MipsArch.(string_of_register return_register))))  in
+               let r =
+                 `Register (RId (MipsArch.(string_of_register return_register)))
+               in
                assign runtime r return
              )
              else
@@ -334,37 +343,38 @@ let evaluate runtime0 (ast : t) =
            in
            (return, runtime)
         )
-      | _ ->
+    | _ ->
         assert false
 
   and external_function runtime vs (FId f) =
     match f, vs with
-      | "allocate_block", (DInt size :: _) ->
-         let addr = Memory.allocate runtime.memory size (DInt Int32.zero) in
-         (DLocation addr, runtime)
-      | "write_block", (DLocation location :: DInt i :: v :: _) ->
-         let block = Memory.dereference runtime.memory location in
-         Memory.write block i v;
-         (DUnit, runtime)
-      | "read_block", (DLocation location :: DInt i :: _) ->
-         let block = Memory.dereference runtime.memory location in
-         (Memory.read block i, runtime)
-      | "print_int", (DInt i :: _) ->
-         print_string (Int32.to_string i);
-         (DUnit, runtime)
-      | "print_char", (DChar i :: _) ->
-         print_char i;
-         (DUnit, runtime)
-      | "print_string", (DString i :: _) ->
-         print_string i;
-         (DUnit, runtime)
-      | _ -> failwith (
-                 Printf.sprintf
-                   "NoSuchFunction or InvalidApplication of `%s' (%d argument(s) provided : %s)."
-                   f
-                   (List.length vs)
-                   (String.concat " " (List.map type_of vs))
-               )
+    | "allocate_block", (DInt size :: _) ->
+        let addr = Memory.allocate runtime.memory size (DInt Int32.zero) in
+        (DLocation addr, runtime)
+    | "write_block", (DLocation location :: DInt i :: v :: _) ->
+        let block = Memory.dereference runtime.memory location in
+        Memory.write block i v;
+        (DUnit, runtime)
+    | "read_block", (DLocation location :: DInt i :: _) ->
+        let block = Memory.dereference runtime.memory location in
+        (Memory.read block i, runtime)
+    | "print_int", (DInt i :: _) ->
+        print_string (Int32.to_string i);
+        (DUnit, runtime)
+    | "print_char", (DChar i :: _) ->
+        print_char i;
+        (DUnit, runtime)
+    | "print_string", (DString i :: _) ->
+        print_string i;
+        (DUnit, runtime)
+    | _ -> failwith (
+        Printf.sprintf
+          "NoSuchFunction or InvalidApplication of `%s' \
+           (%d argument(s) provided : %s)."
+          f
+          (List.length vs)
+          (String.concat " " (List.map type_of vs))
+      )
 
   and bind_local runtime x v =
     { runtime with lvariables = IdMap.add x v runtime.lvariables }

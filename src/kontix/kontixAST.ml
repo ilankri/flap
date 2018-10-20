@@ -29,12 +29,12 @@ and tailexpr =
   | TContCall of basicexpr
 
 (** Note:
-   - [TPushCont (f,ids,body)] let the current continuation for body
+    - [TPushCont (f,ids,body)] let the current continuation for body
      become f, and the current environment becomes
      [(old K, old E, ids...)].
-   - A [FunCall(f,args)] always receives in addition the current
+    - A [FunCall(f,args)] always receives in addition the current
      continuation K and environment E
-   - A [ContCall res] launches the current continuation K on the
+    - A [ContCall res] launches the current continuation K on the
      current environment E and on the result r. *)
 
 

@@ -1,12 +1,11 @@
 {
-  open Error
-  open Position
-  open Lexing
-  open MipsParser
+open Error
+open Position
+open Lexing
+open MipsParser
 
-  let error lexbuf =
-    error "during lexing" (lex_join lexbuf.lex_start_p lexbuf.lex_curr_p)
-
+let error lexbuf =
+  error "during lexing" (lex_join lexbuf.lex_start_p lexbuf.lex_curr_p)
 }
 
 rule token = parse

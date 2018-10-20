@@ -53,23 +53,23 @@ let print_value m v =
     if d >= max_depth then "..." else
       match v with
       | VInt x ->
-        Int32.to_string x
+          Int32.to_string x
       | VBool true ->
-        "true"
+          "true"
       | VBool false ->
-        "false"
+          "false"
       | VChar c ->
-        "'" ^ Char.escaped c ^ "'"
+          "'" ^ Char.escaped c ^ "'"
       | VString s ->
-        "\"" ^ String.escaped s ^ "\""
+          "\"" ^ String.escaped s ^ "\""
       | VUnit ->
-        "()"
+          "()"
       | VAddress a ->
-        print_block m d a
+          print_block m d a
       | VFun _ ->
-        "<fun>"
+          "<fun>"
       | VPrimitive (s, _) ->
-        Printf.sprintf "<primitive: %s>" s
+          Printf.sprintf "<primitive: %s>" s
   and print_block m d a =
     let b = Memory.dereference m a in
     let vs = Array.to_list (Memory.array_of_block b) in
@@ -103,7 +103,7 @@ end = struct
     let rec aux = function
       | EEmpty -> raise (UnboundIdentifier x)
       | EBind (y, v, e) ->
-        if x = y then v else aux e
+          if x = y then v else aux e
     in
     aux
 
@@ -197,15 +197,15 @@ let primitives =
   in
   let equal_string =
     VPrimitive  ("equal_string", function
-      | [ VString x; VString y ] -> VBool (String.compare x y = 0)
-      | _ -> assert false (* By typing. *)
-    )
+        | [ VString x; VString y ] -> VBool (String.compare x y = 0)
+        | _ -> assert false (* By typing. *)
+      )
   in
   let equal_char =
     VPrimitive  ("equal_char", function
-      | [ VChar x; VChar y ] -> VBool (Char.compare x y = 0)
-      | _ -> assert false (* By typing. *)
-    )
+        | [ VChar x; VChar y ] -> VBool (Char.compare x y = 0)
+        | _ -> assert false (* By typing. *)
+      )
   in
   let bind' x w env = Environment.bind env (Id x) w in
   Environment.empty
@@ -248,17 +248,17 @@ let rec evaluate runtime ast =
 and definition runtime d =
   match d with
   | DefineValue (x, e) ->
-    let v = expression runtime.environment runtime.memory e in
-    { runtime with environment =
-                     bind_identifier runtime.environment x v
-    }
+      let v = expression runtime.environment runtime.memory e in
+      { runtime with environment =
+                       bind_identifier runtime.environment x v
+      }
   | DefineRecFuns rdefs ->
-    { runtime with environment =
-                     define_recvalues runtime.environment runtime.memory rdefs
-    }
+      { runtime with environment =
+                       define_recvalues runtime.environment runtime.memory rdefs
+      }
 
   | DeclareExtern _ ->
-    runtime
+      runtime
 
 and define_recvalues environment memory rdefs =
   let environment =
@@ -279,119 +279,119 @@ and define_recvalues environment memory rdefs =
 *)
 and expression environment memory = function
   | Apply (a, b) ->
-    let vbs () = expressions environment memory b in
-    begin match expression environment memory a with
+      let vbs () = expressions environment memory b in
+      begin match expression environment memory a with
       | VPrimitive ("`||", f) ->
-        begin match expression environment memory (List.nth b 0) with
+          begin match expression environment memory (List.nth b 0) with
           | VBool true -> VBool true
           | _ -> expression environment memory (List.nth b 1)
-        end
+          end
       | VPrimitive ("`&&", f) ->
-        begin match expression environment memory (List.nth b 0) with
+          begin match expression environment memory (List.nth b 0) with
           | VBool false -> VBool false
           | _ -> expression environment memory (List.nth b 1)
-        end
+          end
 
       | VPrimitive (_, f) ->
-        f (vbs ())
+          f (vbs ())
 
       | VFun (xs, e, environment) ->
-        expression (List.fold_left2 bind_identifier environment xs (vbs ()))
-          memory e
+          expression (List.fold_left2 bind_identifier environment xs (vbs ()))
+            memory e
 
       | _ ->
-        assert false (* By typing. *)
-    end
+          assert false (* By typing. *)
+      end
 
   | While (c, e) ->
-    let rec aux () =
-      match expression environment memory c with
-      | VBool true ->
-        ignore (expression environment memory e);
-        aux ()
-      | VBool false ->
-        VUnit
-      | _ ->
-        assert false (* By typing. *)
-    in
-    aux ()
+      let rec aux () =
+        match expression environment memory c with
+        | VBool true ->
+            ignore (expression environment memory e);
+            aux ()
+        | VBool false ->
+            VUnit
+        | _ ->
+            assert false (* By typing. *)
+      in
+      aux ()
 
   | Switch (e, branches, default) ->
-    begin match expression environment memory e with
+      begin match expression environment memory e with
       | VInt i ->
-        let i = Int32.to_int i in
-        if i < 0 then assert false; (* By typing. *)
-        if i < Array.length branches then
-          expression environment memory branches.(i)
-        else begin match default with
-          | None -> assert false; (* By typing. *)
-          | Some t -> expression environment memory t
-        end
+          let i = Int32.to_int i in
+          if i < 0 then assert false; (* By typing. *)
+          if i < Array.length branches then
+            expression environment memory branches.(i)
+          else begin match default with
+            | None -> assert false; (* By typing. *)
+            | Some t -> expression environment memory t
+          end
       | _ -> assert false (* By typing. *)
-    end
+      end
 
   | Fun (p, e) ->
-    VFun (p, e, environment)
+      VFun (p, e, environment)
 
   | Literal l ->
-    literal l
+      literal l
 
   | Variable x ->
-    Environment.lookup x environment
+      Environment.lookup x environment
 
   | Define (x, ex, e) ->
-    let v = expression environment memory ex in
-    let environment = bind_identifier environment x v in
-    expression environment memory e
+      let v = expression environment memory ex in
+      let environment = bind_identifier environment x v in
+      expression environment memory e
 
   | IfThenElse (c, t, f) ->
-    let v = expression environment memory c in
-    begin match value_as_bool v with
+      let v = expression environment memory c in
+      begin match value_as_bool v with
       | None -> assert false (* By typing. *)
       | Some true -> expression environment memory t
       | Some false -> expression environment memory f
-    end
+      end
 
   | DefineRec (rdefs, e) ->
-    let environment = define_recvalues environment memory rdefs in
-    expression environment memory e
+      let environment = define_recvalues environment memory rdefs in
+      expression environment memory e
 
   | AllocateBlock e ->
-    begin match expression environment memory e with
+      begin match expression environment memory e with
       | VInt x ->
-        let a = Memory.allocate memory x (VInt Int32.zero) in
-        VAddress a
+          let a = Memory.allocate memory x (VInt Int32.zero) in
+          VAddress a
       | _ ->
-        assert false (* By typing. *)
-    end
+          assert false (* By typing. *)
+      end
 
   | WriteBlock (b, i, v) ->
-    let bv = expression environment memory b in
-    (value_as_addr bv >>= fun a ->
-     let bi = expression environment memory i in
-     value_as_int bi >>= fun i ->
-     let bb = expression environment memory v in
-     let b = Memory.dereference memory a in
-     Memory.write b i bb;
-     return (VUnit)
-    ) |> trust_me (* By typing. *)
+      let bv = expression environment memory b in
+      (value_as_addr bv >>= fun a ->
+       let bi = expression environment memory i in
+       value_as_int bi >>= fun i ->
+       let bb = expression environment memory v in
+       let b = Memory.dereference memory a in
+       Memory.write b i bb;
+       return (VUnit)
+      ) |> trust_me (* By typing. *)
 
   | ReadBlock (b, i) ->
-    let bv = expression environment memory b in
-    (value_as_addr bv >>= fun a ->
-     let bi = expression environment memory i in
-     value_as_int bi >>= fun i ->
-     let b = Memory.dereference memory a in
-     return (Memory.read b i)
-    ) |> trust_me (* By typing. *)
+      let bv = expression environment memory b in
+      (value_as_addr bv >>= fun a ->
+       let bi = expression environment memory i in
+       value_as_int bi >>= fun i ->
+       let b = Memory.dereference memory a in
+       return (Memory.read b i)
+      ) |> trust_me (* By typing. *)
 
 and expressions environment memory es =
   let rec aux vs = function
     | [] ->
-      List.rev vs
+        List.rev vs
     | e :: es ->
-      let v = expression environment memory e in
-      aux (v :: vs) es
+        let v = expression environment memory e in
+        aux (v :: vs) es
   in
   aux [] es
 
@@ -410,8 +410,8 @@ and extract_observable runtime runtime' =
       match Environment.last env' with
       | None -> assert false (* Absurd. *)
       | Some (x, v, env') ->
-        let new_environment = Environment.bind new_environment x v in
-        substract new_environment env env'
+          let new_environment = Environment.bind new_environment x v in
+          substract new_environment env env'
   in
   {
     new_environment =

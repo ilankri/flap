@@ -1,4 +1,5 @@
 %{
+
 open HopixAST
 
 let list_of_listoption = function
@@ -55,6 +56,7 @@ let pand ps =
     | _ -> None
   in
   wrap_patterns (fun ps -> PAnd ps) (flatten_patterns extract_patterns ps)
+
 %}
 
 %token EOF
@@ -283,8 +285,8 @@ localdef_expr:
         | DefineValue(x1, e1) -> Define (x1, e1, e2)
         | DefineRecFuns(li) -> DefineRec(li ,e2)
         | _ ->
-          failwith "Error: DefineType and DeclareExtern \
-                    should not be in the vdefinition"
+            failwith "Error: DefineType and DeclareExtern \
+                      should not be in the vdefinition"
       }
 
 %inline inlined_simple_expr:

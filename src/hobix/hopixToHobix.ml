@@ -164,16 +164,16 @@ and definition' env p = located (definition env) p
 
 and definition env = HobixAST.(function
     | HopixAST.DeclareExtern (x, _) ->
-      env, [DeclareExtern (located identifier x)]
+        env, [DeclareExtern (located identifier x)]
 
     | HopixAST.DefineValue (x, e) ->
-      env, [DefineValue (located identifier x, located (expression env) e)]
+        env, [DefineValue (located identifier x, located (expression env) e)]
 
     | HopixAST.DefineRecFuns recs ->
-      env, [DefineRecFuns (List.map (function_definition env) recs)]
+        env, [DefineRecFuns (List.map (function_definition env) recs)]
 
     | HopixAST.DefineType (_, _, tydef) ->
-      type_definition env tydef, []
+        type_definition env tydef, []
   )
 
 and value_definition env (x, e) =
@@ -202,77 +202,77 @@ and expression' env e = located (expression env) e
 (** Compilation of Hopix expressions. *)
 and expression env = HobixAST.(function
     | HopixAST.Variable x ->
-      Variable (located identifier x)
+        Variable (located identifier x)
 
     | HopixAST.Tagged (k, _, es) ->
-      let fill_then_return_block env b k es =
-        let tag_block env b k =
-          write_block b 0 (tag_of_constructor' env k)
+        let fill_then_return_block env b k es =
+          let tag_block env b k =
+            write_block b 0 (tag_of_constructor' env k)
+          in
+          let fill_cell env b i e = write_block b (i + 1) (expression' env e) in
+          seqs (tag_block env b k :: List.mapi (fill_cell env b) es @ [b])
         in
-        let fill_cell env b i e = write_block b (i + 1) (expression' env e) in
-        seqs (tag_block env b k :: List.mapi (fill_cell env b) es @ [b])
-      in
-      def
-        (AllocateBlock (int_literal (List.length es + 1)))
-        (fun b -> fill_then_return_block env (Variable b) k es)
+        def
+          (AllocateBlock (int_literal (List.length es + 1)))
+          (fun b -> fill_then_return_block env (Variable b) k es)
 
     (* If the pattern matching fails, we make the program crash...  *)
     | HopixAST.Case (e, branches) ->
-      let branch scrutinee b next = branch env (Variable scrutinee) next b in
-      let branches = located' expands_or_patterns branches in
-      def
-        (expression' env e)
-        (fun scrutinee -> List.fold_right (branch scrutinee) branches crash)
+        let branch scrutinee b next = branch env (Variable scrutinee) next b in
+        let branches = located' expands_or_patterns branches in
+        def
+          (expression' env e)
+          (fun scrutinee -> List.fold_right (branch scrutinee) branches crash)
 
     | HopixAST.Ref e ->
-      let init_then_return_ref env r e =
-        seqs [write_block r 0 (expression' env e); r]
-      in
-      def
-        (AllocateBlock (int_literal 1))
-        (fun r -> init_then_return_ref env (Variable r) e)
+        let init_then_return_ref env r e =
+          seqs [write_block r 0 (expression' env e); r]
+        in
+        def
+          (AllocateBlock (int_literal 1))
+          (fun r -> init_then_return_ref env (Variable r) e)
 
     | HopixAST.Read r ->
-      read_block (located (expression env) r) 0
+        read_block (located (expression env) r) 0
 
     | HopixAST.Write (r, v) ->
-      WriteBlock (located (expression env) r,
-                  Literal (LInt Int32.zero),
-                  located (expression env) v)
+        WriteBlock (located (expression env) r,
+                    Literal (LInt Int32.zero),
+                    located (expression env) v)
 
     | HopixAST.While (c, b) ->
-      HobixAST.While (located (expression env) c,
-                      located (expression env) b)
+        HobixAST.While (located (expression env) c,
+                        located (expression env) b)
 
     | HopixAST.Apply (e1, _, es) ->
-      Apply (located (expression env) e1,
-             List.map (located (expression env)) es)
+        Apply (located (expression env) e1,
+               List.map (located (expression env)) es)
 
     | HopixAST.Literal l ->
-      Literal (located literal l)
+        Literal (located literal l)
 
     | HopixAST.Define (x, e1, e2) ->
-      Define (located identifier x,
-              located (expression env) e1,
-              located (expression env) e2)
+        Define (located identifier x,
+                located (expression env) e1,
+                located (expression env) e2)
 
     | HopixAST.DefineRec (recs, e) ->
-      DefineRec (List.map (function_definition env) recs,
-                 located (expression env) e)
+        DefineRec (List.map (function_definition env) recs,
+                   located (expression env) e)
 
     | HopixAST.TypeAnnotation (e, ty) ->
-      located (expression env) e
+        located (expression env) e
 
     | HopixAST.If (conditions, final) ->
-      let final = match final with
-        | None -> HobixAST.(Variable (Id "nothing"))
-        | Some e -> located (expression env) e
-      in
-      List.fold_left (fun t (cond, thenb) ->
-          HobixAST.IfThenElse (located (expression env) cond,
-                               located (expression env) thenb,
-                               t)
-        ) final (List.rev conditions)
+        let final = match final with
+          | None -> HobixAST.(Variable (Id "nothing"))
+          | Some e -> located (expression env) e
+        in
+        List.fold_left (fun t (cond, thenb) ->
+            HobixAST.IfThenElse (located (expression env) cond,
+                                 located (expression env) thenb,
+                                 t)
+          ) final (List.rev conditions)
 
     | HopixAST.Fun fdef -> function_definition' env fdef
   )
@@ -285,11 +285,11 @@ and expand_pattern = HopixAST.(ListMonad.(function
     | PTypeAnnotation (p, _) -> located expand_pattern p
     | PWildcard | PLiteral _ | PVariable _ as p -> return p
     | PTaggedValue (k, ps) ->
-      expand_patterns' ps (fun ps -> PTaggedValue (k, ps))
+        expand_patterns' ps (fun ps -> PTaggedValue (k, ps))
     | PAnd ps -> expand_patterns' ps (fun ps -> PAnd ps)
     | POr ps ->
-      located' pick ps >>= fun p ->
-      return p
+        located' pick ps >>= fun p ->
+        return p
   ))
 
 and expand_patterns' ps wrap = ListMonad.(
@@ -332,29 +332,29 @@ and pattern env scrutinee = HobixAST.(function
     | HopixAST.PVariable id -> (htrue, [(identifier' id, scrutinee)])
 
     | HopixAST.PTaggedValue (k, ps) ->
-      let conds, defs =
-        List.split (
-          List.mapi
-            (fun i p -> pattern' env (read_block scrutinee (i + 1)) p)
-            ps
-        )
-      in
-      let same_tag =
-        is_equal_int (read_block scrutinee 0) (tag_of_constructor' env k)
-      in
-      (conjs (same_tag :: conds), List.flatten defs)
+        let conds, defs =
+          List.split (
+            List.mapi
+              (fun i p -> pattern' env (read_block scrutinee (i + 1)) p)
+              ps
+          )
+        in
+        let same_tag =
+          is_equal_int (read_block scrutinee 0) (tag_of_constructor' env k)
+        in
+        (conjs (same_tag :: conds), List.flatten defs)
 
     | HopixAST.PWildcard -> (htrue, [])
 
     | HopixAST.PLiteral l ->
-      let l = literal' l in
-      (is_equal l scrutinee (Literal l), [])
+        let l = literal' l in
+        (is_equal l scrutinee (Literal l), [])
 
     | HopixAST.POr ps -> assert false
 
     | HopixAST.PAnd ps ->
-      let conds, defs = List.split (List.map (pattern' env scrutinee) ps) in
-      (conjs conds, List.flatten defs)
+        let conds, defs = List.split (List.map (pattern' env scrutinee) ps) in
+        (conjs conds, List.flatten defs)
   )
 
 and literal' l = located literal l
@@ -370,13 +370,13 @@ and type_definition env t =
   match t with
   | HopixAST.Abstract -> env
   | HopixAST.DefineSumType l ->
-    let r = ref Int32.zero in
-    let incr_32 re = re := Int32.succ !re in
-    let fIter ctags (k, _) =
-      incr_32 r;
-      ConstructorMap.add (Position.value k) !r ctags
-    in
-    {constructor_tags = List.fold_left fIter env.constructor_tags l}
+      let r = ref Int32.zero in
+      let incr_32 re = re := Int32.succ !re in
+      let fIter ctags (k, _) =
+        incr_32 r;
+        ConstructorMap.add (Position.value k) !r ctags
+      in
+      {constructor_tags = List.fold_left fIter env.constructor_tags l}
 
 (** Here is the compiler! *)
 let translate source env =

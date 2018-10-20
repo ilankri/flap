@@ -30,35 +30,35 @@ let free_simple_variables : S.simplexpr -> VarSet.t = function
 let rec free_variables : S.expression -> VarSet.t = function
   | S.Simple e -> free_simple_variables e
   | S.Let (id,e1,e2) ->
-     let freeV_e1, freeV_e2  = free_variables e1, free_variables e2 in
-     VarSet.union freeV_e1 (VarSet.remove id freeV_e2)
+      let freeV_e1, freeV_e2  = free_variables e1, free_variables e2 in
+      VarSet.union freeV_e1 (VarSet.remove id freeV_e2)
 
-  | S.IfThenElse (c,e1,e2) -> 
-     let freeV_c, freeV_e1, freeV_e2 = 
-       free_simple_variables c, free_variables e1, free_variables e2 in
-     VarSet.union freeV_c (VarSet.union freeV_e1 freeV_e2)
+  | S.IfThenElse (c,e1,e2) ->
+      let freeV_c, freeV_e1, freeV_e2 =
+        free_simple_variables c, free_variables e1, free_variables e2 in
+      VarSet.union freeV_c (VarSet.union freeV_e1 freeV_e2)
 
-  | S.BinOp (binop,e1,e2) -> 
-     let freeVar_e1, freeVar_e2  = 
-       free_simple_variables e1, free_simple_variables e2 in
-     VarSet.union freeVar_e1 freeVar_e2
-       
-  | S.BlockNew n -> free_simple_variables n 
-  | S.BlockGet (t,i) -> 
-     let freeVar_t, freeVar_i = 
-       free_simple_variables t, free_simple_variables i in
-     VarSet.union freeVar_t freeVar_i
+  | S.BinOp (binop,e1,e2) ->
+      let freeVar_e1, freeVar_e2  =
+        free_simple_variables e1, free_simple_variables e2 in
+      VarSet.union freeVar_e1 freeVar_e2
 
-  | S.BlockSet (t,i,e) -> 
-     let freeV_t, freeV_i, freeV_e = 
-       free_simple_variables t,free_simple_variables i, free_simple_variables e
-     in
-     VarSet.union freeV_t (VarSet.union freeV_i freeV_e)
+  | S.BlockNew n -> free_simple_variables n
+  | S.BlockGet (t,i) ->
+      let freeVar_t, freeVar_i =
+        free_simple_variables t, free_simple_variables i in
+      VarSet.union freeVar_t freeVar_i
+
+  | S.BlockSet (t,i,e) ->
+      let freeV_t, freeV_i, freeV_e =
+        free_simple_variables t,free_simple_variables i, free_simple_variables e
+      in
+      VarSet.union freeV_t (VarSet.union freeV_i freeV_e)
 
   | S.FunCall (f,args) ->
-     let freeV_f, freeV_args = 
-       free_simple_variables f, List.map free_simple_variables args in
-     VarSet.union freeV_f (List.fold_left VarSet.union VarSet.empty freeV_args)
+      let freeV_f, freeV_args =
+        free_simple_variables f, List.map free_simple_variables args in
+      VarSet.union freeV_f (List.fold_left VarSet.union VarSet.empty freeV_args)
 
   | S.Print s -> VarSet.empty
 
@@ -71,22 +71,22 @@ let rec as_basicexpr : S.expression -> T.basicexpr option = function
   | S.Simple e -> Some(translate_simplexpr e)
   | S.Let (id,e1,e2) -> None
   | S.IfThenElse _ -> None
-  | S.BinOp (binop,e1,e2) -> 
-     let e1' = translate_simplexpr e1 in
-     let e2' = translate_simplexpr e2 in
-     Some(T.BinOp (binop,e1',e2'))
+  | S.BinOp (binop,e1,e2) ->
+      let e1' = translate_simplexpr e1 in
+      let e2' = translate_simplexpr e2 in
+      Some(T.BinOp (binop,e1',e2'))
 
   | S.BlockNew n -> Some(T.BlockNew (translate_simplexpr n))
-  | S.BlockGet (t,i) -> 
-     let t' = translate_simplexpr t in
-     let i' = translate_simplexpr i in
-     Some(T.BlockGet (t',i'))
+  | S.BlockGet (t,i) ->
+      let t' = translate_simplexpr t in
+      let i' = translate_simplexpr i in
+      Some(T.BlockGet (t',i'))
 
-  | S.BlockSet (t,i,e) -> 
-     let t' = translate_simplexpr t in
-     let i' = translate_simplexpr i in
-     let e' = translate_simplexpr e in
-     Some(T.BlockSet (t',i',e'))
+  | S.BlockSet (t,i,e) ->
+      let t' = translate_simplexpr t in
+      let i' = translate_simplexpr i in
+      let e' = translate_simplexpr e in
+      Some(T.BlockSet (t',i',e'))
 
   | S.FunCall _ -> None
   | S.Print s -> Some(T.Print s)
@@ -115,20 +115,22 @@ let rec translate_expression :
               let kdef = T.DefCont (kid, fvs, x, ce') in
               (T.TPushCont (kid, fvs, ce), kdef :: kdefs @ kdefs')
         )
-      | S.IfThenElse (s, e1, e2) -> ( 
+      | S.IfThenElse (s, e1, e2) -> (
           let ss = translate_simplexpr s in
           let e1' = as_basicexpr e1 in
           let e2' = as_basicexpr e2 in
           match e1', e2' with
           | Some e1', Some e2' -> T.TContCall(T.IfThenElse(ss, e1', e2')), []
           | _ ->
-            let ce1, kdefs1 = translate_expression e1 in
-            let ce2, kdefs2 = translate_expression e2 in
-             (T.TIfThenElse(ss, ce1, ce2), kdefs1@kdefs2 )
+              let ce1, kdefs1 = translate_expression e1 in
+              let ce2, kdefs2 = translate_expression e2 in
+              (T.TIfThenElse(ss, ce1, ce2), kdefs1@kdefs2 )
         )
       | S.FunCall (e,args) -> (
-        T.TFunCall (translate_simplexpr e,List.map translate_simplexpr args),[]
-         )
+          T.TFunCall (translate_simplexpr e,
+                      List.map translate_simplexpr args),
+          []
+        )
 
       | S.Simple _ | S.BinOp _ | S.BlockNew _ | S.BlockGet _ | S.BlockSet _ |
         S.Print _ ->
@@ -169,13 +171,13 @@ let translate_fun_def ((f,formals,body) : fun_def) : T.definition list =
 (* Remark: With the current implementation of [build_main], the order of
    value definitions must be preserved by this function.  *)
 let split_program (prog : S.t) : fun_def list * val_def list =
-    let fun_list = [] in 
-    let val_list = [] in
-    let split_into (flist, vlist) p = (
-      match p with
-      | S.DefVal (id, e) -> (flist, (id, e)::vlist)
-      | S.DefFun (fid, fmls, e) -> ((fid, fmls, e)::flist, vlist)
-    ) in List.fold_left split_into (fun_list, val_list) (List.rev prog)
+  let fun_list = [] in
+  let val_list = [] in
+  let split_into (flist, vlist) p = (
+    match p with
+    | S.DefVal (id, e) -> (flist, (id, e)::vlist)
+    | S.DefFun (fid, fmls, e) -> ((fid, fmls, e)::flist, vlist)
+  ) in List.fold_left split_into (fun_list, val_list) (List.rev prog)
 
 
 let translate (p : S.t) env =

@@ -19,18 +19,19 @@ let rec string_of_value = function
   | VInt i -> string_of_int i
   | VBox i -> "<"^string_of_int i^">"
   | VArray v ->
-     "["^ (Array.fold_right
-             (fun v s -> string_of_value v ^ (if s="" then "" else ";"^s)) v "")
-     ^ "]"
+      "["^
+      (Array.fold_right
+         (fun v s -> string_of_value v ^ (if s="" then "" else ";"^s)) v "")
+      ^ "]"
   | VNil -> "."
 
 type runtime =
-    { mutable code : instruction array;
-      mutable jumptbl : (label * int) list;
-      mutable stack : value list;
-      mutable vars : value array;
-      mutable pc : int;
-      mutable time : int }
+  { mutable code : instruction array;
+    mutable jumptbl : (label * int) list;
+    mutable stack : value list;
+    mutable vars : value array;
+    mutable pc : int;
+    mutable time : int }
 
 let string_of_binop = function
   | Add -> "Add"
@@ -67,14 +68,14 @@ let string_of_instr = function
   | Tableswitch _ -> "Switch"
   | Checkarray -> "Checkarray"
   | Print s ->
-     let p = ref "" in
-     String.iter (fun c -> match c with
-                           | '\\' -> p := !p ^ "\\\\"
-                           | '\n' -> p := !p ^ "\\n"
-                           | '\t' -> p := !p ^ "\\t"
-                           | '"'  -> p := !p ^ "\\\""
-                           | _    -> p := !p ^ (String.make 1 c)) s;
-     "Print \"" ^ !p ^ "\""
+      let p = ref "" in
+      String.iter (fun c -> match c with
+          | '\\' -> p := !p ^ "\\\\"
+          | '\n' -> p := !p ^ "\\n"
+          | '\t' -> p := !p ^ "\\t"
+          | '"'  -> p := !p ^ "\\\""
+          | _    -> p := !p ^ (String.make 1 c)) s;
+      "Print \"" ^ !p ^ "\""
 
 let rec string_of_stack i l =
   if i=0 then "..."
@@ -114,10 +115,10 @@ let initial_runtime () =
 let rec evaluate runtime (ast : t) =
   runtime.code <- Array.of_list (List.map snd ast.code);
   List.iteri (fun i (labo,_) ->
-              match labo with
-              | Some lab -> runtime.jumptbl <- (lab,i)::runtime.jumptbl
-              | None -> ())
-             ast.code;
+      match labo with
+      | Some lab -> runtime.jumptbl <- (lab,i)::runtime.jumptbl
+      | None -> ())
+    ast.code;
   runtime.vars <- Array.make ast.varsize VNil;
   let ret = interp runtime in
   runtime, ret
@@ -129,66 +130,66 @@ and interp r =
   r.time <- r.time + 1;
   match r.code.(r.pc) with
   | Box ->
-     let i = pop_int r "Box" in push (VBox i) r; next r
+      let i = pop_int r "Box" in push (VBox i) r; next r
   | Unbox ->
-     (match pop r "Unbox" with
-      | VBox i -> push (VInt i) r; next r
-      | _ -> failwith "Incorrect stack head for Unbox")
+      (match pop r "Unbox" with
+       | VBox i -> push (VInt i) r; next r
+       | _ -> failwith "Incorrect stack head for Unbox")
   | Bipush i -> push (VInt i) r; next r
   | Pop -> let _ = pop r "Pop" in next r
   | Swap ->
-     let v2 = pop r "Swap" in
-     let v1 = pop r "Swap" in
-     push v2 r; push v1 r; next r
+      let v2 = pop r "Swap" in
+      let v1 = pop r "Swap" in
+      push v2 r; push v1 r; next r
   | Dup ->
-     let v = pop r "Dup" in
-     push v r; push v r; next r
+      let v = pop r "Dup" in
+      push v r; push v r; next r
   | Binop op ->
-     let i2 = pop_int r "Binop" in
-     let i1 = pop_int r "Binop" in
-     push (VInt (binop op i1 i2)) r; next r
+      let i2 = pop_int r "Binop" in
+      let i1 = pop_int r "Binop" in
+      push (VInt (binop op i1 i2)) r; next r
   | Astore (Var var) ->
-     (match pop r "Astore" with
-      | VInt _ -> failwith "Astore on a non-boxed integer"
-      | v -> r.vars.(var) <- v; next r)
+      (match pop r "Astore" with
+       | VInt _ -> failwith "Astore on a non-boxed integer"
+       | v -> r.vars.(var) <- v; next r)
   | Aload (Var var) -> push (r.vars.(var)) r; next r
   | Goto lab -> goto lab r
   | If_icmp (op, lab) ->
-     let i2 = pop_int r "If_icmp" in
-     let i1 = pop_int r "If_icmp" in
-     if cmpop op i1 i2 then goto lab r else next r
+      let i2 = pop_int r "If_icmp" in
+      let i1 = pop_int r "If_icmp" in
+      if cmpop op i1 i2 then goto lab r else next r
   | Anewarray ->
-     let i = pop_int r "Anewarray" in
-     push (VArray (Array.make i VNil)) r; next r
+      let i = pop_int r "Anewarray" in
+      push (VArray (Array.make i VNil)) r; next r
   | AAstore ->
-     let v = pop r "AAstore" in
-     let i = pop_int r "AAstore" in
-     let a = pop r "AAstore" in
-     (match v,a with
-      | VInt _, _ -> failwith "AAstore of a non-boxed integer"
-      | _,VArray a -> a.(i) <- v; next r
-      | _ -> failwith "AAstore on a non-VArray")
+      let v = pop r "AAstore" in
+      let i = pop_int r "AAstore" in
+      let a = pop r "AAstore" in
+      (match v,a with
+       | VInt _, _ -> failwith "AAstore of a non-boxed integer"
+       | _,VArray a -> a.(i) <- v; next r
+       | _ -> failwith "AAstore on a non-VArray")
   | AAload ->
-     let i = pop_int r "AAstore" in
-     let a = pop r "AAstore" in
-     (match a with
-      | VArray a -> push a.(i) r; next r
-      | _ -> failwith "AAload on a non-VArray")
+      let i = pop_int r "AAstore" in
+      let a = pop r "AAstore" in
+      (match a with
+       | VArray a -> push a.(i) r; next r
+       | _ -> failwith "AAload on a non-VArray")
   | Ireturn ->
-     let i = pop_int r "Ireturn" in
-     if r.stack <> []
-     then print_string "Warning: Ireturn discards some stack\n";
-     i
+      let i = pop_int r "Ireturn" in
+      if r.stack <> []
+      then print_string "Warning: Ireturn discards some stack\n";
+      i
   | Comment _ -> next r
   | Tableswitch (n, labs, lab) ->
-     let i = pop_int r "Tableswitch" in
-     if 0 <= i-n && i-n < List.length labs then goto (List.nth labs (i-n)) r
-     else goto lab r
+      let i = pop_int r "Tableswitch" in
+      if 0 <= i-n && i-n < List.length labs then goto (List.nth labs (i-n)) r
+      else goto lab r
   | Checkarray ->
-     let a = pop r "Checkarray" in
-     (match a with
-      | VArray _ -> push a r; next r
-      | _ -> failwith "Checkarray on a non-VArray")
+      let a = pop r "Checkarray" in
+      (match a with
+       | VArray _ -> push a r; next r
+       | _ -> failwith "Checkarray on a non-VArray")
   | Print s -> Printf.printf "%s" s; push (VInt 0) r; next r
 
 and next r = r.pc <- r.pc + 1; interp r

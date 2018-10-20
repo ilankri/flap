@@ -27,7 +27,7 @@ and identifier =
   | Id of string
 
 and formals =
-    identifier list
+  identifier list
 
 and function_identifier =
   | FunId of string

@@ -67,23 +67,23 @@ exception InvalidMIPSRegisterName of string
 
 let register_of_string = function
   | "$fp" ->
-    Fp
+      Fp
   | "$sp" ->
-    Sp
+      Sp
   | "$gp" ->
-    Gp
+      Gp
   | "$ra" ->
-    Ra
+      Ra
   | s when Str.(string_match (regexp "\\$t\\([0-9]\\)") s 0) ->
-    t (int_of_string (Str.matched_group 1 s))
+      t (int_of_string (Str.matched_group 1 s))
   | s when Str.(string_match (regexp "\\$a\\([0-3]\\)") s 0) ->
-    a (int_of_string (Str.matched_group 1 s))
+      a (int_of_string (Str.matched_group 1 s))
   | s when Str.(string_match (regexp "\\$v\\([0-1]\\)") s 0) ->
-    v (int_of_string (Str.matched_group 1 s))
+      v (int_of_string (Str.matched_group 1 s))
   | s when Str.(string_match (regexp "\\$s\\([0-7]\\)") s 0) ->
-    S (int_of_string (Str.matched_group 1 s))
+      S (int_of_string (Str.matched_group 1 s))
   | s ->
-    raise (InvalidMIPSRegisterName s)
+      raise (InvalidMIPSRegisterName s)
 
 let argument_passing_registers = ExtStd.List.(
     map a (range 0 3)

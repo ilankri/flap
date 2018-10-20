@@ -56,8 +56,9 @@ module Utils : sig
     T.labelled_instruction list -> T.labelled_instruction list
   val translate_Print   : string -> T.labelled_instruction list
   val save_return_address : T.label -> T.labelled_instruction list
-  val translate_IfThenElse : T.labelled_instruction list *
-    T.labelled_instruction list * T.labelled_instruction list ->
+  val translate_IfThenElse :
+    T.labelled_instruction list * T.labelled_instruction list *
+    T.labelled_instruction list ->
     T.labelled_instruction list
 
 end = struct
@@ -116,24 +117,24 @@ let string_of_binop = function
   | S.Gt -> "`>"
 
 let rec translate_basicexpr (expr: S.basicexpr) (env: environment) :
-(T.labelled_instruction list) =
+  (T.labelled_instruction list) =
   match expr with
   | S.Num i -> Utils.translate_Num i
 
   | S.FunName fun_id ->
-     let fun_label = Env.lookup_function_label fun_id env in
-     Utils.translate_FunName fun_id fun_label
+      let fun_label = Env.lookup_function_label fun_id env in
+      Utils.translate_FunName fun_id fun_label
 
   | S.Var id ->
-     let v = Env.lookup_variable id env in
-     Utils.translate_Var v
+      let v = Env.lookup_variable id env in
+      Utils.translate_Var v
 
 
   | S.Let (id, expr, expr') ->
-     let var, env' = Env.bind_variable env id in
-     let instrs =
-       translate_basicexpr expr env @ Utils.unlabelled_instrs [T.Astore var] in
-     let instrs' = translate_basicexpr expr' env' in instrs @ instrs'
+      let var, env' = Env.bind_variable env id in
+      let instrs =
+        translate_basicexpr expr env @ Utils.unlabelled_instrs [T.Astore var] in
+      let instrs' = translate_basicexpr expr' env' in instrs @ instrs'
 
   | S.IfThenElse (cond_expr, then_expr, else_expr) ->
       let cond_codes' = translate_basicexpr cond_expr env in
@@ -142,24 +143,24 @@ let rec translate_basicexpr (expr: S.basicexpr) (env: environment) :
       Utils.translate_IfThenElse (cond_codes', then_codes, else_codes)
 
   | S.BinOp (binop, left_expr, right_expr) ->
-     let insts_left = translate_basicexpr left_expr env in
-     let insts_right = translate_basicexpr right_expr env in
-     Utils.translate_Binop insts_left insts_right (string_of_binop binop)
+      let insts_left = translate_basicexpr left_expr env in
+      let insts_right = translate_basicexpr right_expr env in
+      Utils.translate_Binop insts_left insts_right (string_of_binop binop)
 
   | S.BlockNew size_expr ->
-     let size = translate_basicexpr size_expr env in
-     Utils.translate_BlockNew size
+      let size = translate_basicexpr size_expr env in
+      Utils.translate_BlockNew size
 
   | S.BlockGet (array_expr, index_expr) ->
-     let a_instrs = translate_basicexpr array_expr env in
-     let i_instrs = translate_basicexpr index_expr env in
-     Utils.translate_BlockGet a_instrs i_instrs
+      let a_instrs = translate_basicexpr array_expr env in
+      let i_instrs = translate_basicexpr index_expr env in
+      Utils.translate_BlockGet a_instrs i_instrs
 
   | S.BlockSet (array_expr, index_expr, value_expr) ->
-     let a_instrs = translate_basicexpr array_expr env in
-     let i_instrs = translate_basicexpr index_expr env in
-     let v_instrs = translate_basicexpr value_expr env in
-     Utils.translate_BlockSet a_instrs i_instrs v_instrs
+      let a_instrs = translate_basicexpr array_expr env in
+      let i_instrs = translate_basicexpr index_expr env in
+      let v_instrs = translate_basicexpr value_expr env in
+      Utils.translate_BlockSet a_instrs i_instrs v_instrs
 
   | S.Print s -> Utils.translate_Print s
 
@@ -180,37 +181,37 @@ let pass_fun_args args env =
 let call_fun fun_expr env =
   match fun_expr with
   | S.FunName f ->
-     Utils.unlabelled_instrs [T.Goto (Env.lookup_function_label f env)]
+      Utils.unlabelled_instrs [T.Goto (Env.lookup_function_label f env)]
 
   | _ ->
-     Utils.unlabelled_instr (T.Comment "Compute the function to call") ::
-     translate_basicexpr fun_expr env @
-     Utils.unlabelled_instrs [T.Goto Dispatcher.label]
+      Utils.unlabelled_instr (T.Comment "Compute the function to call") ::
+      translate_basicexpr fun_expr env @
+      Utils.unlabelled_instrs [T.Goto Dispatcher.label]
 
 let translate_FunCall fun_expr args env =
-     (* this code can be changed when we implement TPushCont and TContCall*)
-     pass_fun_args args env @
-     call_fun fun_expr env
+  (* this code can be changed when we implement TPushCont and TContCall*)
+  pass_fun_args args env @
+  call_fun fun_expr env
 
 let rec translate_tailexpr (expr: S.tailexpr) (env: environment) :
-(T.labelled_instruction list) =
+  (T.labelled_instruction list) =
   match expr with
   | S.TLet (id, expr, expr') ->
-     let var, env' = Env.bind_variable env id in
-     let instrs =
-       translate_basicexpr expr env @ Utils.unlabelled_instrs [T.Astore var] in
-     let instrs' = translate_tailexpr expr' env' in instrs @ instrs'
+      let var, env' = Env.bind_variable env id in
+      let instrs =
+        translate_basicexpr expr env @ Utils.unlabelled_instrs [T.Astore var] in
+      let instrs' = translate_tailexpr expr' env' in instrs @ instrs'
 
   | S.TIfThenElse (e_cond, e_then, e_else) ->
-     let cond_codes = translate_basicexpr e_cond env in
-     let then_codes = translate_tailexpr e_then env in
-     let else_codes = translate_tailexpr e_else env in
-     Utils.translate_IfThenElse (cond_codes, then_codes, else_codes)
+      let cond_codes = translate_basicexpr e_cond env in
+      let then_codes = translate_tailexpr e_then env in
+      let else_codes = translate_tailexpr e_else env in
+      Utils.translate_IfThenElse (cond_codes, then_codes, else_codes)
 
   | S.TPushCont (cont_id, _, e) -> ExtStd.failwith_todo __LOC__
 
   | S.TFunCall (fun_expr, args) ->
-     translate_FunCall fun_expr args env
+      translate_FunCall fun_expr args env
 
   | S.TContCall b_expr -> ExtStd.failwith_todo __LOC__
 
@@ -233,7 +234,7 @@ let fun_prolog fun_id formals env =
    env)
 
 let translate_definition (def:S.definition) (env: environment) :
-(T.labelled_instruction list) * environment =
+  (T.labelled_instruction list) * environment =
   match def with
   | S.DefFun (fun_id, formals, body) ->
       let prolog, env' = fun_prolog fun_id formals env in

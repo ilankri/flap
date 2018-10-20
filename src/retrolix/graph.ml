@@ -17,11 +17,11 @@
 
 *)
 module type EdgeLabelSig = sig
-    include Set.OrderedType
-    (** [all] enumerates all the possible edge labels. *)
-    val all : t list
-    (** [to_string e] converts [e] in a human readable value. *)
-    val to_string : t -> string
+  include Set.OrderedType
+  (** [all] enumerates all the possible edge labels. *)
+  val all : t list
+  (** [to_string e] converts [e] in a human readable value. *)
+  val to_string : t -> string
 end
 
 (** The type for node labels.
@@ -31,7 +31,7 @@ end
 *)
 module type NodeLabelSig = sig
   include Set.OrderedType
-    (** [to_string n] converts [n] in a human readable value. *)
+  (** [to_string n] converts [n] in a human readable value. *)
   val to_string : t -> string
 end
 
@@ -55,7 +55,8 @@ struct
 
   (** A type for maps whose keys are node identifiers. *)
   module NodeIdMap = Map.Make (IdCmp)
-  let nodeid_map_update k m d f = ExtStd.update NodeIdMap.find NodeIdMap.add k m d f
+  let nodeid_map_update k m d f =
+    ExtStd.update NodeIdMap.find NodeIdMap.add k m d f
 
   (** A type for sets of node identifiers. *)
   module NodeIdSet = Set.Make (IdCmp)
@@ -92,23 +93,25 @@ struct
   let dump g =
     let neighbours =
       EdgeLabelMap.bindings g.neighbours |> List.map (fun (c, m) ->
-	NodeIdMap.bindings m |> List.map (fun (id, ids) ->
-	  Printf.sprintf "%s -%s-> %s"
-	    (string_of_nodeid id)
-	    (EdgeLabel.to_string c)
-	    (String.concat "," (List.map string_of_nodeid (NodeIdSet.elements ids)))
-	)
-      ) |> List.flatten |> String.concat "\n"
+          NodeIdMap.bindings m |> List.map (fun (id, ids) ->
+              Printf.sprintf "%s -%s-> %s"
+                (string_of_nodeid id)
+                (EdgeLabel.to_string c)
+                (String.concat ","
+                   (List.map string_of_nodeid (NodeIdSet.elements ids)))
+            )
+        ) |> List.flatten |> String.concat "\n"
     in
     let degrees =
       EdgeLabelMap.bindings g.degrees |> List.map (fun (c, m) ->
-	IntMap.bindings m |> List.map (fun (d, ids) ->
-	  Printf.sprintf "%d =%s=> %s"
-	    d
-	    (EdgeLabel.to_string c)
-	    (String.concat "," (List.map string_of_nodeid (NodeIdSet.elements ids)))
-	)
-      ) |> List.flatten |> String.concat "\n"
+          IntMap.bindings m |> List.map (fun (d, ids) ->
+              Printf.sprintf "%d =%s=> %s"
+                d
+                (EdgeLabel.to_string c)
+                (String.concat ","
+                   (List.map string_of_nodeid (NodeIdSet.elements ids)))
+            )
+        ) |> List.flatten |> String.concat "\n"
     in
     Printf.sprintf "%s\n%s\n" neighbours degrees
 
@@ -116,15 +119,15 @@ struct
   let empty =
     let degrees =
       List.fold_left
-	(fun m e -> EdgeLabelMap.add e IntMap.empty m)
-	EdgeLabelMap.empty
-	EdgeLabel.all
+        (fun m e -> EdgeLabelMap.add e IntMap.empty m)
+        EdgeLabelMap.empty
+        EdgeLabel.all
     in
     let neighbours =
       List.fold_left
-	(fun m e -> EdgeLabelMap.add e NodeIdMap.empty m)
-	EdgeLabelMap.empty
-	EdgeLabel.all
+        (fun m e -> EdgeLabelMap.add e NodeIdMap.empty m)
+        EdgeLabelMap.empty
+        EdgeLabel.all
     in
     {
       next_node_id = 0;
@@ -153,12 +156,12 @@ struct
       NodeIdSet.mem x (IntMap.find xdegree (EdgeLabelMap.find c g.degrees))
     in
     EdgeLabelMap.iter (fun c ngbs ->
-      NodeIdMap.iter (fun x ngb ->
-	if not (valid_degree c x ngb) then (
-	  raise InconsistentDegree
-	)
-      ) ngbs
-    ) g.neighbours
+        NodeIdMap.iter (fun x ngb ->
+            if not (valid_degree c x ngb) then (
+              raise InconsistentDegree
+            )
+          ) ngbs
+      ) g.neighbours
 
   let update_neighbour update_set g id1 e id2 =
     (** We focus on [e]. *)
@@ -173,12 +176,14 @@ struct
     let nbg = nodeid_map_update id1 nbg NodeIdSet.empty (update_set id2) in
 
     (** Update the degree of id1. *)
-    let deg = int_map_update id1_deg deg NodeIdSet.empty (NodeIdSet.remove id1) in
+    let deg =
+      int_map_update id1_deg deg NodeIdSet.empty (NodeIdSet.remove id1)
+    in
     let deg =
       if IntMap.find id1_deg deg = NodeIdSet.empty then
-	IntMap.remove id1_deg deg
+        IntMap.remove id1_deg deg
       else
-	deg
+        deg
     in
     let id1_nbg = try NodeIdMap.find id1 nbg with _ -> assert false in
     let id1_deg = NodeIdSet.cardinal id1_nbg in
@@ -190,8 +195,8 @@ struct
     let g = { g with neighbours; degrees } in
 
     (** If you suspect a bug in the implementation of the graph data
-	structure, which is always possible. Activating sanity check
-	might help you to track it down. *)
+        structure, which is always possible. Activating sanity check
+        might help you to track it down. *)
     if sanity_check then check_consistent_degree g;
     g
 
@@ -220,14 +225,14 @@ struct
     let labels = NodeIdMap.add nodeid ns g.labels in
     let neighbours =
       EdgeLabelMap.map (fun nbg ->
-	NodeIdMap.add nodeid NodeIdSet.empty nbg
-      ) g.neighbours
+          NodeIdMap.add nodeid NodeIdSet.empty nbg
+        ) g.neighbours
     in
     (** Initially, the node has a degree 0 since it has no neighbour. *)
     let degrees =
       EdgeLabelMap.map
-	(fun deg -> int_map_update 0 deg NodeIdSet.empty (NodeIdSet.add nodeid))
-	g.degrees
+        (fun deg -> int_map_update 0 deg NodeIdSet.empty (NodeIdSet.add nodeid))
+        g.degrees
     in
     { next_node_id; node_of_label; labels; degrees; neighbours }
 
@@ -245,19 +250,25 @@ struct
   (** [neighbours g e n] returns the neighbours of [n] in [g]. *)
   let neighbours g e n =
     let id = id_of_node g n in
-    let ids = NodeIdSet.elements (NodeIdMap.find id (EdgeLabelMap.find e g.neighbours)) in
+    let ids =
+      NodeIdSet.elements (NodeIdMap.find id (EdgeLabelMap.find e g.neighbours))
+    in
     List.map (fun id -> NodeIdMap.find id g.labels) ids
 
   (** [neighbours' g es n] *)
   let neighbours' g es n =
     let id = id_of_node g n in
-    let ids = List.map (fun e -> NodeIdMap.find id (EdgeLabelMap.find e g.neighbours)) es in
+    let ids =
+      List.map
+        (fun e -> NodeIdMap.find id (EdgeLabelMap.find e g.neighbours)) es
+    in
     let rec aux = function
       | [] -> assert false
       | [s] -> s
       | s :: ss -> NodeIdSet.inter s (aux ss)
     in
-    List.map (fun id -> NodeIdMap.find id g.labels) (NodeIdSet.elements (aux ids))
+    List.map
+      (fun id -> NodeIdMap.find id g.labels) (NodeIdSet.elements (aux ids))
 
   (** [del_node g n] returns a new graph that contains [g] minus the
       node [n] and its edges. *)
@@ -265,32 +276,32 @@ struct
     let id = id_of_node g n in
     let g =
       EdgeLabelMap.fold (fun e nbg g ->
-	let nnbg = NodeIdMap.find id nbg in
-	NodeIdSet.fold (fun id' g ->
-	  let g = del_neighbour g id' e id in
-	  let g = del_neighbour g id e id' in
-	  g
-	) nnbg g
-      ) g.neighbours g
+          let nnbg = NodeIdMap.find id nbg in
+          NodeIdSet.fold (fun id' g ->
+              let g = del_neighbour g id' e id in
+              let g = del_neighbour g id e id' in
+              g
+            ) nnbg g
+        ) g.neighbours g
     in
     let neighbours =
       EdgeLabelMap.map (fun nbg ->
-    	NodeIdMap.remove id nbg
-      ) g.neighbours
+          NodeIdMap.remove id nbg
+        ) g.neighbours
     in
     let degrees =
       EdgeLabelMap.map (fun deg ->
-	let deg0 = IntMap.find 0 deg in
-	let deg0 = NodeIdSet.remove id deg0 in
-	if deg0 = NodeIdSet.empty then
-	  IntMap.remove 0 deg
-	else
-	  IntMap.add 0 deg0 deg
-      ) g.degrees
+          let deg0 = IntMap.find 0 deg in
+          let deg0 = NodeIdSet.remove id deg0 in
+          if deg0 = NodeIdSet.empty then
+            IntMap.remove 0 deg
+          else
+            IntMap.add 0 deg0 deg
+        ) g.degrees
     in
     let node_of_label = List.fold_left (fun node_of_label l ->
-      NodeLabelMap.remove l node_of_label
-    ) g.node_of_label (NodeIdMap.find id g.labels)
+        NodeLabelMap.remove l node_of_label
+      ) g.node_of_label (NodeIdMap.find id g.labels)
     in
     let labels = NodeIdMap.remove id g.labels in
     { g with node_of_label; neighbours; labels; degrees }
@@ -306,13 +317,13 @@ struct
     let nbg = EdgeLabelMap.find e g.neighbours in
     let edges =
       NodeIdMap.fold (fun id ids edges ->
-	NodeIdSet.fold (fun id' edges ->
-	  (NodeIdMap.find id g.labels, NodeIdMap.find id' g.labels) :: edges
-	) ids edges) nbg []
+          NodeIdSet.fold (fun id' edges ->
+              (NodeIdMap.find id g.labels, NodeIdMap.find id' g.labels) :: edges
+            ) ids edges) nbg []
     in
     let edges = List.map (fun (n1, n2) ->
-      if n1 < n2 then (n1, n2) else (n2, n1)
-    ) edges
+        if n1 < n2 then (n1, n2) else (n2, n1)
+      ) edges
     in
     let edges = List.sort compare edges in
     ExtStd.List.uniq edges
@@ -322,18 +333,18 @@ struct
     let forbidden = EdgeLabelMap.find nc g.neighbours in
     let rec aux degrees =
       try
-	let k, ids = IntMap.min_binding degrees in
-	let rec aux' ids =
-	  try
-	    let id = NodeIdSet.choose ids in
-	    if NodeIdMap.find id forbidden = NodeIdSet.empty then
-	      Some (k, List.hd (NodeIdMap.find id g.labels))
-	    else
-	      aux' (NodeIdSet.remove id ids)
-	  with Not_found ->
-	    aux (IntMap.remove k degrees)
-	in
-	aux' ids
+        let k, ids = IntMap.min_binding degrees in
+        let rec aux' ids =
+          try
+            let id = NodeIdSet.choose ids in
+            if NodeIdMap.find id forbidden = NodeIdSet.empty then
+              Some (k, List.hd (NodeIdMap.find id g.labels))
+            else
+              aux' (NodeIdSet.remove id ids)
+          with Not_found ->
+            aux (IntMap.remove k degrees)
+        in
+        aux' ids
       with Not_found -> None
     in
     aux cdegrees
@@ -351,11 +362,11 @@ struct
       let k, ids = IntMap.max_binding degrees in
       if k = 0 then None
       else
-	let id = NodeIdSet.choose ids in
-	let nbg = EdgeLabelMap.find e g.neighbours in
-	let nbgid = NodeIdMap.find id nbg in
-	let id2 = NodeIdSet.choose nbgid in
-	Some (List.hd (nodes_of_id g id), List.hd (nodes_of_id g id2))
+        let id = NodeIdSet.choose ids in
+        let nbg = EdgeLabelMap.find e g.neighbours in
+        let nbgid = NodeIdMap.find id nbg in
+        let id2 = NodeIdSet.choose nbgid in
+        Some (List.hd (nodes_of_id g id), List.hd (nodes_of_id g id2))
     with Not_found ->
       None
 
@@ -365,18 +376,19 @@ struct
     let nodes1 = nodes_of_id g i1 and nodes2 = nodes_of_id g i2 in
     let nbgs =
       List.map
-	(fun e -> (e, List.filter (fun n -> not (List.mem n1 n) && not (List.mem n2 n))
-	  (neighbours g e n1 @ neighbours g e n2)))
-	EdgeLabel.all
+        (fun e ->
+           (e, List.filter (fun n -> not (List.mem n1 n) && not (List.mem n2 n))
+              (neighbours g e n1 @ neighbours g e n2)))
+        EdgeLabel.all
     in
     let g = del_node g n1 in
     let g = del_node g n2 in
     let g = add_node g (nodes1 @ nodes2) in
     List.fold_left (fun g (e, nbgs) ->
-      List.fold_left (fun g ns ->
-	add_edge g n1 e (List.hd ns)
+        List.fold_left (fun g ns ->
+            add_edge g n1 e (List.hd ns)
+          ) g nbgs
       ) g nbgs
-    ) g nbgs
 
   (** [all_labels g n] *)
   let all_labels g n =
@@ -388,9 +400,10 @@ struct
   let show g labels =
     let dot_node (NodeId n, ns) =
       let ns =
-	String.concat "," (List.map (fun n ->
-	  NodeLabel.to_string n ^ (match labels n with None -> "" | Some s -> " => " ^ s)
-	) ns)
+        String.concat "," (List.map (fun n ->
+            NodeLabel.to_string n
+            ^ (match labels n with None -> "" | Some s -> " => " ^ s)
+          ) ns)
       in
       Printf.sprintf "n%d [label=\"%s\"];" n ns
     in
@@ -401,8 +414,8 @@ struct
     let dot_edge (NodeId n) c (NodeId n') =
       let n, n' = min n n', max n n' in
       if not (Hashtbl.mem seen (n, n')) then (
-	Hashtbl.add seen (n, n') ();
-	Printf.sprintf "n%d -- n%d [label=\"%s\"];" n n' (EdgeLabel.to_string c)
+        Hashtbl.add seen (n, n') ();
+        Printf.sprintf "n%d -- n%d [label=\"%s\"];" n n' (EdgeLabel.to_string c)
       ) else ""
     in
     let neighbour c (id, ids) =
@@ -412,7 +425,8 @@ struct
       String.concat "\n" (List.map (neighbour c) (NodeIdMap.bindings ngb))
     in
     let dot_edges =
-      String.concat "\n" (List.map dot_edges_of_kind (EdgeLabelMap.bindings g.neighbours))
+      String.concat "\n"
+        (List.map dot_edges_of_kind (EdgeLabelMap.bindings g.neighbours))
     in
     let dot =
       Printf.sprintf "graph g {\n%s\n%s\n}" dot_nodes dot_edges
@@ -420,7 +434,9 @@ struct
     let fname, cout = Filename.open_temp_file "flap" ".dot" in
     output_string cout dot;
     close_out cout;
-    Printf.printf "Graph written in %s. (You need to install dotty to display it.)\n%!" fname;
+    Printf.printf
+      "Graph written in %s. (You need to install dotty to display it.)\n%!"
+      fname;
     ignore (Sys.command ("dotty " ^ fname ^ "&"))
 
 end

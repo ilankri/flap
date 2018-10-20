@@ -130,19 +130,19 @@ let new_label =
     accordingly to use 1000 as base value. *)
 
 module Labels :
- sig
-   val encode : T.label -> int
-   val all_encodings : unit -> (int * T.label) list
- end = struct
-   let nextcode = ref 1000
-   let allcodes = ref ([]:(int * T.label) list)
-   let encode lab =
-     let n = !nextcode in
-     incr nextcode;
-     allcodes := (n,lab) :: !allcodes;
-     n
-   let all_encodings () = !allcodes
- end
+sig
+  val encode : T.label -> int
+  val all_encodings : unit -> (int * T.label) list
+end = struct
+  let nextcode = ref 1000
+  let allcodes = ref ([]:(int * T.label) list)
+  let encode lab =
+    let n = !nextcode in
+    incr nextcode;
+    allcodes := (n,lab) :: !allcodes;
+    n
+  let all_encodings () = !allcodes
+end
 
 module Dispatcher : sig
   val label : T.label
@@ -231,61 +231,61 @@ let translate_Num i = unlabelled_instrs (bipush_box i)
 let translate_Var v = unlabelled_instrs [T.Aload v]
 
 let translate_FunName fun_id fun_label =
-   unlabelled_instrs (
-        T.Comment ("Push the encoded label of the function " ^ fun_id) ::
-        bipush_box (Labels.encode fun_label)
-      )
+  unlabelled_instrs (
+    T.Comment ("Push the encoded label of the function " ^ fun_id) ::
+    bipush_box (Labels.encode fun_label)
+  )
 
 let translate_Binop insts_left insts_right binop =
-   begin match binop with
-      | "`+" | "`-" | "`*" | "`/" ->
-          let op = translate_binop binop in
-          unbox_after insts_left @ unbox_after insts_right @
-          unlabelled_instrs (box_after [op])
+  begin match binop with
+  | "`+" | "`-" | "`*" | "`/" ->
+      let op = translate_binop binop in
+      unbox_after insts_left @ unbox_after insts_right @
+      unlabelled_instrs (box_after [op])
 
-      | "`=" | "`<=" | "`<" | "`>=" | "`>" ->
-          let op, to_label = translate_binop_comp_with_new_label binop in
-          let close_label = new_label "close" in
-          unbox_after insts_left @
-          unbox_after insts_right @
-          unlabelled_instrs [op; T.Bipush 0] @
-          unlabelled_instr (T.Goto close_label) ::
-          labelled_instr to_label (T.Bipush 1) ::
-          labelled_instrs close_label [T.Box]
-      | _ -> failwith "Unknown binary operator"
-      end
+  | "`=" | "`<=" | "`<" | "`>=" | "`>" ->
+      let op, to_label = translate_binop_comp_with_new_label binop in
+      let close_label = new_label "close" in
+      unbox_after insts_left @
+      unbox_after insts_right @
+      unlabelled_instrs [op; T.Bipush 0] @
+      unlabelled_instr (T.Goto close_label) ::
+      labelled_instr to_label (T.Bipush 1) ::
+      labelled_instrs close_label [T.Box]
+  | _ -> failwith "Unknown binary operator"
+  end
 
 let translate_BlockNew size =
   unlabelled_instr (T.Comment "builds an array of java Objects") ::
-      size @
-      unlabelled_instrs (unbox_before [T.Anewarray])
+  size @
+  unlabelled_instrs (unbox_before [T.Anewarray])
 
 let translate_BlockGet a_instrs i_instrs =
   unlabelled_instr (T.Comment "array access: array[index]") ::
-      a_instrs @ unlabelled_instr T.Checkarray :: i_instrs @
-      unlabelled_instrs (unbox_before [T.AAload])
+  a_instrs @ unlabelled_instr T.Checkarray :: i_instrs @
+  unlabelled_instrs (unbox_before [T.AAload])
 
 let translate_BlockSet a_instrs i_instrs v_instrs  =
   unlabelled_instrs (
-        T.Comment "array modification: array[index] = value" ::
-        bipush_box 0
-      ) @
-      a_instrs @
-      unlabelled_instr T.Checkarray ::
-      unbox_after i_instrs @ v_instrs @ unlabelled_instrs [T.AAstore]
+    T.Comment "array modification: array[index] = value" ::
+    bipush_box 0
+  ) @
+  a_instrs @
+  unlabelled_instr T.Checkarray ::
+  unbox_after i_instrs @ v_instrs @ unlabelled_instrs [T.AAstore]
 
 let translate_Print s = unlabelled_instrs (box_after [T.Print s])
 
 let translate_IfThenElse (cond_codes, then_codes, else_codes) =
-      let cond_codes' = append_if_icmp cond_codes in
-      let if_true_label = get_if_true_label_from_cond_codes cond_codes' in
-      let close_label = new_label "close" in
-      cond_codes' @
-      else_codes @
-      unlabelled_instr (T.Goto close_label) ::
-      labelled_instr if_true_label (T.Comment "then_start") ::
-      then_codes @
-      labelled_instrs close_label [T.Comment "end_if"]
+  let cond_codes' = append_if_icmp cond_codes in
+  let if_true_label = get_if_true_label_from_cond_codes cond_codes' in
+  let close_label = new_label "close" in
+  cond_codes' @
+  else_codes @
+  unlabelled_instr (T.Goto close_label) ::
+  labelled_instr if_true_label (T.Comment "then_start") ::
+  then_codes @
+  labelled_instrs close_label [T.Comment "end_if"]
 
 let is_binop fun_id = try fun_id.[0] = '`' with Invalid_argument _ -> false
 
@@ -472,19 +472,19 @@ let translate (p : S.t) (env : environment) : T.t * environment =
   (basic_program code, env)
 
 (** Remarks:
-  - When using this compiler from fopix to javix, flap will
+    - When using this compiler from fopix to javix, flap will
     produce some .j files.
     {ol
     {- Compile them to .class via: jasmin Foobar.j}
     {- Run them with: java -noverify Foobar}
     }
 
-  - Final answer:
+    - Final answer:
     your code should contain a final [Ireturn] that should
     return the value of the last DefVal (supposed to be
     an Integer).
 
-  - Function Call Convention:
+    - Function Call Convention:
     {ol
     {- When a function starts, the stack should contain the
       return address (a label encoded as a number, see Labels.encode)
@@ -499,7 +499,7 @@ let translate (p : S.t) (env : environment) : T.t * environment =
       of the stack.}
     }
 
-  - Boxing:
+    - Boxing:
     The stack could contain both unboxed elements (Java int)
     or boxed elements (Java objects such as Integer or java arrays).
     We place into variables or in array cells only boxed values.
@@ -511,13 +511,13 @@ let translate (p : S.t) (env : environment) : T.t * environment =
     do some obvious optimisations such as removing [Box;Unbox] or
     [Unbox;Box].
 
-  - Tail-recursive calls : if the body of f ends with a call to
+    - Tail-recursive calls : if the body of f ends with a call to
     another function g (which may be f itself in case of recursion),
     no need to save any variables, nor to push a new return address:
     just reuse the return address of the current call to f when
     jumping to g !
 
-  - Variable size and stack size
+    - Variable size and stack size
     Your code should determine the number of variables used by the
     produced code. You might also try to compute the maximum
     stack size when the code is non-recursive or 100% tail-recursive.

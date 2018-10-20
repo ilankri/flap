@@ -1,16 +1,15 @@
 {
-  open Lexing
-  open Error
-  open Position
-  open JavixParser
+open Lexing
+open Error
+open Position
+open JavixParser
 
-  let next_line_and f lexbuf  =
-    Lexing.new_line lexbuf;
-    f lexbuf
+let next_line_and f lexbuf  =
+  Lexing.new_line lexbuf;
+  f lexbuf
 
-  let error lexbuf =
-    error "during lexing" (lex_join lexbuf.lex_start_p lexbuf.lex_curr_p)
-
+let error lexbuf =
+  error "during lexing" (lex_join lexbuf.lex_start_p lexbuf.lex_curr_p)
 }
 
 let newline = ('\010' | '\013' | "\013\010")
@@ -90,5 +89,7 @@ and read_string buf = parse
   | ([^ '"' '\\']+  as c) { Buffer.add_string buf c;
                             read_string buf lexbuf }
   | eof                   { error lexbuf "String is not terminated." }
-  | _                     { error lexbuf ("Unexpected character in the string:" ^
-                                          Lexing.lexeme lexbuf) }
+  | _
+      { error
+          lexbuf
+          ("Unexpected character in the string:" ^ Lexing.lexeme lexbuf) }

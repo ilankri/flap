@@ -12,17 +12,17 @@ let mkcall f l startpos endpos =
   match f, l with
   | None, [Env; Expr res] -> TContCall res
   | Some e, (Kont::Env::args) ->
-     (try
-        let a = List.map (function Expr e -> e | _ -> raise Not_found) args in
-        TFunCall (e, a)
-      with Not_found ->
-        let pos = Position.lex_join startpos endpos in
-        Error.error "parsing" pos
-        "bad application (missing or badly shaped arguments)")
+      (try
+         let a = List.map (function Expr e -> e | _ -> raise Not_found) args in
+         TFunCall (e, a)
+       with Not_found ->
+         let pos = Position.lex_join startpos endpos in
+         Error.error "parsing" pos
+           "bad application (missing or badly shaped arguments)")
   | _ ->
-     let pos = Position.lex_join startpos endpos in
-     Error.error "parsing" pos
-     "bad application (missing or badly shaped arguments)"
+      let pos = Position.lex_join startpos endpos in
+      Error.error "parsing" pos
+        "bad application (missing or badly shaped arguments)"
 
 %}
 
@@ -72,7 +72,7 @@ basicexpr:
 | l=basicexpr b=binop r=basicexpr                  { BinOp (b, l, r) }
 | e=basicexpr LBRACKET i=basicexpr RBRACKET        { BlockGet (e, i) }
 | e=basicexpr LBRACKET i=basicexpr RBRACKET ASSIGNS v=basicexpr
-                                                   { BlockSet (e, i, v) }
+    { BlockSet (e, i, v) }
 | NEW LBRACKET e=basicexpr RBRACKET                { BlockNew (e) }
 | e1=basicexpr SEMICOLON e2=basicexpr              { Let ("_", e1, e2) }
 | LPAREN e=basicexpr RPAREN                        { e }
@@ -80,12 +80,12 @@ basicexpr:
 
 tailexpr:
 | LET K COMMA E EQUAL UPPERSAND f=ID COMMA t=tuple IN e=tailexpr
-                                                   { TPushCont(f,t,e) }
+    { TPushCont(f,t,e) }
 | LET x=ID EQUAL e1=basicexpr IN e2=tailexpr       { TLet (x, e1, e2) }
 | e1=basicexpr SEMICOLON e2=tailexpr               { TLet ("_", e1, e2) }
 | IF c=basicexpr THEN t=tailexpr ELSE f=tailexpr   { TIfThenElse (c, t, f) }
 | f=fun_head LPAREN l=separated_list(COMMA,basicexpr_or_tuple) RPAREN
-                                                   { mkcall f l $startpos $endpos }
+    { mkcall f l $startpos $endpos }
 
 fun_head:
 | QMARK LPAREN e=basicexpr RPAREN { Some e }

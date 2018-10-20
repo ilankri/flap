@@ -9,17 +9,17 @@ module type ColorsSig = sig
 end
 
 module Make
-  (EdgeLabel : sig
-    include Graph.EdgeLabelSig
-    (** A conflict edge imposes a distinct color on its two nodes. *)
-    val conflict   : t
-    (** A preference edge indicates that two nodes should have the
-        same color if possible. *)
-    val preference : t
-  end)
-  (NodeLabel : Graph.NodeLabelSig)
-  (Colors : ColorsSig)
-  =
+    (EdgeLabel : sig
+       include Graph.EdgeLabelSig
+       (** A conflict edge imposes a distinct color on its two nodes. *)
+       val conflict   : t
+       (** A preference edge indicates that two nodes should have the
+           same color if possible. *)
+       val preference : t
+     end)
+    (NodeLabel : Graph.NodeLabelSig)
+    (Colors : ColorsSig)
+=
 struct
 
   module Graph = Graph.Make (EdgeLabel) (NodeLabel)
@@ -38,14 +38,14 @@ struct
   (** Assign the color [c] to the node [n] in the [coloring]. *)
   let assign_color g n c coloring =
     List.fold_left (fun coloring n ->
-      NodeLabelMap.add n (Some c) coloring
-    ) coloring (Graph.all_labels g n)
+        NodeLabelMap.add n (Some c) coloring
+      ) coloring (Graph.all_labels g n)
 
   (** Assign no color to the node [n] in the [coloring]. *)
   let assign_no_color g n coloring =
     List.fold_left (fun coloring n ->
-      NodeLabelMap.add n None coloring
-    ) coloring (Graph.all_labels g n)
+        NodeLabelMap.add n None coloring
+      ) coloring (Graph.all_labels g n)
 
   (** [InvalidColoring c] is raised if [c] is not a valid coloring. *)
   exception InvalidColoring of t
@@ -56,8 +56,8 @@ struct
       colors. *)
   let rec check_coloring g c =
     let someEdge = Graph.pick_edge g EdgeLabel.conflict in
-      match someEdge with
-      | Some (n1, n2) ->
+    match someEdge with
+    | Some (n1, n2) ->
         let c1 = color_of_node c n1 in
         let c2 = color_of_node c n2 in
         if (c1 <> c2)
@@ -66,7 +66,7 @@ struct
           check_coloring g' c
         else
           raise (InvalidColoring c)
-      | None -> ()
+    | None -> ()
 
   type pick_result =
     | EmptyGraph
@@ -84,40 +84,41 @@ struct
     let pick_preference g = Graph.pick_edge g EdgeLabel.preference in
     let res = Graph.min_degree g EdgeLabel.conflict EdgeLabel.preference in
     match res with
-    | Some (d, nl) -> 
-       if (d < Colors.cardinal) then SimplifiableNode nl
-       else 
-       begin match pick_preference g with
-       | Some (l1, l2) -> PreferenceNodes (l1, l2)   
-       | None -> MaybeSpillNode nl
-       end
-    | None -> 
-       begin match pick_preference g with
-       | Some (l1, l2) -> PreferenceNodes (l1, l2)   
-       | None -> EmptyGraph
-       end
+    | Some (d, nl) ->
+        if (d < Colors.cardinal) then SimplifiableNode nl
+        else
+          begin match pick_preference g with
+          | Some (l1, l2) -> PreferenceNodes (l1, l2)
+          | None -> MaybeSpillNode nl
+          end
+    | None ->
+        begin match pick_preference g with
+        | Some (l1, l2) -> PreferenceNodes (l1, l2)
+        | None -> EmptyGraph
+        end
 
   (** [colorize g] returns a coloring for [g]. *)
   let rec colorize (g : Graph.t) : t =
-     let remove_nodes_from pkresult g = match pkresult with
-     | EmptyGraph -> g
-     | SimplifiableNode n -> Graph.del_node g n
-     | MaybeSpillNode n -> Graph.del_node g n
-     | PreferenceNodes (n1, n2) -> Graph.del_node (Graph.del_node g n1) n2
-     in
-     let assign_remaining_color coloringMap node g =
-     match node with
-     | EmptyGraph -> ExtStd.failwith_todo __LOC__
-     | SimplifiableNode n -> ExtStd.failwith_todo __LOC__
-     | MaybeSpillNode n -> ExtStd.failwith_todo __LOC__
-     | PreferenceNodes (n1, n2) -> failwith "Advance algo implementation needed for preference nodes"
-     in
-     let pick_res = pick g in
-     let g' = remove_nodes_from pick_res g in
-     let coloring = colorize g' in
-       (**try **)
-         assign_remaining_color coloring pick_res g'
-       (**with NoMoreColor -> give_up coloring n *)
+    let remove_nodes_from pkresult g = match pkresult with
+      | EmptyGraph -> g
+      | SimplifiableNode n -> Graph.del_node g n
+      | MaybeSpillNode n -> Graph.del_node g n
+      | PreferenceNodes (n1, n2) -> Graph.del_node (Graph.del_node g n1) n2
+    in
+    let assign_remaining_color coloringMap node g =
+      match node with
+      | EmptyGraph -> ExtStd.failwith_todo __LOC__
+      | SimplifiableNode n -> ExtStd.failwith_todo __LOC__
+      | MaybeSpillNode n -> ExtStd.failwith_todo __LOC__
+      | PreferenceNodes (n1, n2) ->
+          failwith "Advance algo implementation needed for preference nodes"
+    in
+    let pick_res = pick g in
+    let g' = remove_nodes_from pick_res g in
+    let coloring = colorize g' in
+    (**try **)
+    assign_remaining_color coloring pick_res g'
+  (**with NoMoreColor -> give_up coloring n *)
 
   (** [briggs g n1 n2] returns true iff in [g'] the graph in which n1 and
       n2 are merged, the number of neighbours of the new node for n1 and n2
@@ -141,8 +142,8 @@ struct
     *)
     let i = Graph.neighbours' g [EdgeLabel.preference; EdgeLabel.conflict] n1 in
     List.fold_left (fun g ns ->
-      Graph.del_edge g n1 EdgeLabel.preference (List.hd ns)
-    ) g i
+        Graph.del_edge g n1 EdgeLabel.preference (List.hd ns)
+      ) g i
   and degree_of_node g n =
     List.length (Graph.neighbours g EdgeLabel.conflict n)
 
@@ -184,54 +185,56 @@ let test () =
   in
   let module GC = Make (EdgeLabel) (NodeLabel) (Colors) in GC.(
 
-    (** A function to generate a random graph. *)
+      (** A function to generate a random graph. *)
 
-    Random.init random_seed;
-    let random_graph () =
-      let nb_nodes = ExtStd.Random.int_in_range min_nodes max_nodes in
-      let ns =
-        List.map
-          (fun i -> "n" ^ string_of_int i)
-          (ExtStd.List.range 0 (nb_nodes - 1))
+      Random.init random_seed;
+      let random_graph () =
+        let nb_nodes = ExtStd.Random.int_in_range min_nodes max_nodes in
+        let ns =
+          List.map
+            (fun i -> "n" ^ string_of_int i)
+            (ExtStd.List.range 0 (nb_nodes - 1))
+        in
+        let g =
+          List.fold_left (fun g n -> Graph.add_node g [n]) Graph.empty ns
+        in
+        List.fold_left (fun g n1 ->
+            List.fold_left (fun g n2 ->
+                if n1 = n2
+                || Graph.are_connected g n1 EdgeLabel.C n2
+                || Graph.are_connected g n1 EdgeLabel.P n2
+                then
+                  g
+                else if Random.float 1. < freq_conflict then
+                  Graph.add_edge g n1 EdgeLabel.C n2
+                else if Random.float 1. < freq_preference then
+                  Graph.add_edge g n1 EdgeLabel.P n2
+                else
+                  g
+              ) g ns
+          ) g ns
       in
-      let g = List.fold_left (fun g n -> Graph.add_node g [n]) Graph.empty ns in
-      List.fold_left (fun g n1 ->
-        List.fold_left (fun g n2 ->
-          if n1 = n2
-          || Graph.are_connected g n1 EdgeLabel.C n2
-          || Graph.are_connected g n1 EdgeLabel.P n2
-          then
-            g
-          else if Random.float 1. < freq_conflict then
-            Graph.add_edge g n1 EdgeLabel.C n2
-          else if Random.float 1. < freq_preference then
-            Graph.add_edge g n1 EdgeLabel.P n2
-          else
-            g
-        ) g ns
-      ) g ns
-    in
-    let show_coloring g coloring =
-      Graph.show g (fun n ->
+      let show_coloring g coloring =
+        Graph.show g (fun n ->
+            try
+              Option.map Colors.to_string (color_of_node coloring n)
+            with Not_found -> Some "!"
+          )
+      in
+      let one_test () =
+        let g = random_graph () in
+        (** Show the graph! *)
+        if show then Graph.show g (fun _ -> None);
+        (** Compute the coloring. *)
+        let coloring = colorize g in
+        (** Show the coloring! *)
+        if show then show_coloring g coloring;
+        (** Check the coloring! *)
         try
-          Option.map Colors.to_string (color_of_node coloring n)
-        with Not_found -> Some "!"
-      )
-    in
-    let one_test () =
-      let g = random_graph () in
-      (** Show the graph! *)
-      if show then Graph.show g (fun _ -> None);
-      (** Compute the coloring. *)
-      let coloring = colorize g in
-      (** Show the coloring! *)
-      if show then show_coloring g coloring;
-      (** Check the coloring! *)
-      try
-        check_coloring g coloring
-      with _ -> show_coloring g coloring; exit 1
-    in
-    for i = 0 to nb_test - 1 do
-      one_test ()
-    done
-  )
+          check_coloring g coloring
+        with _ -> show_coloring g coloring; exit 1
+      in
+      for i = 0 to nb_test - 1 do
+        one_test ()
+      done
+    )

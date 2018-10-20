@@ -17,8 +17,8 @@ let ( ++ ) x y =
 let vcat = separate_map hardline (fun x -> x)
 
 type decorations = {
-    pre  : label -> document list;
-    post : label -> document list;
+  pre  : label -> document list;
+  post : label -> document list;
 }
 
 let nodecorations = { pre = (fun _ -> []); post = (fun _ -> []) }
@@ -28,16 +28,16 @@ let rec program ?(decorations=nodecorations) p =
 
 and definition decorations = function
   | DValue (x, b) ->
-    group (string "code" ++ parens (identifier x))
-    ^^ hardline ^^ block decorations b ++ string "end"
+      group (string "code" ++ parens (identifier x))
+      ^^ hardline ^^ block decorations b ++ string "end"
   | DFunction (f, xs, b) ->
-    group (string "def"
-           ++ function_identifier f
-           ++ parens (identifiers xs))
-    ++ string ":" ^^ hardline
-    ^^ block decorations b
+      group (string "def"
+             ++ function_identifier f
+             ++ parens (identifiers xs))
+      ++ string ":" ^^ hardline
+      ^^ block decorations b
   | DExternalFunction f ->
-    group (string "external" ++ function_identifier f)
+      group (string "external" ++ function_identifier f)
 
 and block decorations (ls, b) =
   let shift = max_label_length b in
@@ -59,45 +59,47 @@ and locals = function
 
 and labelled_instruction decorations lsize (l, i) =
   vcat (
-      (decorations.pre l)
-      @ [ group (label lsize l ^^ group (instruction i) ^^ string ";") ]
-      @ (decorations.post l)
-    )
+    (decorations.pre l)
+    @ [ group (label lsize l ^^ group (instruction i) ^^ string ";") ]
+    @ (decorations.post l)
+  )
 
 and label lsize (Label l) =
   string (Printf.sprintf "%*s: " lsize l)
 
 and instruction = function
   | Call (l, f, xs) ->
-    lvalue l ++ string "<-"
-    ++ string "call" ++ rvalue f ++ parens (rvalues xs)
+      lvalue l ++ string "<-"
+      ++ string "call" ++ rvalue f ++ parens (rvalues xs)
 
   | TailCall (f, xs) ->
-    string "tail_call" ++ rvalue f ++ parens (rvalues xs)
+      string "tail_call" ++ rvalue f ++ parens (rvalues xs)
 
   | Ret r ->
-    string "ret" ++ rvalue r
+      string "ret" ++ rvalue r
 
   | Assign (l, o, rs) ->
-    lvalue l ++ string "<-" ++ string (op o) ++ rvalues rs
+      lvalue l ++ string "<-" ++ string (op o) ++ rvalues rs
 
   | Jump (Label l) ->
-    string "jump" ++ string l
+      string "jump" ++ string l
 
   | ConditionalJump (c, rs, Label l1, Label l2) ->
-    string "jumpif" ++ string (condition c) ++ rvalues rs
-    ++ string "->" ++ string l1 ^^ string ", " ++ string l2
+      string "jumpif" ++ string (condition c) ++ rvalues rs
+      ++ string "->" ++ string l1 ^^ string ", " ++ string l2
 
   | Comment s ->
-    string (";; " ^ s)
+      string (";; " ^ s)
 
   | Switch (r, ls, default) ->
-    string "switch" ++ rvalue r
-    ++ separate_map (break 0 ^^ comma ^^ space) slabel (Array.to_list ls)
-    ++ (match default with None -> empty | Some l -> string "orelse" ++ slabel l)
+      string "switch" ++ rvalue r
+      ++ separate_map (break 0 ^^ comma ^^ space) slabel (Array.to_list ls)
+      ++ (match default with
+          | None -> empty
+          | Some l -> string "orelse" ++ slabel l)
 
   | Exit ->
-    string "exit"
+      string "exit"
 
 and slabel (Label s) =
   string s

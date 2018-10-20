@@ -85,9 +85,9 @@ let define e f =
 let rec defines ds e =
   match ds with
   | [] ->
-    e
+      e
   | (x, d) :: ds ->
-    T.Define (x, d, defines ds e)
+      T.Define (x, d, defines ds e)
 
 let seq a b =
   define a (fun _ -> b)
@@ -133,32 +133,32 @@ let free_variables =
   in
   let rec fvs = function
     | S.Literal l ->
-      M.empty
+        M.empty
     | S.Variable x ->
-      M.singleton x
+        M.singleton x
     | S.While (cond, e) ->
-      unions fvs [cond; e]
+        unions fvs [cond; e]
     | S.Define (x, a, b) ->
-      let sa = fvs a in
-      let sb = fvs b in
-      M.(union sa (remove x sb))
+        let sa = fvs a in
+        let sb = fvs b in
+        M.(union sa (remove x sb))
     | S.DefineRec (rdefs, a) ->
-      let fs = List.map fst rdefs in
-      let xs = M.(unions fvs (a :: List.map snd rdefs)) in
-      List.fold_left (fun s x -> M.remove x s) xs fs
+        let fs = List.map fst rdefs in
+        let xs = M.(unions fvs (a :: List.map snd rdefs)) in
+        List.fold_left (fun s x -> M.remove x s) xs fs
     | S.ReadBlock (a, b) ->
-      unions fvs [a; b]
+        unions fvs [a; b]
     | S.Apply (a, b) ->
-      unions fvs (a :: b)
+        unions fvs (a :: b)
     | S.WriteBlock (a, b, c) | S.IfThenElse (a, b, c) ->
-      unions fvs [a; b; c]
+        unions fvs [a; b; c]
     | S.AllocateBlock a ->
-      fvs a
+        fvs a
     | S.Fun (xs, e) ->
-      List.fold_left (fun s x -> M.remove x s) (fvs e) xs
+        List.fold_left (fun s x -> M.remove x s) (fvs e) xs
     | S.Switch (a, b, c) ->
-      let c = match c with None -> [] | Some c -> [c] in
-      unions fvs (a :: Array.to_list b @ c)
+        let c = match c with None -> [] | Some c -> [c] in
+        unions fvs (a :: Array.to_list b @ c)
   in
   fun e ->
     M.elements (
@@ -205,11 +205,11 @@ let translate (p : S.t) env =
   and definition = function
     | S.DeclareExtern id -> [T.ExternalFunction (function_identifier id)]
     | S.DefineValue (x, e) ->
-      let fs, e = expression Dict.empty e in
-      fs @ [T.DefineValue (identifier x, e)]
+        let fs, e = expression Dict.empty e in
+        fs @ [T.DefineValue (identifier x, e)]
     | S.DefineRecFuns rdefs ->
-      let fs, defs = define_recursive_functions rdefs in
-      fs @ List.map (fun (x, e) -> T.DefineValue (x, e)) defs
+        let fs, defs = define_recursive_functions rdefs in
+        fs @ List.map (fun (x, e) -> T.DefineValue (x, e)) defs
 
   and define_recursive_functions rdefs =
     let fs, defs = unwrap_rec_defs rdefs in
@@ -278,87 +278,87 @@ let translate (p : S.t) env =
     | S.Literal l -> ([], T.Literal (literal l))
 
     | S.While (cond, e) ->
-      let cfs, cond = expression env cond in
-      let efs, e = expression env e in
-      (cfs @ efs, T.While (cond, e))
+        let cfs, cond = expression env cond in
+        let efs, e = expression env e in
+        (cfs @ efs, T.While (cond, e))
 
     | S.Variable (S.Id id as x) ->
-      let xc =
-        if is_primitive id then
-          T.Literal (T.LFun (function_identifier x))
-        else
-          match Dict.lookup x env with
-          | None -> T.Variable (identifier x)
-          | Some e -> e
-      in
-      ([], xc)
+        let xc =
+          if is_primitive id then
+            T.Literal (T.LFun (function_identifier x))
+          else
+            match Dict.lookup x env with
+            | None -> T.Variable (identifier x)
+            | Some e -> e
+        in
+        ([], xc)
 
     | S.Define (x, a, b) ->
-      let afs, a = expression env a in
-      let bfs, b = expression env b in
-      (afs @ bfs, T.Define (identifier x, a, b))
+        let afs, a = expression env a in
+        let bfs, b = expression env b in
+        (afs @ bfs, T.Define (identifier x, a, b))
 
     | S.DefineRec (rdefs, a) ->
-      let fs, defs = unwrap_rec_defs rdefs in
-      let fdefs, es = mk_closures fs defs in
-      let fdefs', a = expression env a in
-      (fdefs @ fdefs', defines (List.combine (List.map identifier fs) es) a)
+        let fs, defs = unwrap_rec_defs rdefs in
+        let fdefs, es = mk_closures fs defs in
+        let fdefs', a = expression env a in
+        (fdefs @ fdefs', defines (List.combine (List.map identifier fs) es) a)
 
     | S.Apply (a, bs) ->
-      let idfs, id = expression env a in
-      let fsWithExprs =  List.map (expression env) bs in
-      let (fs, es) =
-        List.fold_right
-          (fun (a,b) (la, lb) -> (a@la, b::lb))
-          fsWithExprs
-          ([],[])
-      in
-      begin
-        match id with
-        | T.Literal (T.LFun f) -> idfs@fs, T.FunCall(f, es)
-        | e ->
-          idfs @ fs, T.UnknownFunCall (read_block e (lint 0), e :: es)
-      end
+        let idfs, id = expression env a in
+        let fsWithExprs =  List.map (expression env) bs in
+        let (fs, es) =
+          List.fold_right
+            (fun (a,b) (la, lb) -> (a@la, b::lb))
+            fsWithExprs
+            ([],[])
+        in
+        begin
+          match id with
+          | T.Literal (T.LFun f) -> idfs@fs, T.FunCall(f, es)
+          | e ->
+              idfs @ fs, T.UnknownFunCall (read_block e (lint 0), e :: es)
+        end
 
     | S.IfThenElse (a, b, c) ->
-      let afs, a = expression env a in
-      let bfs, b = expression env b in
-      let cfs, c = expression env c in
-      (afs @ bfs @ cfs, T.IfThenElse (a, b, c))
+        let afs, a = expression env a in
+        let bfs, b = expression env b in
+        let cfs, c = expression env c in
+        (afs @ bfs @ cfs, T.IfThenElse (a, b, c))
 
     | S.Fun (x, e) -> mk_closure x e
 
     | S.AllocateBlock a ->
-      let afs, a = expression env a in
-      (afs, allocate_block a)
+        let afs, a = expression env a in
+        (afs, allocate_block a)
 
     | S.WriteBlock (a, b, c) ->
-      let afs, a = expression env a in
-      let bfs, b = expression env b in
-      let cfs, c = expression env c in
-      (afs @ bfs @ cfs, T.FunCall (T.FunId "write_block", [a; b; c]))
+        let afs, a = expression env a in
+        let bfs, b = expression env b in
+        let cfs, c = expression env c in
+        (afs @ bfs @ cfs, T.FunCall (T.FunId "write_block", [a; b; c]))
 
     | S.ReadBlock (a, b) ->
-      let afs, a = expression env a in
-      let bfs, b = expression env b in
-      (afs @ bfs, T.FunCall (T.FunId "read_block", [a; b]))
+        let afs, a = expression env a in
+        let bfs, b = expression env b in
+        (afs @ bfs, T.FunCall (T.FunId "read_block", [a; b]))
 
     | S.Switch (a, bs, default) ->
-      let afs, a = expression env a in
-      let bsfs, bs = List.(split (map (expression env) (Array.to_list bs))) in
-      let dfs, default = match default with
-        | None -> [], None
-        | Some e -> let bs, e = expression env e in bs, Some e
-      in
-      (afs @ List.flatten bsfs @ dfs, T.Switch (a, Array.of_list bs, default))
+        let afs, a = expression env a in
+        let bsfs, bs = List.(split (map (expression env) (Array.to_list bs))) in
+        let dfs, default = match default with
+          | None -> [], None
+          | Some e -> let bs, e = expression env e in bs, Some e
+        in
+        (afs @ List.flatten bsfs @ dfs, T.Switch (a, Array.of_list bs, default))
 
   and expressions env = function
     | [] ->
-      [], []
+        [], []
     | e :: es ->
-      let efs, es = expressions env es in
-      let fs, e = expression env e in
-      fs @ efs, e :: es
+        let efs, es = expressions env es in
+        let fs, e = expression env e in
+        fs @ efs, e :: es
 
   and literal = function
     | S.LInt x -> T.LInt x

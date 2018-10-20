@@ -1,6 +1,6 @@
 %{
 
-  open RetrolixAST
+open RetrolixAST
 
 %}
 
@@ -21,9 +21,9 @@ program: ds=definition* EOF
   ds
 }
 | error {
-  let pos = Position.lex_join $startpos $endpos in
-  Error.error "parsing" pos "Syntax error."
-}
+   let pos = Position.lex_join $startpos $endpos in
+   Error.error "parsing" pos "Syntax error."
+ }
 
 definition: CODE LPAREN x=identifier RPAREN b=block END {
   DValue (x, b)

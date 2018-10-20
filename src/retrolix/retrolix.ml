@@ -5,7 +5,7 @@ module AST = RetrolixAST
 let name = "retrolix"
 
 type ast =
-    RetrolixAST.t
+  RetrolixAST.t
 
 let parse lexer_init input =
   SyntacticAnalysis.process

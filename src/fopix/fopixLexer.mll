@@ -1,16 +1,15 @@
 {
-  open Lexing
-  open Error
-  open Position
-  open FopixParser
+open Lexing
+open Error
+open Position
+open FopixParser
 
-  let next_line_and f lexbuf  =
-    Lexing.new_line lexbuf;
-    f lexbuf
+let next_line_and f lexbuf  =
+  Lexing.new_line lexbuf;
+  f lexbuf
 
-  let error lexbuf =
-    error "during lexing" (lex_join lexbuf.lex_start_p lexbuf.lex_curr_p)
-
+let error lexbuf =
+  error "during lexing" (lex_join lexbuf.lex_start_p lexbuf.lex_curr_p)
 }
 
 let newline = ('\010' | '\013' | "\013\010")
@@ -45,8 +44,8 @@ rule token = parse
   | "else"          { ELSE }
   | "eval"          { EVAL }
   | "external"      { EXTERNAL }
-  | "switch"	    { SWITCH }
-  | "orelse"	    { ORELSE }
+  | "switch"        { SWITCH }
+  | "orelse"        { ORELSE }
 
   (** Literals *)
   | digit+ as d     { INT (Int32.of_string d) }
@@ -68,7 +67,7 @@ rule token = parse
   | "&&"            { LAND      }
   | "&"             { UPPERSAND }
   | "||"            { LOR       }
-  | "|"		    { PIPE      }
+  | "|"             { PIPE      }
 
   (** Punctuation *)
   | ","             { COMMA     }
@@ -84,20 +83,20 @@ rule token = parse
 
 and comment level = parse
   | "*/" {
-    if level = 1 then
-      token lexbuf
-    else
-      comment (pred level) lexbuf
-  }
+      if level = 1 then
+        token lexbuf
+      else
+        comment (pred level) lexbuf
+    }
   | "/*" {
-    comment (succ level) lexbuf
-  }
+      comment (succ level) lexbuf
+    }
   | eof {
-    error lexbuf "unterminated comment."
-  }
+      error lexbuf "unterminated comment."
+    }
   | newline {
-    next_line_and (comment level) lexbuf
-  }
+      next_line_and (comment level) lexbuf
+    }
   | _ {
-    comment level lexbuf
-  }
+      comment level lexbuf
+    }

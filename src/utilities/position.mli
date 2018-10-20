@@ -8,12 +8,12 @@ type position = t
 
 (** Decoration of a value with a position. *)
 type 'a located =
-    {
-      value    : 'a;
-      position : t;
-    }
+  {
+    value    : 'a;
+    position : t;
+  }
 
-     
+
 (** [value dv] returns the raw value that underlies the
     decorated value [dv]. *)
 val value: 'a located -> 'a

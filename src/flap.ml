@@ -50,7 +50,8 @@ let get_compiler () : (module Compilers.Compiler) =
       source_language
   in
   let using = List.map Languages.get (Options.get_using ()) in
-  Compilers.get ~using (Languages.get source_language) (Languages.get target_language)
+  Compilers.get
+    ~using (Languages.get source_language) (Languages.get target_language)
 
 (** The evaluation function evaluates some code and prints the results
     into the standard output. It also benchmarks the time taken to
@@ -103,19 +104,19 @@ let interactive_loop () =
 
   let rec step
     : Target.runtime -> Compiler.environment -> Source.typing_environment
-    -> Target.runtime * Compiler.environment * Source.typing_environment =
+      -> Target.runtime * Compiler.environment * Source.typing_environment =
     fun runtime cenvironment tenvironment ->
       try
         match read () with
-          | "+debug" ->
+        | "+debug" ->
             Options.set_verbose_mode true;
             step runtime cenvironment tenvironment
 
-          | "-debug" ->
+        | "-debug" ->
             Options.set_verbose_mode false;
             step runtime cenvironment tenvironment
 
-          | input ->
+        | input ->
             let ast = Compiler.Source.parse_string input in
             let tenvironment =
               if Options.get_unsafe () then
@@ -127,18 +128,18 @@ let interactive_loop () =
             if Options.get_verbose_mode () then
               print_endline (Target.print_ast cast);
             let runtime = Compiler.Target.(
-              eval runtime (fun r -> evaluate r cast) print_observable
-            )
+                eval runtime (fun r -> evaluate r cast) print_observable
+              )
             in
             step runtime cenvironment tenvironment
       with
-        | e when !Sys.interactive -> raise e (* display exception at toplevel *)
-        | Error.Error (positions, msg) ->
+      | e when !Sys.interactive -> raise e (* display exception at toplevel *)
+      | Error.Error (positions, msg) ->
           output_string stdout (Error.print_error positions msg);
           step runtime cenvironment tenvironment
-        | End_of_file ->
+      | End_of_file ->
           (runtime, cenvironment, tenvironment)
-        | e ->
+      | e ->
           print_endline (Printexc.get_backtrace ());
           print_endline (Printexc.to_string e);
           step runtime cenvironment tenvironment
@@ -148,7 +149,7 @@ let interactive_loop () =
             (Target.initial_runtime ())
             (Compiler.initial_environment ())
             (Source.initial_typing_environment ())
-  )
+         )
 
 (* ------------- **)
 (*   Batch mode   *)
@@ -190,22 +191,22 @@ let batch_compilation () =
     close_out cout;
   );
   if Options.get_running_mode () then Compiler.Target.(
-    ignore (
-      try
-        let print =
-          if Options.get_verbose_eval () then
-            print_observable
-          else
-            fun _ _ -> ""
-        in
-        eval (initial_runtime ()) (fun r -> evaluate r cast) print
-      with
+      ignore (
+        try
+          let print =
+            if Options.get_verbose_eval () then
+              print_observable
+            else
+              fun _ _ -> ""
+          in
+          eval (initial_runtime ()) (fun r -> evaluate r cast) print
+        with
         | e ->
-          print_endline (Printexc.get_backtrace ());
-          print_endline (Printexc.to_string e);
-          exit 1
+            print_endline (Printexc.get_backtrace ());
+            print_endline (Printexc.to_string e);
+            exit 1
+      )
     )
-  )
 
 (** -------------- **)
 (**   Entry point   *)
@@ -213,6 +214,6 @@ let batch_compilation () =
 let main =
   initialize ();
   match get_mode () with
-    | _ when !Sys.interactive -> ()
-    | Interactive -> interactive_loop ()
-    | Batch -> batch_compilation ()
+  | _ when !Sys.interactive -> ()
+  | Interactive -> interactive_loop ()
+  | Batch -> batch_compilation ()

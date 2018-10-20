@@ -13,14 +13,14 @@ and aty_of_ty' x = aty_of_ty (Position.value x)
 
 let rec print_aty = function
   | ATyVar (TId x) ->
-    x
+      x
   | ATyArrow (ins, out) ->
-    String.concat " * " (List.map print_aty' ins)
-    ^ " -> " ^ print_aty' out
+      String.concat " * " (List.map print_aty' ins)
+      ^ " -> " ^ print_aty' out
   | ATyCon (TCon x, []) ->
-    x
+      x
   | ATyCon (TCon x, ts) ->
-    x ^ "(" ^ String.concat ", " (List.map print_aty' ts) ^ ")"
+      x ^ "(" ^ String.concat ", " (List.map print_aty' ts) ^ ")"
 and print_aty' = function
   | (ATyArrow (_, _)) as t -> "(" ^ print_aty t ^ ")"
   | x -> print_aty x
@@ -66,9 +66,9 @@ let type_of_reference_type = function
       | Pattern(p) -> (match p with | Condition -> return )
   *)
   | ATyCon (t, [ty]) when t = tcref ->
-    ty
+      ty
   | _ ->
-    raise NotAReference
+      raise NotAReference
 
 module TypeVariableSet = Set.Make (struct
     type t = type_variable
@@ -117,11 +117,11 @@ let type_of_monotype = function
 
 let rec substitute phi = function
   | ATyVar tv ->
-    (try List.assoc tv phi with Not_found -> ATyVar tv)
+      (try List.assoc tv phi with Not_found -> ATyVar tv)
   | ATyArrow (ins, out) ->
-    ATyArrow (List.map (substitute phi) ins, substitute phi out)
+      ATyArrow (List.map (substitute phi) ins, substitute phi out)
   | ATyCon (t, tys) ->
-    ATyCon (t, List.map (substitute phi) tys)
+      ATyCon (t, List.map (substitute phi) tys)
 
 let type_error = Error.error "typechecking"
 
@@ -171,43 +171,44 @@ let report_error = function
   | UnboundId (pos, id) -> id_err unbound_err pos id
   | UnboundDataCons (pos, dc) -> data_cons_err unbound_err pos dc
   | WrongArityTyCons (pos, tc, xarity, iarity) ->
-    ty_cons_err (wrong_arity_err xarity iarity) pos tc
+      ty_cons_err (wrong_arity_err xarity iarity) pos tc
   | WrongArityDataCons (pos, dc, xarity, iarity) ->
-    data_cons_err (wrong_arity_err xarity iarity) pos dc
+      data_cons_err (wrong_arity_err xarity iarity) pos dc
   | AlreadyBoundTyVar (pos, tv) -> ty_var_err already_bound_err pos tv
   | AlreadyBoundDataCons (pos, dc) -> data_cons_err already_bound_err pos dc
   | InvalidApplication pos ->
-    type_error pos "This expression must have a functional type to be applied."
+      type_error
+        pos "This expression must have a functional type to be applied."
   | MissingTypeAnnotation pos -> type_error pos "A type annotation is missing."
   | TypeMismatch (pos, xty, ity) ->
-    type_error pos (
-      Printf.sprintf "Type error:\nExpected:\n  %s\nGiven:\n  %s\n"
-        (print_aty xty) (print_aty ity)
-    )
+      type_error pos (
+        Printf.sprintf "Type error:\nExpected:\n  %s\nGiven:\n  %s\n"
+          (print_aty xty) (print_aty ity)
+      )
   | TooPolymorphicType pos ->
-    type_error pos
-      (Printf.sprintf "The type of this expression is too polymorphic.")
+      type_error pos
+        (Printf.sprintf "The type of this expression is too polymorphic.")
   | POrError pos ->
-    type_error pos (
-      Printf.sprintf "All patterns of a disjunctive pattern must bind \
-                      the same set of identifiers."
-    )
+      type_error pos (
+        Printf.sprintf "All patterns of a disjunctive pattern must bind \
+                        the same set of identifiers."
+      )
   | InvalidTypeInstantiation (pos, xarity, iarity) ->
-    type_error pos (
-      Printf.sprintf
-        "Invalid type instantiation: expected %d type(s) and not %d."
-        xarity iarity
-    )
+      type_error pos (
+        Printf.sprintf
+          "Invalid type instantiation: expected %d type(s) and not %d."
+          xarity iarity
+      )
   | WrongArityFunction (pos, xarity, iarity) ->
-    type_error pos
-      (Printf.sprintf "This function has arity %d and not %d." xarity iarity)
+      type_error pos
+        (Printf.sprintf "This function has arity %d and not %d." xarity iarity)
   | NonLinearPattern (pos, id) ->
-    id_err (fun pos what which ->
-        type_error pos (
-          Printf.sprintf
-            "The %s %s is bound several times in this pattern."  what which
-        )
-      ) pos id
+      id_err (fun pos what which ->
+          type_error pos (
+            Printf.sprintf
+              "The %s %s is bound several times in this pattern."  what which
+          )
+        ) pos id
 
 exception InvalidInstantiation of int * int
 
@@ -227,29 +228,29 @@ exception UnificationFailed of aty * aty
 let unify_types ty1 ty2 =
   let rec unify = function
     | [] ->
-      []
+        []
     | (a, b) :: pbs when a = b ->
-      unify pbs
+        unify pbs
     | (ATyVar x, ty) :: pbs ->
-      if occurs x ty then raise (UnificationFailed (ty1, ty2));
-      let eliminate_x = substitute [(x, ty)] in
-      let phi = unify (List.map (fun (a, b) ->
-          (eliminate_x a, eliminate_x b)
-        ) pbs)
-      in
-      (x, substitute phi ty) :: phi
+        if occurs x ty then raise (UnificationFailed (ty1, ty2));
+        let eliminate_x = substitute [(x, ty)] in
+        let phi = unify (List.map (fun (a, b) ->
+            (eliminate_x a, eliminate_x b)
+          ) pbs)
+        in
+        (x, substitute phi ty) :: phi
     | (ty, ATyVar x) :: pbs ->
-      unify ((ATyVar x, ty) :: pbs)
+        unify ((ATyVar x, ty) :: pbs)
     | (ATyArrow (ins1, out1), ATyArrow (ins2, out2)) :: pbs ->
-      if List.(length ins1 <> length ins2) then
-        raise (UnificationFailed (ty1, ty2));
-      unify (List.combine (out1 :: ins1) (out2 :: ins2) @ pbs)
+        if List.(length ins1 <> length ins2) then
+          raise (UnificationFailed (ty1, ty2));
+        unify (List.combine (out1 :: ins1) (out2 :: ins2) @ pbs)
     | (ATyCon (t1, ts1), ATyCon (t2, ts2)) :: pbs ->
-      if t1 <> t2 || List.(length ts1 <> length ts2) then
-        raise (UnificationFailed (ty1, ty2));
-      unify (List.combine ts1 ts2 @ pbs)
+        if t1 <> t2 || List.(length ts1 <> length ts2) then
+          raise (UnificationFailed (ty1, ty2));
+        unify (List.combine ts1 ts2 @ pbs)
     | _ ->
-      raise (UnificationFailed (ty1, ty2))
+        raise (UnificationFailed (ty1, ty2))
   in
   let phi = unify [(ty1, ty2)] in
   let phi = List.map (fun (x, ty) -> (x, substitute phi ty)) phi in
@@ -302,15 +303,15 @@ let check_ty_cons_data_cons pos data_constructors =
 
 let rec check_well_formed_type pos env = function
   | ATyVar tv ->
-    if not (is_type_variable_defined pos env tv) then
-      raise_type_error (UnboundTyVar (pos, tv))
+      if not (is_type_variable_defined pos env tv) then
+        raise_type_error (UnboundTyVar (pos, tv))
   | ATyCon (tc, ts) ->
-    let tc_info = lookup_type_info_of_ty_cons pos tc env in
-    check_ty_cons_arity pos tc tc_info.arity (List.length ts);
-    check_ty_cons_data_cons pos tc_info.data_constructors
+      let tc_info = lookup_type_info_of_ty_cons pos tc env in
+      check_ty_cons_arity pos tc tc_info.arity (List.length ts);
+      check_ty_cons_data_cons pos tc_info.data_constructors
   | ATyArrow (ts, t) ->
-    List.iter (check_well_formed_type pos env) ts;
-    check_well_formed_type pos env t
+      List.iter (check_well_formed_type pos env) ts;
+      check_well_formed_type pos env t
 
 let internalize_ty env ty =
   let pos = Position.position ty in

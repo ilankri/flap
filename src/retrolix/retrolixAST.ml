@@ -29,12 +29,12 @@ and definition =
   | DExternalFunction of function_identifier
 
 and block =
-    (** a block consists in a list of local variables and a list of
-        instructions. *)
-    identifier list * labelled_instruction list
+  (** a block consists in a list of local variables and a list of
+      instructions. *)
+  identifier list * labelled_instruction list
 
 and labelled_instruction =
-    label * instruction
+  label * instruction
 
 and instruction =
   (** l ← call r (r1, ⋯, rN) *)
@@ -76,8 +76,8 @@ module IdMap = Map.Make (IdCmp)
 
 (**
 
-  In Retrolix, the toplevel value declarations define global
-  variables. The identifiers of these variables must be distinct.
+   In Retrolix, the toplevel value declarations define global
+   variables. The identifiers of these variables must be distinct.
 
 *)
 exception GlobalIdentifiersMustBeUnique of identifier
@@ -85,12 +85,12 @@ exception GlobalIdentifiersMustBeUnique of identifier
 let globals =
   List.fold_left (fun globals -> function
       | DValue (x, _) ->
-         if IdSet.mem x globals then
-           raise (GlobalIdentifiersMustBeUnique x);
-         IdSet.add x globals
+          if IdSet.mem x globals then
+            raise (GlobalIdentifiersMustBeUnique x);
+          IdSet.add x globals
       | _ ->
-         globals
-  ) IdSet.empty
+          globals
+    ) IdSet.empty
 
 
 (** Convert a list of Retrolix identifiers to a set of Retrolix
@@ -99,21 +99,21 @@ let idset_of_idlist ids =
   List.fold_left (fun acc id -> IdSet.add id acc) IdSet.empty ids
 
 let local globals instr =
-    let local = function
-      | `Variable id ->
+  let local = function
+    | `Variable id ->
         if IdSet.mem id globals then IdSet.empty else IdSet.singleton id
-      | `Register _ | `Immediate _ -> IdSet.empty
-    in
-    let ( ++ ) = IdSet.union in
-    let locals xs = List.fold_left ( ++ ) IdSet.empty (List.map local xs) in
-    match instr with
-    | Call (lv, rv, rvs) -> local lv ++ local rv ++ locals rvs
-    | TailCall (rv, rvs) -> local rv ++ locals rvs
-    | Ret rv -> local rv
-    | Assign (lv, _, rvs) -> local lv ++ locals rvs
-    | Jump _ | Comment _ | Exit -> IdSet.empty
-    | ConditionalJump (_, rvs, _, _) -> locals rvs
-    | Switch (rv, _, _) -> local rv
+    | `Register _ | `Immediate _ -> IdSet.empty
+  in
+  let ( ++ ) = IdSet.union in
+  let locals xs = List.fold_left ( ++ ) IdSet.empty (List.map local xs) in
+  match instr with
+  | Call (lv, rv, rvs) -> local lv ++ local rv ++ locals rvs
+  | TailCall (rv, rvs) -> local rv ++ locals rvs
+  | Ret rv -> local rv
+  | Assign (lv, _, rvs) -> local lv ++ locals rvs
+  | Jump _ | Comment _ | Exit -> IdSet.empty
+  | ConditionalJump (_, rvs, _, _) -> locals rvs
+  | Switch (rv, _, _) -> local rv
 
 (**
    Every function in Retrolix starts with a declaration

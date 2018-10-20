@@ -22,11 +22,11 @@ module List = struct
     let rec aux accu xs ys =
       match xs, ys with
       | xs, [] ->
-        (List.rev accu, xs, [])
+          (List.rev accu, xs, [])
       | [], ys ->
-        (List.rev accu, [], ys)
+          (List.rev accu, [], ys)
       | x :: xs, y :: ys ->
-        aux (f x y :: accu) xs ys
+          aux (f x y :: accu) xs ys
     in
     aux []
 
@@ -62,7 +62,7 @@ module List = struct
     let rec aux = function
       | [] | [_] -> raise Not_found
       | x :: y :: ys ->
-        if x = y then x else aux (y :: ys)
+          if x = y then x else aux (y :: ys)
     in
     aux l
 
@@ -81,10 +81,10 @@ module List = struct
   let foldmap f init =
     let rec aux (accu, ys) = function
       | [] ->
-        (accu, List.rev ys)
+          (accu, List.rev ys)
       | x :: xs ->
-        let accu, y = f accu x in
-        aux (accu, y :: ys) xs
+          let accu, y = f accu x in
+          aux (accu, y :: ys) xs
     in
     aux (init, [])
 
@@ -93,12 +93,12 @@ module List = struct
   let foldmap2 f init l1 l2 =
     let rec aux (accu, ys) = function
       | [], [] ->
-        (accu, List.rev ys)
+          (accu, List.rev ys)
       | x :: xs, z :: zs ->
-        let accu, y = f accu x z in
-        aux (accu, y :: ys) (xs, zs)
+          let accu, y = f accu x z in
+          aux (accu, y :: ys) (xs, zs)
       | _, _ ->
-        raise FoldMap2
+          raise FoldMap2
     in
     aux (init, []) (l1, l2)
 

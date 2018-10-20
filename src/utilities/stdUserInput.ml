@@ -17,6 +17,6 @@ let input_char =
     if c = '\n' then display_prompt := true;
     String.make 1 c
   in
-    ask
+  ask
 
 let set_ascii () = ()

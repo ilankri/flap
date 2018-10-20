@@ -25,14 +25,14 @@ let unescaped_char = function
   | "\\b" -> '\b'
   | "\\r" -> '\r'
   | s ->
-    begin match s.[0] with
+      begin match s.[0] with
       | '\\' ->
-        let s = String.sub s 1 (String.length s - 1) in
-        begin try char_of_int (int_of_string s) with
+          let s = String.sub s 1 (String.length s - 1) in
+          begin try char_of_int (int_of_string s) with
           | Failure _ -> raise Invalid_char_literal
-        end
+          end
       | c -> c
-    end
+      end
 }
 
 let newline = '\n' | '\r' | "\r\n"
@@ -163,15 +163,15 @@ rule token = parse
       | Failure _ -> error lexbuf "Invalid integer literal."
     }
   | '\'' (char_atom as a) '\''
-    {
-      try CHAR (unescaped_char a) with
-      | Invalid_char_literal -> error lexbuf "Invalid character literal."
-    }
+      {
+        try CHAR (unescaped_char a) with
+        | Invalid_char_literal -> error lexbuf "Invalid character literal."
+      }
   | '"' (string_atom* as s) '"'
-    {
-      try STRING (Scanf.unescaped s) with
-      | Scanf.Scan_failure _ -> error lexbuf "Invalid string literal."
-    }
+      {
+        try STRING (Scanf.unescaped s) with
+        | Scanf.Scan_failure _ -> error lexbuf "Invalid string literal."
+      }
 
   (** Identifiers *)
   | alien_prefix_id as id { PREFIX_ID id }
@@ -195,6 +195,6 @@ and line_comment = parse
 and block_comment depth = parse
   | "{-" {block_comment (succ depth) lexbuf}
   | "-}"
-    { if depth = 0 then token lexbuf else block_comment (pred depth) lexbuf }
+      { if depth = 0 then token lexbuf else block_comment (pred depth) lexbuf }
   | eof {error lexbuf "Unterminated comment."}
   | _ {block_comment depth lexbuf}

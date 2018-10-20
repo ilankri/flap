@@ -3,7 +3,7 @@
 module AST = JavixAST
 
 type ast =
-    JavixAST.t
+  JavixAST.t
 
 let name = "javix"
 

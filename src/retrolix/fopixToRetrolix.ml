@@ -68,23 +68,23 @@ and generate_new_id renaming x =
     generate_new_id renaming existId
   with
   | Not_found ->
-    let S.Id s = x in
-    let newId = S.Id(s ^ fresh_id ()) in
-    newId, (x, newId)::renaming
+      let S.Id s = x in
+      let newId = S.Id(s ^ fresh_id ()) in
+      newId, (x, newId)::renaming
 
 and declaration env p = match p with
   | S.DefineValue (x, e) ->
-    let env, newE = expression env e in
-    S.DefineValue (x, newE)
+      let env, newE = expression env e in
+      S.DefineValue (x, newE)
 
   | S.DefineFunction (f, xs, e) ->
-    let (g, r) = initial_environment () in
-    let globals =
-      List.fold_left (fun acc s -> (T.IdSet.add (identifier s) acc)) g xs
-    in
-    let envForFun = (globals, r) in
-    let _, newE = expression envForFun e in
-    S.DefineFunction (f, xs, newE)
+      let (g, r) = initial_environment () in
+      let globals =
+        List.fold_left (fun acc s -> (T.IdSet.add (identifier s) acc)) g xs
+      in
+      let envForFun = (globals, r) in
+      let _, newE = expression envForFun e in
+      S.DefineFunction (f, xs, newE)
 
   | _ -> p
 
@@ -106,44 +106,44 @@ and replace_id_if_need renaming i =
 
 and expression env e = match e with
   | S.Variable (S.Id id as i) ->
-    env, S.Variable (replace_id_if_need (snd env) i)
+      env, S.Variable (replace_id_if_need (snd env) i)
 
   | S.Define (i, e1, e2) ->
-    let env, newE1 = expression env e1 in
-    let env, newI = check_and_generate_new_id env i in
-    let env, newE2 = expression env e2 in
-    env, S.Define (newI, newE1, newE2)
+      let env, newE1 = expression env e1 in
+      let env, newI = check_and_generate_new_id env i in
+      let env, newE2 = expression env e2 in
+      env, S.Define (newI, newE1, newE2)
 
   | S.FunCall (f, el) ->
-    let env, newEl = List.fold_right fun_expr_list el (env, []) in
-    env, S.FunCall (f, newEl)
+      let env, newEl = List.fold_right fun_expr_list el (env, []) in
+      env, S.FunCall (f, newEl)
 
   | S.UnknownFunCall (e, el) ->
-    let env, newE = expression env e in
-    let env, newEl = List.fold_right fun_expr_list el (env, []) in
-    env, S.UnknownFunCall (newE, newEl)
+      let env, newE = expression env e in
+      let env, newEl = List.fold_right fun_expr_list el (env, []) in
+      env, S.UnknownFunCall (newE, newEl)
 
   | S.While (e1, e2) ->
-    let env, newE1 = expression env e1 in
-    let env, newE2 = expression env e2 in
-    env, S.While (newE1, newE2)
+      let env, newE1 = expression env e1 in
+      let env, newE2 = expression env e2 in
+      env, S.While (newE1, newE2)
 
   | S.IfThenElse (e, e1, e2) ->
-    let env, newE = expression env e in
-    let env, newE1 = expression env e1 in
-    let env, newE2 = expression env e2 in
-    env, S.IfThenElse (newE, newE1, newE2)
+      let env, newE = expression env e in
+      let env, newE1 = expression env e1 in
+      let env, newE2 = expression env e2 in
+      env, S.IfThenElse (newE, newE1, newE2)
 
   | S.Switch (e, el, eOp) ->
-    let env, newE = expression env e in
-    let env, newEl, _ = Array.fold_left fun_expr_array (env, el, 0) el in
-    let env, newEOp =
-      begin
-        match eOp with
-        | Some x -> let env, e = expression env x in env, Some e
-        | None -> env, eOp
-      end in
-    env, S.Switch (newE, newEl, newEOp)
+      let env, newE = expression env e in
+      let env, newEl, _ = Array.fold_left fun_expr_array (env, el, 0) el in
+      let env, newEOp =
+        begin
+          match eOp with
+          | Some x -> let env, e = expression env x in env, Some e
+          | None -> env, eOp
+        end in
+      env, S.Switch (newE, newEl, newEOp)
 
   | _ -> env, e
 
@@ -205,16 +205,16 @@ and function_body fst_four_formals e proc_call_conv =
 
 and declaration env = T.(function
     | S.DefineValue (S.Id x, e) ->
-      let x = Id x in
-      let ec = expression (`Variable x) e in
-      let locals = locals env ec in
-      DValue (x, (locals, ec))
+        let x = Id x in
+        let ec = expression (`Variable x) e in
+        let locals = locals env ec in
+        DValue (x, (locals, ec))
 
     | S.DefineFunction (S.FunId f, xs, e) ->
-      define_function env f xs e (Options.get_retromips ())
+        define_function env f xs e (Options.get_retromips ())
 
     | S.ExternalFunction (S.FunId f) ->
-      DExternalFunction (FId f)
+        DExternalFunction (FId f)
   )
 
 and push env x =
@@ -253,87 +253,87 @@ and fun_call out f actuals proc_call_conv =
     instructions that stores the evaluation of [e] into [out]. *)
 and expression out = T.(function
     | S.Literal l ->
-      [labelled (Assign (out, Load, [ `Immediate (literal l) ]))]
+        [labelled (Assign (out, Load, [ `Immediate (literal l) ]))]
 
     | S.Variable (S.Id "true") ->
-      expression out (S.(Literal (LInt (Int32.one))))
+        expression out (S.(Literal (LInt (Int32.one))))
 
     | S.Variable (S.Id "false") ->
-      expression out (S.(Literal (LInt (Int32.zero))))
+        expression out (S.(Literal (LInt (Int32.zero))))
 
     | S.Variable (S.Id x) ->
-      [labelled (Assign (out, Load, [ `Variable (Id x) ]))]
+        [labelled (Assign (out, Load, [ `Variable (Id x) ]))]
 
     | S.Define (S.Id x, e1, e2) ->
-      (** Hey student! The following code is wrong in general,
-          hopefully, you will implement [preprocess] in such a way that
-          it will work, right? *)
-      expression (`Variable (Id x)) e1 @ expression out e2
+        (** Hey student! The following code is wrong in general,
+            hopefully, you will implement [preprocess] in such a way that
+            it will work, right? *)
+        expression (`Variable (Id x)) e1 @ expression out e2
 
     | S.While (c, e) ->
-      let closeLabel = [labelled (Comment "Exit While")] in
-      let condReg = fresh_variable () in
-      let condIns = expression condReg c in
-      let eIns = ( expression out e ) in
-      let condJump =
-        [ labelled (
-              ConditionalJump (
-                EQ,
-                [ condReg; `Immediate (LInt (Int32.of_int 0)) ],
-                first_label closeLabel,
-                first_label eIns
-              )
-            )]
-      in
-      condIns @ condJump @ eIns @ labelled (Jump (first_label condIns)) ::
-                                  closeLabel
+        let closeLabel = [labelled (Comment "Exit While")] in
+        let condReg = fresh_variable () in
+        let condIns = expression condReg c in
+        let eIns = ( expression out e ) in
+        let condJump =
+          [ labelled (
+                ConditionalJump (
+                  EQ,
+                  [ condReg; `Immediate (LInt (Int32.of_int 0)) ],
+                  first_label closeLabel,
+                  first_label eIns
+                )
+              )]
+        in
+        condIns @ condJump @ eIns @ labelled (Jump (first_label condIns)) ::
+                                    closeLabel
 
     | S.IfThenElse (c, t, f) ->
-      let closeLabel = [labelled (Comment "Exit If")] in
-      let jumpToClose = Jump (first_label closeLabel) in
-      let insTrue = (expression out t) @ [labelled jumpToClose] in
-      let insFalse = (expression out f) @ [labelled jumpToClose] in
-      (condition (first_label insTrue) (first_label insFalse) c) @
-      insTrue @ insFalse @ closeLabel
+        let closeLabel = [labelled (Comment "Exit If")] in
+        let jumpToClose = Jump (first_label closeLabel) in
+        let insTrue = (expression out t) @ [labelled jumpToClose] in
+        let insFalse = (expression out f) @ [labelled jumpToClose] in
+        (condition (first_label insTrue) (first_label insFalse) c) @
+        insTrue @ insFalse @ closeLabel
 
     | S.FunCall (S.FunId "`&&", [e1; e2]) ->
-      expression out (S.(IfThenElse (e1, e2, Variable (Id "false"))))
+        expression out (S.(IfThenElse (e1, e2, Variable (Id "false"))))
 
     | S.FunCall (S.FunId "`||", [e1; e2]) ->
-      expression out (S.(IfThenElse (e1, Variable (Id "true"), e2)))
+        expression out (S.(IfThenElse (e1, Variable (Id "true"), e2)))
 
     | S.FunCall (S.FunId f, es) when is_binop f ->
-      assign out (binop f) es
+        assign out (binop f) es
 
     | S.FunCall (f, actuals) ->
-      let f = `Immediate (literal (S.LFun f)) in
-      fun_call out f actuals (Options.get_retromips ())
+        let f = `Immediate (literal (S.LFun f)) in
+        fun_call out f actuals (Options.get_retromips ())
 
     | S.UnknownFunCall (ef, actuals) ->
-      let code_ptr = fresh_variable () in
-      expression code_ptr ef @
-      fun_call out code_ptr actuals (Options.get_retromips ())
+        let code_ptr = fresh_variable () in
+        expression code_ptr ef @
+        fun_call out code_ptr actuals (Options.get_retromips ())
 
     | S.Switch (e, cases, default) ->
-      let closeLabel = [labelled (Comment "Exit Switch")] in
-      let jumpToClose = [labelled (Jump (first_label closeLabel))] in
-      let condVar, condIns = as_rvalue e in
-      let lsOfCases =
-        Array.map (fun c -> ((expression out c) @ jumpToClose)) cases
-      in
-      let labelsOfLsOfCases = Array.map (fun l -> first_label l) lsOfCases in
-      let casesIns = Array.fold_left (fun acc i -> i @ acc ) [] lsOfCases in
-      match default with
-      | Some expr -> (
-          let defaultIns = (expression out expr) @ jumpToClose in
-          condIns @
-          [labelled (
-              Switch(condVar, labelsOfLsOfCases, Some(first_label defaultIns))
-            )] @
-          casesIns @ defaultIns @ closeLabel)
-      | None ->
-        condIns @ [labelled (Switch(condVar, labelsOfLsOfCases, None))] @
-        casesIns @ closeLabel
+        let closeLabel = [labelled (Comment "Exit Switch")] in
+        let jumpToClose = [labelled (Jump (first_label closeLabel))] in
+        let condVar, condIns = as_rvalue e in
+        let lsOfCases =
+          Array.map (fun c -> ((expression out c) @ jumpToClose)) cases
+        in
+        let labelsOfLsOfCases = Array.map (fun l -> first_label l) lsOfCases in
+        let casesIns = Array.fold_left (fun acc i -> i @ acc ) [] lsOfCases in
+        match default with
+        | Some expr -> (
+            let defaultIns = (expression out expr) @ jumpToClose in
+            condIns @
+            [labelled (
+                Switch(condVar, labelsOfLsOfCases, Some(first_label defaultIns))
+              )] @
+            casesIns @ defaultIns @ closeLabel)
+        | None ->
+            condIns @ [labelled (Switch(condVar, labelsOfLsOfCases, None))] @
+            casesIns @ closeLabel
   )
 
 and retrieve_fst_four_actuals fst_four_formals =
@@ -412,16 +412,16 @@ and rename_predefine_function f =
 
 and literal = T.(function
     | S.LInt x ->
-      LInt x
+        LInt x
     | S.LFun (S.FunId f) ->
-      let f =
-        if Options.get_retromips () then rename_predefine_function f else f
-      in
-      LFun (FId f)
+        let f =
+          if Options.get_retromips () then rename_predefine_function f else f
+        in
+        LFun (FId f)
     | S.LChar c ->
-      LChar c
+        LChar c
     | S.LString s ->
-      LString s
+        LString s
   )
 
 and is_binop = function

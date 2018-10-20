@@ -1,6 +1,6 @@
 %{
 
-  open HobixAST
+open HobixAST
 
 %}
 
@@ -55,9 +55,9 @@ VAL d=value_def
   DeclareExtern (x)
 }
 | error {
-  let pos = Position.lex_join $startpos $endpos in
-  Error.error "parsing" pos "Syntax error."
-}
+    let pos = Position.lex_join $startpos $endpos in
+    Error.error "parsing" pos "Syntax error."
+  }
 
 %inline value_def:
 x=identifier EQUAL e=expression
@@ -81,7 +81,7 @@ mutfun:
 expression:
 s=simple_expression
 {
-      s
+  s
 }
 | e1=expression SEMICOLON e2=expression
 {

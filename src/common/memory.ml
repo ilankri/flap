@@ -31,8 +31,8 @@ exception InvalidDereference of location
 
 let dereference mem location =
   match mem.data.(location) with
-    | None -> raise (InvalidDereference location)
-    | Some b -> b
+  | None -> raise (InvalidDereference location)
+  | Some b -> b
 
 let size block =
   Int32.of_int (Array.length block)

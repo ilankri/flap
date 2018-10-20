@@ -1,18 +1,18 @@
 open Lexing
 
 type t =
-    {
-      start_p : Lexing.position;
-      end_p   : Lexing.position
-    }
+  {
+    start_p : Lexing.position;
+    end_p   : Lexing.position
+  }
 
 type position = t
 
 type 'a located =
-    {
-      value    : 'a;
-      position : t;
-    }
+  {
+    value    : 'a;
+    position : t;
+  }
 
 let value { value = v } =
   v
@@ -47,7 +47,7 @@ let iter f { value = v } =
 let mapd f v =
   let w1, w2 = f v.value in
   let pos = v.position in
-    ({ value = w1; position = pos }, { value = w2; position = pos })
+  ({ value = w1; position = pos }, { value = w2; position = pos })
 
 let dummy =
   {
@@ -103,10 +103,10 @@ let string_of_pos p =
   let filename = filename_of_position p in
   let l = line p.start_p in
   let c1, c2 = characters p.start_p p.end_p in
-    if filename = "" then
-      Printf.sprintf "Line %d, characters %d-%d" l c1 c2
-    else 
-      Printf.sprintf "File \"%s\", line %d, characters %d-%d" filename l c1 c2
+  if filename = "" then
+    Printf.sprintf "Line %d, characters %d-%d" l c1 c2
+  else
+    Printf.sprintf "File \"%s\", line %d, characters %d-%d" filename l c1 c2
 
 let pos_or_undef = function
   | None -> dummy

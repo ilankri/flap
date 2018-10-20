@@ -1,16 +1,15 @@
 {
-  open Lexing
-  open Error
-  open Position
-  open RetrolixParser
+open Lexing
+open Error
+open Position
+open RetrolixParser
 
-  let next_line_and f lexbuf  =
-    Lexing.new_line lexbuf;
-    f lexbuf
+let next_line_and f lexbuf  =
+  Lexing.new_line lexbuf;
+  f lexbuf
 
-  let error lexbuf =
-    error "during lexing" (lex_join lexbuf.lex_start_p lexbuf.lex_curr_p)
-
+let error lexbuf =
+  error "during lexing" (lex_join lexbuf.lex_start_p lexbuf.lex_curr_p)
 }
 
 let newline = ('\010' | '\013' | "\013\010")

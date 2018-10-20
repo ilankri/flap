@@ -27,12 +27,12 @@ program: p=labelled_instruction* EOF
 
 
 labelled_instruction: l=label? i=located(instruction) {
-  (l, i)
-}
+    (l, i)
+  }
 
 label: l=ID COLON {
-  JavixAST.Label l
-}
+    JavixAST.Label l
+  }
 
 instruction:
   PUSH i=INT           { JavixAST.Bipush i }
@@ -60,11 +60,11 @@ instruction:
 | BOX                  { JavixAST.Box }
 | UNBOX                { JavixAST.Unbox }
 | TABLESWITCH i=INT l=ID* DEFAULT COLON lab=ID
-                       { let l = List.map (fun lab -> JavixAST.Label lab) l in
-                         JavixAST.Tableswitch (i,l,JavixAST.Label lab) }
+    { let l = List.map (fun lab -> JavixAST.Label lab) l in
+      JavixAST.Tableswitch (i,l,JavixAST.Label lab) }
 | x=COMMENT            { JavixAST.Comment x }
 | s=STRING             { JavixAST.Print s }
 
 %inline located(X): x=X {
-  (*Position.with_poss $startpos $endpos*) x
-}
+    (*Position.with_poss $startpos $endpos*) x
+  }
