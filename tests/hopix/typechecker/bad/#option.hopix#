@@ -1,9 +1,0 @@
-type option ('a) =
-| None
-| Some ('a)
-
-fun unSome (o : option (int), default: int) : boolq =
-  o ? {
-  | (None : option (int)) => default
-  | Some (x : int) => x
-  }
