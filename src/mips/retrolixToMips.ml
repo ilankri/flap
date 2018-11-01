@@ -36,8 +36,11 @@ let arg_reg_count = List.length MipsArch.argument_passing_registers
 
 let sizeof word_count = int16_literal (word_count * MipsArch.word_size)
 
-(* FIXME: Handle integers not representable with only 16 bits.  *)
-let load_immediate r i = [T.Li (r, T.Literal (Int16.of_int32 i))]
+let load_immediate r i =
+  try [T.Li (r, T.Literal (Int16.of_int32 i))] with
+  | Int16.LiteralExceeds16bits _ ->
+      [ T.Lui (r, T.Literal (Int16.hi i))
+      ; T.Addiu (r, r, T.Literal (Int16.low i)) ]
 
 let increment_sp word_count =
   [T.Addiu (MipsArch.sp, MipsArch.sp, sizeof word_count)]

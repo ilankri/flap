@@ -10,10 +10,10 @@ let check_invariant x =
   if x < min_int16 || x > max_int16 then raise (LiteralExceeds16bits x)
 
 (** [hi x] returns the 16 highest bits of [x]'s 32 bits. *)
-let hi x = ExtStd.failwith_todo __LOC__
+let hi x = Int32.to_int @@ Int32.shift_right_logical x 16
 
 (** [low x] returns the 16 lowests bits of [x]'s 32 bits. *)
-let low x = ExtStd.failwith_todo __LOC__
+let low x = Int32.to_int @@ Int32.logand x 0xffffl
 
 (** [of_int x] turns an OCaml integer literal into a 16 bits literal. *)
 let of_int x =
