@@ -208,22 +208,30 @@ let translate (p : S.t) env =
         let fs, e = expression Dict.empty e in
         fs @ [T.DefineValue (identifier x, e)]
     | S.DefineRecFuns rdefs ->
-        let fs, defs = define_recursive_functions rdefs in
-        fs @ List.map (fun (x, e) -> T.DefineValue (x, e)) defs
+        let fs, closures, fill_closures =
+          define_recursive_functions rdefs
+        in
+        fs
+        @ List.map (fun (x, e) -> T.DefineValue (x, e)) closures
+        @ [T.DefineValue (make_fresh_variable (), fill_closures)]
 
   and define_recursive_functions rdefs =
     let fs, defs = unwrap_rec_defs rdefs in
-    let fdefs, es = mk_closures fs defs in
-    (fdefs, List.combine (List.map identifier fs) es)
+    mk_closures fs defs
 
   and alloc_closure fvs_count =
     let closure = make_fresh_variable () in
-    (closure, T.DefineValue (closure, allocate_block (lint (fvs_count + 1))))
+    (closure, allocate_block (lint (fvs_count + 1)))
 
-  and fill_closure closure fvs formals body renaming =
+  and fill_closure closure fvs formals body fun_id =
     let offsets = List.map lint (ExtStd.List.range 1 (List.length fvs)) in
     let fenv = make_fresh_variable () in
     let fdefs, body =
+      let env =
+        match fun_id with
+        | None -> env
+        | Some f -> Dict.insert f (T.Variable fenv) env
+      in
       let env =
         List.fold_left2 (fun env fv offset ->
             Dict.insert fv (read_block (T.Variable fenv) offset) env
@@ -236,43 +244,49 @@ let translate (p : S.t) env =
       T.DefineFunction (f, fenv :: List.map identifier formals, body)
     in
     let fill_closure =
-      let closure = T.Variable closure in
+      let closure =
+        T.Variable (match fun_id with None -> closure | Some x -> identifier x)
+      in
       let store_free_variable offset fv =
-        let fv = try List.assoc fv renaming with Not_found -> fv in
         write_block closure offset (T.Variable fv)
       in
       seqs (
-        write_block closure (lint 0) (T.Literal (T.LFun f)) ::
-        List.map2 store_free_variable offsets (List.map identifier fvs) @
-        [closure]
+        write_block closure (lint 0) (T.Literal (T.LFun f))
+        :: List.map2 store_free_variable offsets (List.map identifier fvs)
+        @ (match fun_id with None -> [closure] | Some _ -> [])
       )
     in
     (fdef :: fdefs, fill_closure)
 
   and mk_closure formals body =
     let fvs = free_variables (S.Fun (formals, body)) in
-    let closure, closure_def = alloc_closure (List.length fvs) in
-    let fdefs, e = fill_closure closure fvs formals body [] in
-    (closure_def :: fdefs, e)
+    let closure, alloc_closure_e = alloc_closure (List.length fvs) in
+    let fdefs, e = fill_closure closure fvs formals body None in
+    (fdefs, T.Define (closure, alloc_closure_e, e))
 
   and mk_closures fs defs =
-    let fvs = List.map (fun (formals, body) ->
-        free_variables (S.Fun (formals, body))
-      ) defs
+    let fvs =
+      List.map2 (fun f (formals, body) ->
+          List.filter (( <> ) f) (free_variables (S.Fun (formals, body)))
+        ) fs defs
     in
-    let closures, closure_defs =
-      List.split (List.map (fun fvs -> alloc_closure (List.length fvs)) fvs)
+    let closures =
+      List.map (fun fvs -> alloc_closure (List.length fvs)) fvs
     in
-    let renaming = List.combine (List.map identifier fs) closures in
-    let closures = List.combine closures fvs in
     let fdefs, es =
+      let closure_ids, _ = List.split closures in
       List.split (
-        List.map2 (fun (closure, fvs) (formals, body) ->
-            fill_closure closure fvs formals body renaming
-          ) closures defs
+        List.map2 (fun (closure, fvs) (f, (formals, body)) ->
+            fill_closure closure fvs formals body (Some f)
+          ) (List.combine closure_ids fvs) (List.combine fs defs)
       )
+    and closure_defs =
+      List.map2 (fun f (closure_id, closure_def) ->
+          ( identifier f
+          , T.Define (closure_id, closure_def, T.Variable closure_id) )
+        ) fs closures
     in
-    (closure_defs @ List.flatten fdefs, es)
+    (List.flatten fdefs, closure_defs, seqs es)
 
   and expression env = function
     | S.Literal l -> ([], T.Literal (literal l))
@@ -299,10 +313,16 @@ let translate (p : S.t) env =
         (afs @ bfs, T.Define (identifier x, a, b))
 
     | S.DefineRec (rdefs, a) ->
-        let fs, defs = unwrap_rec_defs rdefs in
-        let fdefs, es = mk_closures fs defs in
-        let fdefs', a = expression env a in
-        (fdefs @ fdefs', defines (List.combine (List.map identifier fs) es) a)
+        let fdefs, closures, e =
+          let fs, defs = unwrap_rec_defs rdefs in
+          mk_closures fs defs
+        and fdefs', a = expression env a in
+        let e =
+          List.fold_left (fun acc (x, e) ->
+              T.Define (x, e, acc))
+            (seq e a) closures
+        in
+        (fdefs @ fdefs', e)
 
     | S.Apply (a, bs) ->
         let idfs, id = expression env a in
