@@ -1,0 +1,15 @@
+type list ('a) = Nil | Cons ('a, list ('a))
+
+fun print_res (l : list (int -> int), x : int) : unit =
+  l ? {
+  | Nil => nothing
+  | Cons (f : int -> int, t : list (int -> int)) =>
+      print_int (f (x));
+      print_res (t, x)
+  }
+
+fun gen_fun_list (n : int) : list (int -> int) =
+  if n < 1 then Nil[int -> int]
+  else Cons[int -> int] (\(x : int) => x * n, gen_fun_list (n - 1))
+
+val main = print_res (gen_fun_list (5), 2)
