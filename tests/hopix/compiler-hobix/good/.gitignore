@@ -10,6 +10,8 @@ fact.expected
 fact.hopix
 fibo.expected
 fibo.hopix
+fun.expected
+fun.hopix
 global.expected
 global.hopix
 int.expected
@@ -42,6 +44,8 @@ option.expected
 option.hopix
 ref.expected
 ref.hopix
+ref3.expected
+ref3.hopix
 singleton.expected
 singleton.hopix
 sum.expected

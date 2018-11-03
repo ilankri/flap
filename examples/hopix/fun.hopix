@@ -1,0 +1,7 @@
+fun incr (x : int) : int = x + 1
+
+fun double (x : int) : int = 2 * x
+
+fun square (x : int) : int = x * x
+
+val main = print_int (square (double (incr (3))))

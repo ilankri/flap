@@ -1,0 +1,4 @@
+val main =
+  val r = ref 13;
+  r := 78;
+  print_int (!r)
