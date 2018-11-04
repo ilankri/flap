@@ -94,7 +94,7 @@ let callee_saved_registers = ExtStd.List.(
   )
 
 let caller_saved_registers = ExtStd.List.(
-    map t (range 0 9)
+    argument_passing_registers @ map t (range 0 9)
   )
 
 let return_register =

@@ -240,10 +240,10 @@ and fun_call out f actuals proc_call_conv =
   let caller_epilogue =
     if proc_call_conv then caller_epilogue lvs out else []
   in
+  caller_prologue @
   comment "Pass actuals" ::
   pass_fst_four_actuals (fst_four_actuals) @
   as_rvalues extra_actuals (fun extra_actuals ->
-      caller_prologue @
       comment "Function call" ::
       [labelled (T.Call (out, f, extra_actuals))]
     ) @
