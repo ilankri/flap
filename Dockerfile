@@ -1,8 +1,8 @@
 FROM ocaml/opam
 
 RUN sudo apt-get update && \
-    sudo apt-get install -y gcc-mips-linux-gnu qemu-user jasmin-sable \
-			    openjdk-8-jre
+    sudo apt-get install -y gcc-mips-linux-gnu gdb-multiarch qemu-user \
+			    jasmin-sable openjdk-8-jre
 RUN opam update && opam install -y ocamlfind menhir pprint
 COPY --chown=opam . flap
 WORKDIR flap
