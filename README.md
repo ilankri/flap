@@ -26,13 +26,6 @@
 * Compiler from Retrolix to MIPS assembly language
 * Register allocation (only the liveness analysis is implemented)
 
-## To be fixed
-
-Compilation of operations on blocks in Retrolix/MIPS: there maybe
-a problem with procedure call conventions because operations on blocks
-are OK up to Retrolix but some programs that use operations on blocks
-are successfully executed on MIPS architecture.
-
 ## To be implemented
 
 * Graph coloring of interference graph (to complete register allocation)
