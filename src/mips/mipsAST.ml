@@ -25,6 +25,7 @@ and instruction =
   | Sw of register * address
   | Add of register * register * register
   | Addiu of register * register * immediate
+  | Xori of register * register * immediate
   | Mul of register * register * register
   | Div of register * register * register
   | Sub of register * register * register

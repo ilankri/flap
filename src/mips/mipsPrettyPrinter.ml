@@ -121,6 +121,10 @@ and instruction spaces = function
       ^^ comma ++ register r2
       ^^ comma ++ immediate imm
 
+  | Xori (r1, r2, imm) ->
+      string "xori"
+      ++ register r1 ^^ comma ++ register r2 ^^ comma ++ immediate imm
+
   | Move (r1, r2) ->
       string "move" ++ register r1 ^^ comma ++ register r2
 
