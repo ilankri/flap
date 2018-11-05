@@ -1,0 +1,1 @@
+val main = print_int (-0x8000)
