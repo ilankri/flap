@@ -1,27 +1,27 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-void print_int(int n)
+void print_int(int i)
 {
-	printf("%d", n);
+	printf("%d", i);
 }
 
-void print_str(char* str)
+void print_string(char *s)
 {
-	printf("%s", str);
+	printf("%s", s);
 }
 
-int* block_create(int size)
+int *block_create(int size)
 {
-	return malloc(sizeof(int)*size);
+	return malloc(sizeof(int) * size);
 }
 
-int block_get(int* bAddr, int index)
+int block_get(int *block, int index)
 {
-	return *(bAddr+index);
+	return block[index];
 }
 
-void block_set(int*bAddr, int index, int value)
+void block_set(int *block, int index, int value)
 {
-	bAddr[index] = value;
+	block[index] = value;
 }
