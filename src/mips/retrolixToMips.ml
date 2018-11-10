@@ -109,8 +109,7 @@ let load_rvalue stacksize env rvalue rdest f =
         ]) @ f rdest
   | `Immediate (S.LFun (S.FId fl)) ->
       T.(La (rdest, LabelAddress (Label fl))) :: f rdest
-  | `Immediate _ ->
-      failwith "Strings and characters literal are not handled yet."
+  | `Immediate _ -> ExtStd.failwith_todo __LOC__
 
 (** [store_variable stacksize env x r] emits the instructions
     to store the value of a register [r] into a variable [x]. *)

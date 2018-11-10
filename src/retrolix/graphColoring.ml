@@ -110,8 +110,7 @@ struct
       | EmptyGraph -> ExtStd.failwith_todo __LOC__
       | SimplifiableNode n -> ExtStd.failwith_todo __LOC__
       | MaybeSpillNode n -> ExtStd.failwith_todo __LOC__
-      | PreferenceNodes (n1, n2) ->
-          failwith "Advance algo implementation needed for preference nodes"
+      | PreferenceNodes (n1, n2) -> ExtStd.failwith_todo __LOC__
     in
     let pick_res = pick g in
     let g' = remove_nodes_from pick_res g in
