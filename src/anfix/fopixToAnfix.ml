@@ -62,35 +62,35 @@ and expr : S.expression -> T.expression = function
       simplify_expr e1 (fun x -> T.IfThenElse(x, expr e2, expr e3))
   | S.FunCall (S.FunId b,[e1; e2]) when is_binop b ->
       simplify_expr e1 (fun x1 ->
-          simplify_expr e2 (fun x2 ->
-              T.BinOp(binop b, x1, x2)
-            )
+        simplify_expr e2 (fun x2 ->
+          T.BinOp(binop b, x1, x2)
         )
+      )
   | S.FunCall (S.FunId "allocate_block", [e]) ->
       simplify_expr e (fun size ->
-          T.BlockNew (size)
-        )
+        T.BlockNew (size)
+      )
   | S.FunCall (S.FunId "read_block", [e1; e2]) ->
       simplify_expr e1 (fun a ->
-          simplify_expr e2 (fun i ->
-              T.BlockGet (a,i)
-            )
+        simplify_expr e2 (fun i ->
+          T.BlockGet (a,i)
         )
+      )
   | S.FunCall (S.FunId "write_block", [e1; e2; e3]) ->
       simplify_expr e1 (fun a ->
-          simplify_expr e2 (fun i ->
-              simplify_expr e3 (fun e ->
-                  T.BlockSet (a,i,e)
-                )
-            )
+        simplify_expr e2 (fun i ->
+          simplify_expr e3 (fun e ->
+            T.BlockSet (a,i,e)
+          )
         )
+      )
   | S.FunCall (S.FunId "print_string", [S.Literal (S.LString s)]) -> T.Print s
   | S.FunCall (e,el) ->
       simplify_expr (S.Literal (S.LFun e)) (fun f ->
-          simplify_exprs el (fun xs ->
-              T.FunCall (f, xs)
-            )
+        simplify_exprs el (fun xs ->
+          T.FunCall (f, xs)
         )
+      )
   | _ -> ExtStd.failwith_todo __LOC__
 
 (* Simplify the Fopix expression [e] (if necessary) and then build
@@ -109,13 +109,13 @@ and simplify_exprs (es : S.expression list)
     (f : T.simplexpr list -> T.expression) : T.expression =
   let ids = List.map fresh_identifier_opt es in
   let simplexprs = List.map2 (fun id e ->
-      match id with
-      | None -> simplexpr e
-      | Some id -> T.Var id
-    ) ids es
+    match id with
+    | None -> simplexpr e
+    | Some id -> T.Var id
+  ) ids es
   in
   List.fold_right2 (fun id e acc ->
-      match id with
-      | None -> acc
-      | Some id -> T.Let (id, expr e, acc)
-    ) ids es (f simplexprs)
+    match id with
+    | None -> acc
+    | Some id -> T.Let (id, expr e, acc)
+  ) ids es (f simplexprs)

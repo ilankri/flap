@@ -56,17 +56,17 @@ and expression = function
 
   | DefineRec (vs, e) ->
       nest 2 (group (
-          string "rec"
-          ++ separate_map
-            (break 1 ^^ string "and" ^^ break 1) (value_definition "") vs
-          ^^ string ";"
-        )) ++ group (expression e)
+        string "rec"
+        ++ separate_map
+          (break 1 ^^ string "and" ^^ break 1) (value_definition "") vs
+        ^^ string ";"
+      )) ++ group (expression e)
 
   | Fun (p, e) ->
       nest 2 (group (
-          group (string "\\" ^^ function_parameters p ++ string "=>") ++
-          group (expression e)
-        ))
+        group (string "\\" ^^ function_parameters p ++ string "=>") ++
+        group (expression e)
+      ))
 
   | Apply (a, bs) ->
       group (
@@ -76,17 +76,17 @@ and expression = function
 
   | IfThenElse (c, t, f) ->
       nest 2 (group (
-          group (string "if"
-                 ++ group (expression c)
-                 ++ string "then"
-                )
-          ++ group (expression t)
-        ))
+        group (string "if"
+               ++ group (expression c)
+               ++ string "then"
+              )
+        ++ group (expression t)
+      ))
       ++ nest 2 (group (
-          string "else"
-          ++ group (expression f)
-          ++ string "fi"
-        ))
+        string "else"
+        ++ group (expression f)
+        ++ string "fi"
+      ))
 
   | WriteBlock (e1, e2, e3) ->
       expression (Apply (Variable (Id "write_block"), [e1; e2; e3]))

@@ -221,16 +221,16 @@ let translate_fun_body fun_id body env : (T.labelled_instruction list) =
 
 let store_fun_args formals env =
   List.fold_left (fun (instrs, env) formal ->
-      let var, env = Env.bind_variable env formal in
-      (T.Astore var :: instrs, env)
-    ) ([], env) formals
+    let var, env = Env.bind_variable env formal in
+    (T.Astore var :: instrs, env)
+  ) ([], env) formals
 
 let fun_prolog fun_id formals env =
   let instrs, env = store_fun_args formals (Env.clear_all_variables env) in
   (Utils.labelled_instrs (Env.lookup_function_label fun_id env) (
-      T.Comment "Store the arguments in variables" ::
-      instrs
-    ),
+     T.Comment "Store the arguments in variables" ::
+     instrs
+   ),
    env)
 
 let translate_definition (def:S.definition) (env: environment) :

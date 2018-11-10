@@ -84,13 +84,13 @@ exception GlobalIdentifiersMustBeUnique of identifier
 
 let globals =
   List.fold_left (fun globals -> function
-      | DValue (x, _) ->
-          if IdSet.mem x globals then
-            raise (GlobalIdentifiersMustBeUnique x);
-          IdSet.add x globals
-      | _ ->
-          globals
-    ) IdSet.empty
+    | DValue (x, _) ->
+        if IdSet.mem x globals then
+          raise (GlobalIdentifiersMustBeUnique x);
+        IdSet.add x globals
+    | _ ->
+        globals
+  ) IdSet.empty
 
 
 (** Convert a list of Retrolix identifiers to a set of Retrolix

@@ -41,10 +41,10 @@ let bool_as_value x = VBool x
 
 let primitive name ?(error = fun () -> assert false) coercion wrapper f =
   VPrimitive (name, fun x ->
-      match coercion x with
-      | None -> error ()
-      | Some x -> wrapper (f x)
-    )
+    match coercion x with
+    | None -> error ()
+    | Some x -> wrapper (f x)
+  )
 
 let print_value m v =
   let max_depth = 5 in
@@ -151,7 +151,7 @@ let primitives =
   let intbin name out op =
     VPrimitive (name, function [VInt x; VInt y] -> out (op x y)
                              | _ -> assert false (* By typing. *)
-      )
+    )
   in
   let bind_all what l x =
     List.fold_left (fun env (x, v) -> Environment.bind env (Id x) (what x v))
@@ -161,8 +161,8 @@ let primitives =
   let binarith name =
     intbin name (fun x -> VInt x) in
   let binarithops = Int32.(
-      [ ("`+", add); ("`-", sub); ("`*", mul); ("`/", div) ]
-    ) in
+    [ ("`+", add); ("`-", sub); ("`*", mul); ("`/", div) ]
+  ) in
   (* Define arithmetic comparison operators. *)
   let cmparith name = intbin name (fun x -> VBool x) in
   let cmparithops =
@@ -172,7 +172,7 @@ let primitives =
   let boolbin name out op =
     VPrimitive (name, function [VBool x; VBool y] -> out (op x y)
                              | _ -> assert false (* By typing. *)
-      )
+    )
   in
   let boolarith name = boolbin name (fun x -> VBool x) in
   let boolarithops =
@@ -185,27 +185,27 @@ let primitives =
   in
   let print_int =
     VPrimitive  ("print_int", function
-        | [ VInt x ] -> print (Int32.to_string x)
-        | _ -> assert false (* By typing. *)
-      )
+      | [ VInt x ] -> print (Int32.to_string x)
+      | _ -> assert false (* By typing. *)
+    )
   in
   let print_string =
     VPrimitive  ("print_string", function
-        | [ VString x ] -> print x
-        | _ -> assert false (* By typing. *)
-      )
+      | [ VString x ] -> print x
+      | _ -> assert false (* By typing. *)
+    )
   in
   let equal_string =
     VPrimitive  ("equal_string", function
-        | [ VString x; VString y ] -> VBool (String.compare x y = 0)
-        | _ -> assert false (* By typing. *)
-      )
+      | [ VString x; VString y ] -> VBool (String.compare x y = 0)
+      | _ -> assert false (* By typing. *)
+    )
   in
   let equal_char =
     VPrimitive  ("equal_char", function
-        | [ VChar x; VChar y ] -> VBool (Char.compare x y = 0)
-        | _ -> assert false (* By typing. *)
-      )
+      | [ VChar x; VChar y ] -> VBool (Char.compare x y = 0)
+      | _ -> assert false (* By typing. *)
+    )
   in
   let bind' x w env = Environment.bind env (Id x) w in
   Environment.empty
@@ -267,8 +267,8 @@ and define_recvalues environment memory rdefs =
   in
   let vs = expressions environment memory (snd (List.split rdefs)) in
   List.iter2 (fun (x, _) v ->
-      Environment.update x environment v
-    ) rdefs vs;
+    Environment.update x environment v
+  ) rdefs vs;
   environment
 
 (* [expression pos runtime e] evaluates into a value [v] if

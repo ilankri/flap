@@ -113,13 +113,13 @@ let initial_runtime () = {
 let print_runtime runtime =
   let idmap m =
     String.concat "," (List.map (fun (Id s, v) ->
-        Printf.sprintf "%s = %s" s (print_data runtime.memory v)
-      ) (IdMap.bindings m))
+      Printf.sprintf "%s = %s" s (print_data runtime.memory v)
+    ) (IdMap.bindings m))
   in
   let ridmap m =
     String.concat "," (List.map (fun (RId s, v) ->
-        Printf.sprintf "%s = %s" s (print_data runtime.memory v)
-      ) (RIdMap.bindings m))
+      Printf.sprintf "%s = %s" s (print_data runtime.memory v)
+    ) (RIdMap.bindings m))
   in
   let return = function
     | None -> "none"
@@ -368,13 +368,13 @@ let evaluate runtime0 (ast : t) =
         print_string i;
         (DUnit, runtime)
     | _ -> failwith (
-        Printf.sprintf
-          "NoSuchFunction or InvalidApplication of `%s' \
-           (%d argument(s) provided : %s)."
-          f
-          (List.length vs)
-          (String.concat " " (List.map type_of vs))
-      )
+      Printf.sprintf
+        "NoSuchFunction or InvalidApplication of `%s' \
+         (%d argument(s) provided : %s)."
+        f
+        (List.length vs)
+        (String.concat " " (List.map type_of vs))
+    )
 
   and bind_local runtime x v =
     { runtime with lvariables = IdMap.add x v runtime.lvariables }
@@ -393,5 +393,5 @@ let evaluate runtime0 (ast : t) =
 
 let print_observable runtime obs =
   String.concat "\n" (List.map (fun (Id k, v) ->
-      Printf.sprintf "%s = %s" k (print_data runtime.memory v)
-    ) (IdMap.bindings obs.new_variables))
+    Printf.sprintf "%s = %s" k (print_data runtime.memory v)
+  ) (IdMap.bindings obs.new_variables))

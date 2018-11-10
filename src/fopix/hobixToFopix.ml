@@ -116,10 +116,10 @@ let is_primitive x =
 let unwrap_rec_defs rdefs =
   List.split (
     List.map (fun (f, e) ->
-        match e with
-        | S.Fun (formals, body) -> (f, (formals, body))
-        | _ -> assert false
-      ) rdefs
+      match e with
+      | S.Fun (formals, body) -> (f, (formals, body))
+      | _ -> assert false
+    ) rdefs
   )
 
 let free_variables =
@@ -163,9 +163,9 @@ let free_variables =
   fun e ->
     M.elements (
       M.filter (fun (S.Id x) ->
-          not (is_primitive x) &&
-          not (x = "true" || x = "false" || x = "nothing")
-        ) (fvs e)
+        not (is_primitive x) &&
+        not (x = "true" || x = "false" || x = "nothing")
+      ) (fvs e)
     )
 
 (**
@@ -234,8 +234,8 @@ let translate (p : S.t) env =
       in
       let env =
         List.fold_left2 (fun env fv offset ->
-            Dict.insert fv (read_block (T.Variable fenv) offset) env
-          ) env fvs offsets
+          Dict.insert fv (read_block (T.Variable fenv) offset) env
+        ) env fvs offsets
       in
       expression env body
     in
@@ -267,8 +267,8 @@ let translate (p : S.t) env =
   and mk_closures fs defs =
     let fvs =
       List.map2 (fun f (formals, body) ->
-          List.filter (( <> ) f) (free_variables (S.Fun (formals, body)))
-        ) fs defs
+        List.filter (( <> ) f) (free_variables (S.Fun (formals, body)))
+      ) fs defs
     in
     let closures =
       List.map (fun fvs -> alloc_closure (List.length fvs)) fvs
@@ -277,14 +277,14 @@ let translate (p : S.t) env =
       let closure_ids, _ = List.split closures in
       List.split (
         List.map2 (fun (closure, fvs) (f, (formals, body)) ->
-            fill_closure closure fvs formals body (Some f)
-          ) (List.combine closure_ids fvs) (List.combine fs defs)
+          fill_closure closure fvs formals body (Some f)
+        ) (List.combine closure_ids fvs) (List.combine fs defs)
       )
     and closure_defs =
       List.map2 (fun f (closure_id, closure_def) ->
-          ( identifier f
-          , T.Define (closure_id, closure_def, T.Variable closure_id) )
-        ) fs closures
+        ( identifier f
+        , T.Define (closure_id, closure_def, T.Variable closure_id) )
+      ) fs closures
     in
     (List.flatten fdefs, closure_defs, seqs es)
 
@@ -319,7 +319,7 @@ let translate (p : S.t) env =
         and fdefs', a = expression env a in
         let e =
           List.fold_left (fun acc (x, e) ->
-              T.Define (x, e, acc))
+            T.Define (x, e, acc))
             (seq e a) closures
         in
         (fdefs @ fdefs', e)

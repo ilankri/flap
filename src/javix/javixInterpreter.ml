@@ -70,11 +70,11 @@ let string_of_instr = function
   | Print s ->
       let p = ref "" in
       String.iter (fun c -> match c with
-          | '\\' -> p := !p ^ "\\\\"
-          | '\n' -> p := !p ^ "\\n"
-          | '\t' -> p := !p ^ "\\t"
-          | '"'  -> p := !p ^ "\\\""
-          | _    -> p := !p ^ (String.make 1 c)) s;
+        | '\\' -> p := !p ^ "\\\\"
+        | '\n' -> p := !p ^ "\\n"
+        | '\t' -> p := !p ^ "\\t"
+        | '"'  -> p := !p ^ "\\\""
+        | _    -> p := !p ^ (String.make 1 c)) s;
       "Print \"" ^ !p ^ "\""
 
 let rec string_of_stack i l =
@@ -115,9 +115,9 @@ let initial_runtime () =
 let rec evaluate runtime (ast : t) =
   runtime.code <- Array.of_list (List.map snd ast.code);
   List.iteri (fun i (labo,_) ->
-      match labo with
-      | Some lab -> runtime.jumptbl <- (lab,i)::runtime.jumptbl
-      | None -> ())
+    match labo with
+    | Some lab -> runtime.jumptbl <- (lab,i)::runtime.jumptbl
+    | None -> ())
     ast.code;
   runtime.vars <- Array.make ast.varsize VNil;
   let ret = interp runtime in

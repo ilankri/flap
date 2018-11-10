@@ -95,8 +95,8 @@ and instruction = function
       string "switch" ++ rvalue r
       ++ separate_map (break 0 ^^ comma ^^ space) slabel (Array.to_list ls)
       ++ (match default with
-          | None -> empty
-          | Some l -> string "orelse" ++ slabel l)
+        | None -> empty
+        | Some l -> string "orelse" ++ slabel l)
 
   | Exit ->
       string "exit"

@@ -121,13 +121,13 @@ let typecheck tenv ast : typing_environment =
     let tenv =
       try
         List.fold_left2 (fun tenv fid fty ->
-            bind_value fid fty tenv
-          ) tenv fids ftys
+          bind_value fid fty tenv
+        ) tenv fids ftys
       with
       | Invalid_argument _ -> assert false (* By syntax.  *)
     in
     List.iter (fun fdef ->
-        ignore (located (check_function_definition tenv) fdef)) fdefs;
+      ignore (located (check_function_definition tenv) fdef)) fdefs;
     tenv
 
   and definition tenv pos = function
@@ -290,10 +290,10 @@ let typecheck tenv ast : typing_environment =
         let check_args () =
           try
             List.iter2 (fun t e ->
-                let Scheme (_, atyFromE) = type_scheme_of_expression' tenv e in
-                check_expected_type
-                  (Position.position e) t atyFromE
-              ) tyListFromTau args
+              let Scheme (_, atyFromE) = type_scheme_of_expression' tenv e in
+              check_expected_type
+                (Position.position e) t atyFromE
+            ) tyListFromTau args
           with
           | Invalid_argument _ ->
               let xarity = List.length tyListFromTau in
@@ -363,10 +363,10 @@ let typecheck tenv ast : typing_environment =
         let check_args () =
           try
             List.iter2 (fun xty arg ->
-                let pos = Position.position arg in
-                let Scheme (_, ity) = type_scheme_of_expression' tenv arg in
-                check_expected_type pos xty ity;
-              ) xtypes args
+              let pos = Position.position arg in
+              let Scheme (_, ity) = type_scheme_of_expression' tenv arg in
+              check_expected_type pos xty ity;
+            ) xtypes args
           with
           | Invalid_argument _ ->
               let xargc = List.length xtypes in
@@ -440,9 +440,9 @@ let typecheck tenv ast : typing_environment =
         in
         let tenv', ts =
           List.fold_right (fun p (tenv, ts) ->
-              let tenv, t = located (pattern tenv) p in
-              (tenv, t :: ts)
-            ) ps (tenv, [])
+            let tenv, t = located (pattern tenv) p in
+            (tenv, t :: ts)
+          ) ps (tenv, [])
         in
         let check_ptagged xsc ts =
           let Scheme (_, xty) = refresh_type_scheme xsc in
@@ -524,8 +524,8 @@ let typecheck tenv ast : typing_environment =
   and branches tenv sty bs =
     let oty =
       List.fold_left (fun oty b ->
-          located (branch tenv sty oty) b
-        ) None bs
+        located (branch tenv sty oty) b
+      ) None bs
     in
     match oty with
     | None -> assert false (* By syntax. *)

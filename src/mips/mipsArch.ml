@@ -35,13 +35,13 @@ let a x =
   A x
 
 let all_registers = ExtStd.List.(
-    flatten [
-      map t (range 0 9);
-      map v [0];
-      map a (range 0 3);
-      map s (range 0 7)
-    ]
-  )
+  flatten [
+    map t (range 0 9);
+    map v [0];
+    map a (range 0 3);
+    map s (range 0 7)
+  ]
+)
 
 let string_of_register = function
   | Sp -> "$sp"
@@ -86,16 +86,16 @@ let register_of_string = function
       raise (InvalidMIPSRegisterName s)
 
 let argument_passing_registers = ExtStd.List.(
-    map a (range 0 3)
-  )
+  map a (range 0 3)
+)
 
 let callee_saved_registers = ExtStd.List.(
-    Ra :: map s (range 0 7)
-  )
+  Ra :: map s (range 0 7)
+)
 
 let caller_saved_registers = ExtStd.List.(
-    argument_passing_registers @ map t (range 0 9)
-  )
+  argument_passing_registers @ map t (range 0 9)
+)
 
 let return_register =
   v 0

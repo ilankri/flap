@@ -177,12 +177,12 @@ let basic_program code =
 
 let translate_binop op =
   let op' = (match op with
-      | "`+" -> T.Add
-      | "`-" -> T.Sub
-      | "`*" -> T.Mul
-      | "`/" -> T.Div
-      (* | S.Mod -> T.Rem *)
-      | _ -> error "Incorrect call: Binop is not an arithmetic operator") in
+    | "`+" -> T.Add
+    | "`-" -> T.Sub
+    | "`*" -> T.Mul
+    | "`/" -> T.Div
+    (* | S.Mod -> T.Rem *)
+    | _ -> error "Incorrect call: Binop is not an arithmetic operator") in
   T.Binop(op')
 
 let translate_cmpop op = match op with
@@ -389,9 +389,9 @@ let collect_function_info prog env =
 
 let store_fun_args formals env =
   List.fold_left (fun (instrs, env) formal ->
-      let var, env = Env.bind_variable env formal in
-      (T.Astore var :: instrs, env)
-    ) ([], env) formals
+    let var, env = Env.bind_variable env formal in
+    (T.Astore var :: instrs, env)
+  ) ([], env) formals
 
 let define_value  id expr env =
   let var, env' = Env.bind_variable env id in
@@ -403,9 +403,9 @@ let define_value  id expr env =
 let fun_prolog fun_id formals env =
   let instrs, env = store_fun_args formals (Env.clear_all_variables env) in
   (labelled_instrs (Env.lookup_function_label fun_id env) (
-      T.Comment "Store the arguments in variables" ::
-      instrs
-    ),
+     T.Comment "Store the arguments in variables" ::
+     instrs
+   ),
    env)
 
 let fun_body fun_id body env =
@@ -437,17 +437,17 @@ let translate_definition (definition : S.definition) (env : environment) :
 
 let split_defs p =
   List.fold_right (fun def (vals, defs) ->
-      match def with
-      | S.DefineValue _ -> (def :: vals, defs)
-      | S.DefineFunction _ -> (vals, def :: defs)
-      | S.ExternalFunction _ -> ExtStd.failwith_todo __LOC__
-    ) p ([], [])
+    match def with
+    | S.DefineValue _ -> (def :: vals, defs)
+    | S.DefineFunction _ -> (vals, def :: defs)
+    | S.ExternalFunction _ -> ExtStd.failwith_todo __LOC__
+  ) p ([], [])
 
 let translate_definitions defs env =
   List.fold_left (fun (code, env) def ->
-      let instrs, env = translate_definition def env in
-      (code @ instrs, env)
-    ) ([], env) defs
+    let instrs, env = translate_definition def env in
+    (code @ instrs, env)
+  ) ([], env) defs
 
 (** [translate p env] turns a Fopix program [p] into a Javix program
     using [env] to retrieve contextual information. *)

@@ -13,17 +13,17 @@ let located f x = f (Position.value x)
 
 let max_label_length =
   List.fold_left (fun m  { label = Label l } ->
-      max (String.length l) m
-    ) 0
+    max (String.length l) m
+  ) 0
 
 let vcat = separate_map hardline (fun x -> x)
 
 let rec program p =
   vcat (
     (if Options.get_gcc () then [
-        string "#include <sys/regdef.h>";
-        string ".globl main";
-      ] else [])
+       string "#include <sys/regdef.h>";
+       string ".globl main";
+     ] else [])
     @ globals p.globals
     @ (
       directive ".text"

@@ -77,8 +77,8 @@ let string_of_lset s =
 let string_of_lmap m =
   String.concat "\n" (
     List.map (fun (l, s) ->
-        Printf.sprintf "  %s : %s\n" (string_of_label l) (string_of_lset s)
-      ) (LabelMap.bindings m)
+      Printf.sprintf "  %s : %s\n" (string_of_label l) (string_of_lset s)
+    ) (LabelMap.bindings m)
   )
 
 let string_of_results r =
@@ -267,10 +267,10 @@ type interference_graph = IGraph.t
     [live_out_vars] via the function [relate].  *)
 let add_var igraph var live_out_vars relate =
   LSet.fold (fun live_out_var igraph ->
-      let igraph = IGraph.add_node igraph [live_out_var] in
-      let rel = relate var live_out_var in
-      IGraph.add_edge igraph var rel live_out_var
-    ) live_out_vars (IGraph.add_node igraph [var])
+    let igraph = IGraph.add_node igraph [live_out_var] in
+    let rel = relate var live_out_var in
+    IGraph.add_edge igraph var rel live_out_var
+  ) live_out_vars (IGraph.add_node igraph [var])
 
 (**
 
@@ -303,21 +303,21 @@ let add_relations igraph (label, instr) live_out =
   | Assign _ | Call _ | TailCall _ | Ret _ | Jump _ | ConditionalJump _ |
     Switch _ | Comment _ | Exit as instr ->
       LSet.fold (fun var igraph ->
-          add_var igraph var live_out_vars (fun _ _ -> Conflict)
-        ) (def instr) igraph
+        add_var igraph var live_out_vars (fun _ _ -> Conflict)
+      ) (def instr) igraph
 
 let interference_graph p liveness : interference_graph =
   let aux igraph instrs live_out =
     List.fold_left (fun igraph instr ->
-        add_relations igraph instr live_out
-      ) igraph instrs
+      add_relations igraph instr live_out
+    ) igraph instrs
   in
   List.fold_left (fun igraph def ->
-      match def with
-      | DValue (_, (_, instrs)) | DFunction (_, _, (_, instrs)) ->
-          aux igraph instrs liveness.live_out
-      | DExternalFunction _ -> igraph
-    ) IGraph.empty p
+    match def with
+    | DValue (_, (_, instrs)) | DFunction (_, _, (_, instrs)) ->
+        aux igraph instrs liveness.live_out
+    | DExternalFunction _ -> igraph
+  ) IGraph.empty p
 
 (** Graph coloring. *)
 
@@ -332,19 +332,19 @@ let register_allocation coloring p =
 let translate p =
   let liveness = liveness_analysis p in
   if Options.get_verbose_mode () then RetrolixPrettyPrinter.(
-      let get_decoration space m l =
-        let s = try LabelMap.find l m with Not_found -> LSet.empty in
-        [PPrint.string ("{ " ^ string_of_lset s ^ " }")]
-        @ (if space then [PPrint.empty] else [])
-      in
-      let decorations = {
-        pre = get_decoration false liveness.live_in;
-        post = get_decoration true liveness.live_out
-      }
-      in
-      let p = to_string (program ~decorations) p in
-      Printf.eprintf "Liveness:\n%s\n" p;
-    );
+    let get_decoration space m l =
+      let s = try LabelMap.find l m with Not_found -> LSet.empty in
+      [PPrint.string ("{ " ^ string_of_lset s ^ " }")]
+      @ (if space then [PPrint.empty] else [])
+    in
+    let decorations = {
+      pre = get_decoration false liveness.live_in;
+      post = get_decoration true liveness.live_out
+    }
+    in
+    let p = to_string (program ~decorations) p in
+    Printf.eprintf "Liveness:\n%s\n" p;
+  );
   let igraph   = interference_graph p liveness in
   let coloring = colorize_graph igraph in
   register_allocation coloring p

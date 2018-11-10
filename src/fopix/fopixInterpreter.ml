@@ -81,10 +81,10 @@ end = struct
 
   let _ =
     Printexc.register_printer (function
-        | UnboundIdentifier (Id x) ->
-            Some (Printf.sprintf "Unbound identifier %s" x)
-        | _ -> None
-      )
+      | UnboundIdentifier (Id x) ->
+          Some (Printf.sprintf "Unbound identifier %s" x)
+      | _ -> None
+    )
 
   let lookup x e =
     try

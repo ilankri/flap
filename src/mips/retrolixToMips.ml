@@ -78,10 +78,10 @@ let variable_address stacksize env ((S.Id s) as x) =
 let load_variable stacksize env r x =
   match variable_address stacksize env x with
   | T.LabelAddress l when Options.get_gcc () -> T.([
-      Lui (r, LabelAddressHi l);
-      Addiu (r, r, LabelAddressLow l);
-      Lw (r, RegisterAddress r)
-    ])
+    Lui (r, LabelAddressHi l);
+    Addiu (r, r, LabelAddressLow l);
+    Lw (r, RegisterAddress r)
+  ])
   | addr -> [
       T.Lw (r, addr)
     ]
@@ -104,9 +104,9 @@ let load_rvalue stacksize env rvalue rdest f =
       load_immediate rdest i @ f rdest
   | `Immediate (S.LFun (S.FId fl)) when Options.get_gcc () ->
       T.([
-          Lui (rdest, LabelAddressHi (Label fl));
-          Addiu (rdest, rdest, LabelAddressLow (Label fl))
-        ]) @ f rdest
+        Lui (rdest, LabelAddressHi (Label fl));
+        Addiu (rdest, rdest, LabelAddressLow (Label fl))
+      ]) @ f rdest
   | `Immediate (S.LFun (S.FId fl)) ->
       T.(La (rdest, LabelAddress (Label fl))) :: f rdest
   | `Immediate _ -> ExtStd.failwith_todo __LOC__
@@ -116,9 +116,9 @@ let load_rvalue stacksize env rvalue rdest f =
 let store_variable (stacksize : int) env x r =
   match variable_address stacksize env x with
   | T.LabelAddress l when Options.get_gcc () -> T.([
-      Lui (tmp1, LabelAddressHi l);
-      Sw (r, RegisterOffsetAddress (tmp1, LabelAddressLow l))
-    ])
+    Lui (tmp1, LabelAddressHi l);
+    Sw (r, RegisterOffsetAddress (tmp1, LabelAddressLow l))
+  ])
   | addr -> [
       T.Sw (r, addr)
     ]
@@ -186,14 +186,14 @@ let extract_global xs = function
 let call stacksize env f rs =
   let push i rv =
     load_rvalue stacksize env rv tmp1 (fun rsrc ->
-        [T.Sw (rsrc, sp_offset_address (i + arg_reg_count))]
-      )
+      [T.Sw (rsrc, sp_offset_address (i + arg_reg_count))]
+    )
   in
   let jump = function
     | `Immediate (S.LFun _ as f) ->
         load_rvalue stacksize env (`Immediate f) tmp1 (fun r ->
-            [T.Jalr r]
-          )
+          [T.Jalr r]
+        )
     | `Variable _ | `Register _ ->
         load_rvalue stacksize env f tmp1 (fun r -> [T.Jalr r])
     | `Immediate (S.LInt _ | S.LChar _ | S.LString _) -> assert false
@@ -212,17 +212,17 @@ let call stacksize env f rs =
     be first loaded in temporary registers [tmp1] and [tmp2].
 *)
 let mk_operation stacksize env rdest r1 r2 semantics make = S.(
-    match r1, r2 with
-    | `Immediate i, `Immediate j ->
-        load_immediate rdest (semantics i j)
+  match r1, r2 with
+  | `Immediate i, `Immediate j ->
+      load_immediate rdest (semantics i j)
 
-    | r1, r2 ->
-        load_rvalue stacksize env r1 tmp1 (fun r1 ->
-            load_rvalue stacksize env r2 tmp2 (fun r2 ->
-                [make r1 r2]
-              )
-          )
-  )
+  | r1, r2 ->
+      load_rvalue stacksize env r1 tmp1 (fun r1 ->
+        load_rvalue stacksize env r2 tmp2 (fun r2 ->
+          [make r1 r2]
+        )
+      )
+)
 
 (** [translate p env] turns a Retrolix program into a MIPS program. *)
 let rec translate (p : S.t) (env : environment) : T.t * environment =
@@ -235,105 +235,105 @@ let rec translate (p : S.t) (env : environment) : T.t * environment =
       List.mapi (fun i x -> (x, stacksize - i - 1)) locals
     in
     List.map (fun (S.Label l, i) ->
-        {
-          T.label = T.Label l;
-          T.value = instruction stacksize locals env l i
-        }) instructions
+      {
+        T.label = T.Label l;
+        T.value = instruction stacksize locals env l i
+      }) instructions
 
   (** [instruction stacksize locals env l i] compiles the retrolix
       instruction [i] whose label is [l] into a list of MIPS
       instructions. [stacksize] is the size of the current stack
       frame and [locals] the list of local variables. *)
   and instruction stacksize locals env l = T.(function
-      | S.Call (_, f, rs) -> call stacksize env f rs
+    | S.Call (_, f, rs) -> call stacksize env f rs
 
-      | S.TailCall (_, _) -> ExtStd.failwith_todo __LOC__
+    | S.TailCall (_, _) -> ExtStd.failwith_todo __LOC__
 
-      | S.Ret _ ->
-          (* Pop the stack frame and then jump to the return address.  *)
-          free_stack_frame stacksize @ [T.Jr MipsArch.ra]
+    | S.Ret _ ->
+        (* Pop the stack frame and then jump to the return address.  *)
+        free_stack_frame stacksize @ [T.Jr MipsArch.ra]
 
-      | S.Assign (lv, S.Load, [rv]) ->
-          (* We store [rv] in [tmp2] because [store_variable] may use
-             [tmp1].  *)
-          load_rvalue stacksize env rv tmp2 (fun rsrc ->
-              match lv with
-              | `Register rdest -> [T.Move (register rdest, rsrc)]
-              | `Variable x -> store_variable stacksize env x rsrc
+    | S.Assign (lv, S.Load, [rv]) ->
+        (* We store [rv] in [tmp2] because [store_variable] may use
+           [tmp1].  *)
+        load_rvalue stacksize env rv tmp2 (fun rsrc ->
+          match lv with
+          | `Register rdest -> [T.Move (register rdest, rsrc)]
+          | `Variable x -> store_variable stacksize env x rsrc
+        )
+
+    | S.Assign (lv, binop, [rv1; rv2]) ->
+        load_rvalue stacksize env lv tmp2 (fun rdest ->
+          mk_operation stacksize env rdest rv1 rv2
+            (semantics binop) (mk_instr_by_op binop rdest) @ (
+            match lv with
+            | `Register _ -> []
+            | `Variable x -> store_variable stacksize env x rdest)
+        )
+
+    | S.Assign (_, _, _) -> assert false
+
+    | S.Jump (S.Label l) -> [T.J (T.Label l)]
+
+    (* | S.ConditionalJump (c, [rv1; rv2], l1, l2) -> *)
+    (*   let label (S.Label l) = T.Label l in *)
+    (*   load_rvalue stacksize env rv1 tmp1 (fun r -> *)
+    (*       load_rvalue stacksize env rv2 tmp2 (fun s -> [ *)
+    (*             mk_instr (S.Bool c) r r s; *)
+    (*             T.Beqz (r, label l2); *)
+    (*             T.J (label l1) *)
+    (*           ] *)
+    (*         ) *)
+    (*     ) *)
+
+    | S.ConditionalJump (c, rvl, l1, l2) ->
+        let extract_op c r1 r2 l1 l2 = match c with
+          | S.GT -> [T.Bgt (r1,r2,l1); T.J l2]
+          | S.LT -> [T.Bgt (r1,r2,l2); T.J l1]
+          | S.GTE -> [T.Bge (r1,r2,l1); T.J l2]
+          | S.LTE -> [T.Bge (r1,r2,l2); T.J l1]
+          | S.EQ -> [T.Seq (r1,r1,r2); T.Beqz (r1,l2); T.J l1]
+        in
+        begin match rvl with
+        | [r1; r2] ->
+            load_rvalue stacksize env r1 tmp1 (fun r1 ->
+              load_rvalue stacksize env r2 tmp2 (fun r2 ->
+                let label (S.Label l) = T.Label l in
+                extract_op c tmp1 tmp2 (label l1) (label l2)
+              )
             )
+        | _ -> assert false
+        end
 
-      | S.Assign (lv, binop, [rv1; rv2]) ->
-          load_rvalue stacksize env lv tmp2 (fun rdest ->
-              mk_operation stacksize env rdest rv1 rv2
-                (semantics binop) (mk_instr_by_op binop rdest) @ (
-                match lv with
-                | `Register _ -> []
-                | `Variable x -> store_variable stacksize env x rdest)
-            )
+    | S.Switch (_, _, _) -> ExtStd.failwith_todo __LOC__
 
-      | S.Assign (_, _, _) -> assert false
+    | S.Comment s -> [T.Comment s]
 
-      | S.Jump (S.Label l) -> [T.J (T.Label l)]
-
-      (* | S.ConditionalJump (c, [rv1; rv2], l1, l2) -> *)
-      (*   let label (S.Label l) = T.Label l in *)
-      (*   load_rvalue stacksize env rv1 tmp1 (fun r -> *)
-      (*       load_rvalue stacksize env rv2 tmp2 (fun s -> [ *)
-      (*             mk_instr (S.Bool c) r r s; *)
-      (*             T.Beqz (r, label l2); *)
-      (*             T.J (label l1) *)
-      (*           ] *)
-      (*         ) *)
-      (*     ) *)
-
-      | S.ConditionalJump (c, rvl, l1, l2) ->
-          let extract_op c r1 r2 l1 l2 = match c with
-            | S.GT -> [T.Bgt (r1,r2,l1); T.J l2]
-            | S.LT -> [T.Bgt (r1,r2,l2); T.J l1]
-            | S.GTE -> [T.Bge (r1,r2,l1); T.J l2]
-            | S.LTE -> [T.Bge (r1,r2,l2); T.J l1]
-            | S.EQ -> [T.Seq (r1,r1,r2); T.Beqz (r1,l2); T.J l1]
-          in
-          begin match rvl with
-          | [r1; r2] ->
-              load_rvalue stacksize env r1 tmp1 (fun r1 ->
-                  load_rvalue stacksize env r2 tmp2 (fun r2 ->
-                      let label (S.Label l) = T.Label l in
-                      extract_op c tmp1 tmp2 (label l1) (label l2)
-                    )
-                )
-          | _ -> assert false
-          end
-
-      | S.Switch (_, _, _) -> ExtStd.failwith_todo __LOC__
-
-      | S.Comment s -> [T.Comment s]
-
-      | S.Exit ->
-          load_immediate (MipsArch.a 0) Int32.zero @ [T.J (T.Label "exit")]
-    )
+    | S.Exit ->
+        load_immediate (MipsArch.a 0) Int32.zero @ [T.J (T.Label "exit")]
+  )
 
   (** [function_definition bs df] inserts the compiled code of [df]
       in the block list [bs]. *)
   and function_definition bs = T.(function
-      | S.DFunction (S.FId fid, formals, (locals, instrs)) ->
-          let max_argc instrs =
-            let aux acc (_, instr) = S.(
-                match instr with
-                | Call (_, _, rvs) | TailCall (_, rvs) ->
-                    max acc (List.length rvs)
-                | Ret _ | Assign _ | Jump _ | ConditionalJump _ | Switch _ |
-                  Comment _ | Exit -> acc
-              )
-            in
-            arg_reg_count + List.fold_left aux 0 instrs
+    | S.DFunction (S.FId fid, formals, (locals, instrs)) ->
+        let max_argc instrs =
+          let aux acc (_, instr) = S.(
+            match instr with
+            | Call (_, _, rvs) | TailCall (_, rvs) ->
+                max acc (List.length rvs)
+            | Ret _ | Assign _ | Jump _ | ConditionalJump _ | Switch _ |
+              Comment _ | Exit -> acc
+          )
           in
-          let stacksize = List.length locals + max_argc instrs in
-          labelled (T.Label fid) (allocate_stack_frame stacksize) ::
-          block stacksize formals locals instrs @
-          bs
-      | S.DValue _ | S.DExternalFunction _ -> bs
-    )
+          arg_reg_count + List.fold_left aux 0 instrs
+        in
+        let stacksize = List.length locals + max_argc instrs in
+        labelled (T.Label fid) (allocate_stack_frame stacksize) ::
+        block stacksize formals locals instrs @
+        bs
+    | S.DValue _ | S.DExternalFunction _ -> bs
+  )
   in
 
   (**

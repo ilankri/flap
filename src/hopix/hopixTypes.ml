@@ -204,11 +204,11 @@ let report_error = function
         (Printf.sprintf "This function has arity %d and not %d." xarity iarity)
   | NonLinearPattern (pos, id) ->
       id_err (fun pos what which ->
-          type_error pos (
-            Printf.sprintf
-              "The %s %s is bound several times in this pattern."  what which
-          )
-        ) pos id
+        type_error pos (
+          Printf.sprintf
+            "The %s %s is bound several times in this pattern."  what which
+        )
+      ) pos id
 
 exception InvalidInstantiation of int * int
 
@@ -235,8 +235,8 @@ let unify_types ty1 ty2 =
         if occurs x ty then raise (UnificationFailed (ty1, ty2));
         let eliminate_x = substitute [(x, ty)] in
         let phi = unify (List.map (fun (a, b) ->
-            (eliminate_x a, eliminate_x b)
-          ) pbs)
+          (eliminate_x a, eliminate_x b)
+        ) pbs)
         in
         (x, substitute phi ty) :: phi
     | (ty, ATyVar x) :: pbs ->
@@ -339,8 +339,8 @@ let bind_type_variable pos env tv =
 
 let bind_type_variables pos env ts =
   List.fold_left (fun env t ->
-      bind_type_variable pos env t
-    ) env ts
+    bind_type_variable pos env t
+  ) env ts
 
 let bind_value x scheme env = {
   env with values = (x, scheme) :: env.values
@@ -431,7 +431,7 @@ let print_binding (Id x, Scheme (_, s)) =
 let print_typing_environment tenv =
   let excluded = initial_typing_environment () in
   let values = List.filter (fun (x, _) ->
-      not (List.mem_assoc x excluded.values)
-    ) (List.rev tenv.values)
+    not (List.mem_assoc x excluded.values)
+  ) (List.rev tenv.values)
   in
   String.concat "\n" (List.map print_binding values)

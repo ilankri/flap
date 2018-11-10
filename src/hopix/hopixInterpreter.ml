@@ -37,10 +37,10 @@ let int_as_value x  = VInt x
 
 let primitive name ?(error = fun () -> assert false) coercion wrapper f =
   VPrimitive (name, fun x ->
-      match coercion x with
-      | None -> error ()
-      | Some x -> wrapper (f x)
-    )
+    match coercion x with
+    | None -> error ()
+    | Some x -> wrapper (f x)
+  )
 
 let print_value m v =
   let max_depth = 5 in
@@ -75,9 +75,9 @@ let print_value m v =
     let n = Int32.to_int (Memory.size block) in
     "[ " ^ String.concat ", " (
       List.(map (fun i ->
-          print_value (d + 1) (r (Int32.of_int i))
-        ) (ExtStd.List.range 0 (n - 1))
-        )) ^ " ]"
+        print_value (d + 1) (r (Int32.of_int i))
+      ) (ExtStd.List.range 0 (n - 1))
+      )) ^ " ]"
   in
   print_value 0 v
 
@@ -171,9 +171,9 @@ type observable = {
 let primitives =
   let intbin name out op =
     VPrimitive (name, fun _ -> function
-        | [VInt x; VInt y] -> out (op x y)
-        | _ -> assert false (* By typing. *)
-      )
+      | [VInt x; VInt y] -> out (op x y)
+      | _ -> assert false (* By typing. *)
+    )
   in
   let bind_all what l x =
     List.fold_left
@@ -183,8 +183,8 @@ let primitives =
   let binarith name =
     intbin name (fun x -> VInt x) in
   let binarithops = Int32.(
-      [ ("`+", add); ("`-", sub); ("`*", mul); ("`/", div) ]
-    ) in
+    [ ("`+", add); ("`-", sub); ("`*", mul); ("`/", div) ]
+  ) in
   (* Define arithmetic comparison operators. *)
   let cmparith name = intbin name (fun x -> VBool x) in
   let cmparithops =
@@ -196,9 +196,9 @@ let primitives =
   in
   let boolbin name out op =
     VPrimitive (name, fun m -> function
-        | [VBool x; VBool y] -> out (op x y)
-        | _ -> assert false (* By typing. *)
-      )
+      | [VBool x; VBool y] -> out (op x y)
+      | _ -> assert false (* By typing. *)
+    )
   in
   let boolarith name = boolbin name (fun x -> VBool x) in
   let boolarithops =
@@ -206,11 +206,11 @@ let primitives =
   in
   let generic_printer =
     VPrimitive ("print", fun m vs ->
-        let repr = String.concat ", " (List.map (print_value m) vs) in
-        output_string stdout repr;
-        flush stdout;
-        VUnit
-      )
+      let repr = String.concat ", " (List.map (print_value m) vs) in
+      output_string stdout repr;
+      flush stdout;
+      VUnit
+    )
   in
   let print s =
     output_string stdout s;
@@ -219,15 +219,15 @@ let primitives =
   in
   let print_int =
     VPrimitive  ("print_int", fun m -> function
-        | [ VInt x ] -> print (Int32.to_string x)
-        | _ -> assert false (* By typing. *)
-      )
+      | [ VInt x ] -> print (Int32.to_string x)
+      | _ -> assert false (* By typing. *)
+    )
   in
   let print_string =
     VPrimitive  ("print_string", fun m -> function
-        | [ VString x ] -> print x
-        | _ -> assert false (* By typing. *)
-      )
+      | [ VString x ] -> print x
+      | _ -> assert false (* By typing. *)
+    )
   in
   let bind' x w env = Environment.bind env (Id x) w in
   Environment.empty

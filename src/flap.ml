@@ -128,8 +128,8 @@ let interactive_loop () =
             if Options.get_verbose_mode () then
               print_endline (Target.print_ast cast);
             let runtime = Compiler.Target.(
-                eval runtime (fun r -> evaluate r cast) print_observable
-              )
+              eval runtime (fun r -> evaluate r cast) print_observable
+            )
             in
             step runtime cenvironment tenvironment
       with
@@ -191,22 +191,22 @@ let batch_compilation () =
     close_out cout;
   );
   if Options.get_running_mode () then Compiler.Target.(
-      ignore (
-        try
-          let print =
-            if Options.get_verbose_eval () then
-              print_observable
-            else
-              fun _ _ -> ""
-          in
-          eval (initial_runtime ()) (fun r -> evaluate r cast) print
-        with
-        | e ->
-            print_endline (Printexc.get_backtrace ());
-            print_endline (Printexc.to_string e);
-            exit 1
-      )
+    ignore (
+      try
+        let print =
+          if Options.get_verbose_eval () then
+            print_observable
+          else
+            fun _ _ -> ""
+        in
+        eval (initial_runtime ()) (fun r -> evaluate r cast) print
+      with
+      | e ->
+          print_endline (Printexc.get_backtrace ());
+          print_endline (Printexc.to_string e);
+          exit 1
     )
+  )
 
 (** -------------- **)
 (**   Entry point   *)

@@ -68,23 +68,23 @@ let compilers_from source =
   )
 
 let find compilers source target using = List.(ExtStd.List.Monad.(
-    let rec search seen source target =
-      if List.mem source seen then
-        fail
+  let rec search seen source target =
+    if List.mem source seen then
+      fail
+    else (
+      take_one (compilers_from source) >>= fun (target', m) ->
+      if target = target' then
+        return [(target', m)]
       else (
-        take_one (compilers_from source) >>= fun (target', m) ->
-        if target = target' then
-          return [(target', m)]
-        else (
-          search (source :: seen) target' target >>= fun ms ->
-          return ((target', m) :: ms)
-        )
+        search (source :: seen) target' target >>= fun ms ->
+        return ((target', m) :: ms)
       )
-    in
-    run (search [] source target)
-    |> filter (fun p -> for_all (fun u -> exists (fun (l, _) -> l = u) p) using)
-    |> map (map snd)
-  ))
+    )
+  in
+  run (search [] source target)
+  |> filter (fun p -> for_all (fun u -> exists (fun (l, _) -> l = u) p) using)
+  |> map (map snd)
+))
 
 let get ?(using=[]) (module Source : Language) (module Target : Language) =
   let using = List.map (fun (module L : Language) -> L.name) using in
