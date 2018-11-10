@@ -29,7 +29,6 @@
 ## To be implemented
 
 * Graph coloring of interference graph (to complete register allocation)
-* Handling of strings and chars
 * Type inference for Hopix
 * Various optimizations like efficient compilation of pattern matching
   or tail call optimization

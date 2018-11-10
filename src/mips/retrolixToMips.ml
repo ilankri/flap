@@ -109,7 +109,9 @@ let load_rvalue stacksize env rvalue rdest f =
       ]) @ f rdest
   | `Immediate (S.LFun (S.FId fl)) ->
       T.(La (rdest, LabelAddress (Label fl))) :: f rdest
-  | `Immediate _ -> ExtStd.failwith_todo __LOC__
+  | `Immediate (S.LChar c) ->
+      load_immediate rdest (Int32.of_int @@ Char.code c) @ f rdest
+  | `Immediate (S.LString _) -> assert false
 
 (** [store_variable stacksize env x r] emits the instructions
     to store the value of a register [r] into a variable [x]. *)

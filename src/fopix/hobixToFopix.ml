@@ -97,21 +97,36 @@ let rec seqs = function
   | [x] -> x
   | x :: xs -> seq x (seqs xs)
 
-let allocate_block e =
-  T.(FunCall (FunId "allocate_block", [e]))
+let fun_call f args = T.FunCall (T.FunId f, args)
 
-let write_block e i v =
-  T.(FunCall (FunId "write_block", [e; i; v]))
+type block_kind = Block | String
 
-let read_block e i =
-  T.(FunCall (FunId "read_block", [e; i]))
+let allocate_block' kind e =
+  fun_call
+    (match kind with Block -> "allocate_block" | String -> "allocate_string")
+    [e]
+
+let allocate_block e = allocate_block' Block e
+
+let allocate_string e = allocate_block' String e
+
+let write_block' kind e i v =
+  fun_call
+    (match kind with Block -> "write_block" | String -> "write_string")
+    [e; i; v]
+
+let write_block e i v = write_block' Block e i v
+
+let write_string e i v = write_block' String e i v
+
+let read_block e i = fun_call "read_block" [e; i]
 
 let lint i =
   T.(Literal (LInt (Int32.of_int i)))
 
 let is_primitive x =
   FopixInterpreter.is_binary_primitive x || x = "print_int" ||
-  x = "print_string"
+  x = "print_string" || x = "equal_string" || x = "equal_char"
 
 let unwrap_rec_defs rdefs =
   List.split (
@@ -289,6 +304,22 @@ let translate (p : S.t) env =
     (List.flatten fdefs, closure_defs, seqs es)
 
   and expression env = function
+    | S.Literal (S.LString s) when Options.get_retromips () ->
+        let s_len = String.length s in
+        ( []
+        , define (allocate_string @@ lint s_len) (fun str ->
+            let str = T.Variable str in
+            let fill_string =
+              let write_char i =
+                write_string str (lint i) (lint @@ Char.code s.[i])
+              in
+              List.map write_char (ExtStd.List.range 0 (s_len - 1))
+              @ [write_string str (lint s_len) (lint 0)]
+
+            in
+            seqs (fill_string @ [str])
+          ) )
+
     | S.Literal l -> ([], T.Literal (literal l))
 
     | S.While (cond, e) ->
@@ -356,12 +387,12 @@ let translate (p : S.t) env =
         let afs, a = expression env a in
         let bfs, b = expression env b in
         let cfs, c = expression env c in
-        (afs @ bfs @ cfs, T.FunCall (T.FunId "write_block", [a; b; c]))
+        (afs @ bfs @ cfs, fun_call "write_block" [a; b; c])
 
     | S.ReadBlock (a, b) ->
         let afs, a = expression env a in
         let bfs, b = expression env b in
-        (afs @ bfs, T.FunCall (T.FunId "read_block", [a; b]))
+        (afs @ bfs, fun_call "read_block" [a; b])
 
     | S.Switch (a, bs, default) ->
         let afs, a = expression env a in
