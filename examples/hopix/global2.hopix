@@ -1,0 +1,5 @@
+val x = 12
+
+val x = 1 + x
+
+val main = print_int(x)

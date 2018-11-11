@@ -46,6 +46,8 @@ fun.expected
 fun.hopix
 global.expected
 global.hopix
+global2.expected
+global2.hopix
 id.expected
 id.hopix
 idapp.expected

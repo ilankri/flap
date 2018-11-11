@@ -15,8 +15,11 @@ module T = Target.AST
     representing a renaming (for alpha-conversion). *)
 type environment = T.IdSet.t * (S.identifier * S.identifier) list
 
-(** Initially, the environment is empty. *)
-let initial_environment () = (T.IdSet.empty, [])
+let identifier (S.Id x) = T.Id x
+
+let push set x = T.IdSet.add (identifier x) set
+
+let initial_environment () = (T.IdSet.of_list [T.Id "true"; T.Id "false"], [])
 
 (** [fresh_label ()] returns a new identifier for a label. *)
 let fresh_label =
@@ -31,62 +34,44 @@ let fresh_variable =
 (** Used by preprocess to generate new id *)
 let fresh_id =
   let c = ref 0 in
-  fun () -> incr c; string_of_int !c
-
-let identifier (S.Id x) = T.Id x
-
-let rec get_globals set = function
-  | S.DefineValue (x, _) -> push set x
-  | _ -> set
-
-and push set x =
-  T.IdSet.add (identifier x) set
+  fun () ->
+    incr c;
+    (Printf.sprintf "_retrolix_%d" !c)
 
 let rec preprocess defList env =
+  List.fold_left (fun (defs, env) x ->
+    let def, env = declaration env x in
+    (defs @ [def], env)
+  ) ([], env) defList
+
+and check_and_generate_new_id global env x =
   let (globals, renaming) = env in
-  let globals =
-    T.IdSet.add (T.Id "true") (T.IdSet.add (T.Id "false") globals)
-  in
-  let globals = List.fold_left get_globals globals defList in
-  let env = (globals, renaming) in
-  let defs = List.map (declaration env) defList in
-  (defs, env)
+  let push_global x = if global then push globals x else globals in
+  match T.IdSet.find_opt (identifier x) globals with
+  | Some _ ->
+      let x, renaming = generate_new_id renaming x in
+      let env = (push_global x, renaming) in
+      (env, x)
+  | None -> ((push_global x, renaming), x)
 
-and check_and_generate_new_id env x =
-  let (globals, renaming) = env in
-  try
-    let _ = T.IdSet.find (identifier x) globals in
-    let newX, newRenaming = generate_new_id renaming x in
-    let newEnv = (globals, newRenaming) in
-    newEnv, newX
-  with
-  | Not_found -> env, x
+and generate_new_id renaming (S.Id s as x) =
+  let id = S.Id (fresh_id ()) in
+  (id, (x, id) :: renaming)
 
-and generate_new_id renaming x =
-  try
-    let existId = List.assoc x renaming in
-    generate_new_id renaming existId
-  with
-  | Not_found ->
-      let S.Id s = x in
-      let newId = S.Id(s ^ fresh_id ()) in
-      newId, (x, newId)::renaming
-
-and declaration env p = match p with
+and declaration ((g, r) as env) p = match p with
   | S.DefineValue (x, e) ->
-      let env, newE = expression env e in
-      S.DefineValue (x, newE)
+      let env', x = check_and_generate_new_id true env x in
+      let _, e = expression env e in
+      (S.DefineValue (x, e), env')
 
   | S.DefineFunction (f, xs, e) ->
-      let (g, r) = initial_environment () in
-      let globals =
-        List.fold_left (fun acc s -> (T.IdSet.add (identifier s) acc)) g xs
+      let _, e =
+        let globals = List.fold_left push g xs in
+        expression (globals, r) e
       in
-      let envForFun = (globals, r) in
-      let _, newE = expression envForFun e in
-      S.DefineFunction (f, xs, newE)
+      (S.DefineFunction (f, xs, e), env)
 
-  | _ -> p
+  | _ -> (p, env)
 
 and fun_expr_list elt (accSet, accList) =
   let env, newE = expression accSet elt in
@@ -98,11 +83,9 @@ and fun_expr_array (accSet, accArray, c) elt =
   (env, accArray, c+1)
 
 and replace_id_if_need renaming i =
-  try
-    let existId = List.assoc i renaming in
-    replace_id_if_need renaming existId
-  with
-  | Not_found -> i
+  match List.assoc_opt i renaming with
+  | Some id -> id
+  | None -> i
 
 and expression env e = match e with
   | S.Variable (S.Id id as i) ->
@@ -110,7 +93,7 @@ and expression env e = match e with
 
   | S.Define (i, e1, e2) ->
       let env, newE1 = expression env e1 in
-      let env, newI = check_and_generate_new_id env i in
+      let env, newI = check_and_generate_new_id false env i in
       let env, newE2 = expression env e2 in
       env, S.Define (newI, newE1, newE2)
 
@@ -149,12 +132,7 @@ and expression env e = match e with
 
 (** [translate' p env] turns a Fopix program [p] into a Retrolix
     program using [env] to retrieve contextual information. *)
-let rec translate' p env =
-  (** The global variables are extracted in a the preprocess. *)
-  let p, env = preprocess p env in
-  let (globals, renaming) = env in
-  let env = (globals, renaming) in
-
+let rec translate' p ((globals, _) as env) =
   (** Then, we translate Fopix declarations into Retrolix declarations. *)
   let defs = List.map (declaration globals) p in
   (defs, env)
@@ -216,9 +194,6 @@ and declaration env = T.(function
   | S.ExternalFunction (S.FunId f) ->
       DExternalFunction (FId f)
 )
-
-and push env x =
-  T.IdSet.add (identifier x) env
 
 and caller_prologue fst_four_actuals =
   let lvs, save_caller_saved = save_registers MipsArch.caller_saved_registers in
@@ -451,15 +426,10 @@ and condition_op = T.(function
   | _ -> assert false
 )
 
-(*
-let preprocess p env =
-  (p, env)
-*)
-
 (** [translate p env] turns the fopix program [p] into a semantically
     equivalent retrolix program. *)
 let translate p env =
-  (*let p, env = preprocess p env in *)
+  let p, env = preprocess p env in
   let p, env = translate' p env in
   (* let p = RetrolixRegisterAllocation.translate p in *)
   (p, env)
