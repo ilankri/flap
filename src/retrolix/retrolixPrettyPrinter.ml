@@ -129,8 +129,6 @@ and op = function
   | Mul -> "mul"
   | Div -> "div"
   | Sub -> "sub"
-  | And -> "and"
-  | Or -> "or"
   | Bool c -> condition c
 
 and condition = function

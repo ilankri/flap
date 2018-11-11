@@ -412,8 +412,6 @@ and binop = T.(function
   | "`-" -> Sub
   | "`*" -> Mul
   | "`/" -> Div
-  | "`||" -> Or
-  | "`&&" -> And
   | c -> Bool (condition_op c)
 )
 

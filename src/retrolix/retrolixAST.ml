@@ -59,7 +59,6 @@ and instruction =
 and op =
   | Load
   | Add | Mul | Div | Sub
-  | And | Or
   | Bool of condition
 
 and condition =

@@ -143,8 +143,6 @@ let semantics op =
     | S.Mul -> Int32.mul
     | S.Div -> Int32.div
     | S.Sub -> Int32.sub
-    | S.And -> ExtStd.failwith_todo __LOC__
-    | S.Or -> ExtStd.failwith_todo __LOC__
     | S.Bool cond ->
         fun x y ->
           if (cond_semantics cond) (Int32.compare x y) 0 then Int32.one else
@@ -159,8 +157,6 @@ let mk_instr_by_op binop = fun rdest r1 r2 ->
   | S.Mul -> T.Mul (rdest, r1, r2)
   | S.Div -> T.Div (rdest, r1, r2)
   | S.Sub -> T.Sub (rdest, r1, r2)
-  | S.And -> ExtStd.failwith_todo __LOC__
-  | S.Or -> ExtStd.failwith_todo __LOC__
   | S.Bool S.GT -> T.Sgt (rdest, r1, r2)
   | S.Bool S.LT -> T.Slt (rdest, r1, r2)
   | S.Bool S.GTE -> T.Sge (rdest, r1, r2)

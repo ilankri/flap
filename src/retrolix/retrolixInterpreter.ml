@@ -277,8 +277,6 @@ let evaluate runtime0 (ast : t) =
         DInt (Int32.sub x y)
     | Bool c, vs ->
         DInt (if condition c vs then Int32.one else Int32.zero)
-    | Or, [DInt x; DInt y] -> DInt (Int32.logor x y)
-    | And, [DInt x; DInt y] -> DInt (Int32.logand x y)
     | _, _ ->
         assert false
 
