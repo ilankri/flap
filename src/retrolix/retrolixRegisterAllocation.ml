@@ -132,7 +132,7 @@ let successors label (_, instrs) =
         let next_label, _ = List.nth instrs (cur_instr_index + 1) in
         LabelSet.singleton next_label
       with
-      | Failure "nth" ->    (* [label] has no successor.  *)
+      | Failure _ ->            (* [label] has no successor.  *)
           LabelSet.empty
       | Not_found -> assert false
 
