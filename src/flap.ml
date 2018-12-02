@@ -212,8 +212,11 @@ let batch_compilation () =
 (**   Entry point   *)
 (** -------------- **)
 let main =
-  initialize ();
-  match get_mode () with
-  | _ when !Sys.interactive -> ()
-  | Interactive -> interactive_loop ()
-  | Batch -> batch_compilation ()
+  if !Sys.interactive
+  then ()
+  else begin
+    initialize ();
+    match get_mode () with
+    | Interactive -> interactive_loop ()
+    | Batch -> batch_compilation ()
+  end
