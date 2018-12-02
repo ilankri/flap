@@ -109,6 +109,13 @@ module List = struct
     in
     aux l
 
+  let filter_map p l =
+    List.fold_right (fun x acc ->
+      match p x with
+      | None -> acc
+      | Some x -> x :: acc
+    ) l []
+
   module Monad : sig
     type 'a t
     val return : 'a -> 'a t

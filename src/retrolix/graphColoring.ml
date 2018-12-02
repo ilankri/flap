@@ -55,17 +55,12 @@ struct
       i.e. that every pair of conflicting nodes have different
       colors. *)
   let rec check_coloring g c =
-    let someEdge = Graph.pick_edge g EdgeLabel.conflict in
-    match someEdge with
-    | Some (n1, n2) ->
-        let c1 = color_of_node c n1 in
-        let c2 = color_of_node c n2 in
-        if (c1 <> c2)
-        then
-          let g' = Graph.del_edge g n1 EdgeLabel.conflict n2 in
-          check_coloring g' c
-        else
-          raise (InvalidColoring c)
+    match Graph.pick_edge g EdgeLabel.conflict with
+    | Some (n1, n2) -> (
+        match color_of_node c n1, color_of_node c n2 with
+        | Some c1, Some c2 when c1 = c2 -> raise @@ InvalidColoring c
+        | _ -> check_coloring (Graph.del_edge g n1 EdgeLabel.conflict n2) c
+      )
     | None -> ()
 
   type pick_result =
@@ -81,53 +76,81 @@ struct
       returns a node that may be spilled. Otherwise, the graph is
       empty. *)
   let pick g : pick_result =
-    let pick_preference g = Graph.pick_edge g EdgeLabel.preference in
-    let res = Graph.min_degree g EdgeLabel.conflict EdgeLabel.preference in
-    match res with
-    | Some (d, nl) ->
-        if (d < Colors.cardinal) then SimplifiableNode nl
-        else
-          begin match pick_preference g with
-          | Some (l1, l2) -> PreferenceNodes (l1, l2)
-          | None -> MaybeSpillNode nl
-          end
+    let pick_preference g fallback =
+      match Graph.pick_edge g EdgeLabel.preference with
+      | Some (n1, n2) -> PreferenceNodes (n1, n2)
+      | None -> fallback ()
+    in
+    match Graph.min_degree g EdgeLabel.conflict EdgeLabel.preference with
+    | Some (d, n) ->
+        if d < Colors.cardinal
+        then SimplifiableNode n
+        else pick_preference g (fun () -> MaybeSpillNode n)
     | None ->
-        begin match pick_preference g with
-        | Some (l1, l2) -> PreferenceNodes (l1, l2)
-        | None -> EmptyGraph
-        end
+        pick_preference g (fun () ->
+          match Graph.pick_edge g EdgeLabel.conflict with
+          | None -> EmptyGraph
+          | Some (n, _) -> MaybeSpillNode n
+        )
 
   (** [colorize g] returns a coloring for [g]. *)
   let rec colorize (g : Graph.t) : t =
-    let remove_nodes_from pkresult g = match pkresult with
-      | EmptyGraph -> g
-      | SimplifiableNode n -> Graph.del_node g n
-      | MaybeSpillNode n -> Graph.del_node g n
-      | PreferenceNodes (n1, n2) -> Graph.del_node (Graph.del_node g n1) n2
+    match pick g with
+    | EmptyGraph -> empty
+    | SimplifiableNode n | MaybeSpillNode n -> simplify g n
+    | PreferenceNodes (n, n') ->
+        let g =
+          if briggs g n n' || george g n n'
+          then merge g n n'
+          else Graph.del_edge g n EdgeLabel.preference n'
+        in
+        colorize g
+
+  and simplify g n =
+    let coloring = colorize @@ Graph.del_node g n in
+    let remaining_colors =
+      let neighbor_colors =
+        ExtStd.List.filter_map (function
+          | [] -> assert false
+          | n :: _ -> color_of_node coloring n
+        ) (Graph.neighbours g EdgeLabel.conflict n)
+      in
+      List.filter (fun c -> not @@ List.mem c neighbor_colors) Colors.all
     in
-    let assign_remaining_color coloringMap node g =
-      match node with
-      | EmptyGraph -> ExtStd.failwith_todo __LOC__
-      | SimplifiableNode n -> ExtStd.failwith_todo __LOC__
-      | MaybeSpillNode n -> ExtStd.failwith_todo __LOC__
-      | PreferenceNodes (n1, n2) -> ExtStd.failwith_todo __LOC__
-    in
-    let pick_res = pick g in
-    let g' = remove_nodes_from pick_res g in
-    let coloring = colorize g' in
-    (**try **)
-    assign_remaining_color coloring pick_res g'
-  (**with NoMoreColor -> give_up coloring n *)
+    match remaining_colors with
+    | [] -> assign_no_color g n coloring
+    | c :: _ -> assign_color g n c coloring
+
+  and not_simplifiable_neighbors g n neighbors =
+    List.filter (function
+      | [] -> assert false
+      | n :: _ -> degree_of_node g n >= Colors.cardinal
+    ) (neighbors g n)
 
   (** [briggs g n1 n2] returns true iff in [g'] the graph in which n1 and
       n2 are merged, the number of neighbours of the new node for n1 and n2
       has a number of non simplifiable node which is strictly less than the
       number of available colors. *)
-  and briggs g n1 n2 = ExtStd.failwith_todo __LOC__
+  and briggs g n1 n2 =
+    let n =
+      let neighbors g n = Graph.neighbours' g EdgeLabel.all n1
+      and g = merge g n1 n2 in
+      List.length @@ not_simplifiable_neighbors g n1 neighbors
+    in
+    n < Colors.cardinal
+
   (** [george g n1 n2] returns true iff each neighbour of n1 that is in
       conflict with n1 and is not simplifiable is also in conflict with n2.
       (or the other way around). *)
-  and george g n1 n2 = ExtStd.failwith_todo __LOC__
+  and george g n1 n2 =
+    let check n1 n2 =
+      let neighbors g n = Graph.neighbours g EdgeLabel.conflict n in
+      List.for_all (fun n ->
+        List.mem n (neighbors g n2)
+      ) (not_simplifiable_neighbors g n1 neighbors)
+    in
+    check n1 n2 || check n2 n1
+
   and merge g n1 n2 =
     let g = Graph.merge g n1 n2 in
     (**
