@@ -7,18 +7,18 @@
    Register allocation is done in two steps:
 
    - a static analysis called "Liveness Analysis of Variables" is
-   performed to compute a graph. It approximates the interference
-   relation of program variables, i.e. the intersection between the
-   live ranges of variables. The nodes of the graph are the program
-   variables and, in this graph, a node for 'x' and a node 'y' are
-   connected iff 'x' and 'y' are in interference.
+     performed to compute a graph. It approximates the interference
+     relation of program variables, i.e. the intersection between the
+     live ranges of variables. The nodes of the graph are the program
+     variables and, in this graph, a node for 'x' and a node 'y' are
+     connected iff 'x' and 'y' are in interference.
 
    - a graph coloring algorithm is executed on the interference graph:
-   if two variables live at the same time, then their values cannot
-   be carried by the same register ; thus, it suffices to use a different
-   color for their nodes. Graph coloring is NP-complete. Yet, we will
-   use a simple recursive algorithm that provides good results in
-   practice.
+     if two variables live at the same time, then their values cannot be
+     carried by the same register ; thus, it suffices to use a different
+     color for their nodes. Graph coloring is NP-complete. Yet, we will
+     use a simple recursive algorithm that provides good results in
+     practice.
 
 *)
 
