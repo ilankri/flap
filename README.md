@@ -19,16 +19,12 @@
 * Typechecker for Hopix
 * Compiler from Hopix to Hobix
 * Compiler from Hobix to Fopix
-* Compiler from Fopix to Retrolix (without calling conventions)
-
-## Partially implemented
-
+* Compiler from Fopix to Retrolix
 * Compiler from Retrolix to MIPS assembly language
-* Register allocation (only the liveness analysis is implemented)
 
 ## To be implemented
 
-* Graph coloring of interference graph (to complete register allocation)
+* Register allocation
 * Type inference for Hopix
 * Various optimizations like efficient compilation of pattern matching
   or tail call optimization
