@@ -24,7 +24,6 @@ type environment = FopixToJavix.environment = {
 module Env = FopixToJavix.Env
 
 module Utils : sig
-  val translate_binop   : S.binop -> T.instruction
   val translate_cmpop   : string -> T.cmpop
   val unlabelled_instr  : T.instruction -> T.labelled_instruction
   val unlabelled_instrs : (T.instruction list) -> (T.labelled_instruction list)
@@ -62,7 +61,6 @@ module Utils : sig
     T.labelled_instruction list
 
 end = struct
-  let translate_binop   = FopixToJavix.translate_binop
   let translate_cmpop   = FopixToJavix.translate_cmpop
   let unlabelled_instr  = FopixToJavix.unlabelled_instr
   let unlabelled_instrs = FopixToJavix.unlabelled_instrs
@@ -208,12 +206,12 @@ let rec translate_tailexpr (expr: S.tailexpr) (env: environment) :
       let else_codes = translate_tailexpr e_else env in
       Utils.translate_IfThenElse (cond_codes, then_codes, else_codes)
 
-  | S.TPushCont (cont_id, _, e) -> ExtStd.failwith_todo __LOC__
+  | S.TPushCont _ -> ExtStd.failwith_todo __LOC__
 
   | S.TFunCall (fun_expr, args) ->
       translate_FunCall fun_expr args env
 
-  | S.TContCall b_expr -> ExtStd.failwith_todo __LOC__
+  | S.TContCall _ -> ExtStd.failwith_todo __LOC__
 
 let translate_fun_body fun_id body env : (T.labelled_instruction list) =
   Utils.unlabelled_instr (T.Comment ("Body of the function " ^ fun_id)) ::
@@ -244,7 +242,7 @@ let translate_definition (def:S.definition) (env: environment) :
       let prolog, env' = fun_prolog cont_id (id :: formals) env in
       (prolog @ translate_fun_body cont_id body env' @ Utils.fun_epilog, env)
 
-let varAndStack_size (p: S.t) (env: environment) : int * int =
+let var_and_stack_size (_p : S.t) (_env : environment) : int * int =
   ExtStd.failwith_todo __LOC__
 
 let collect_function_info prog env =
@@ -260,7 +258,7 @@ let collect_function_info prog env =
   in
   List.fold_left collect_function_info env prog
 
-let rec translate (p : S.t) env : T.t * environment =
+let translate (p : S.t) env : T.t * environment =
   FopixToJavix.translate (KontixToFopix.program p) env
 (* let defs, main = p in *)
 (* let env1 = collect_function_info defs env in *)

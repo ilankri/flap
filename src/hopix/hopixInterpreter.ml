@@ -195,7 +195,7 @@ let primitives =
     ; ("`<=", ( <= )) ]
   in
   let boolbin name out op =
-    VPrimitive (name, fun m -> function
+    VPrimitive (name, fun _ -> function
       | [VBool x; VBool y] -> out (op x y)
       | _ -> assert false (* By typing. *)
     )
@@ -218,13 +218,13 @@ let primitives =
     VUnit
   in
   let print_int =
-    VPrimitive  ("print_int", fun m -> function
+    VPrimitive  ("print_int", fun _ -> function
       | [ VInt x ] -> print (Int32.to_string x)
       | _ -> assert false (* By typing. *)
     )
   in
   let print_string =
-    VPrimitive  ("print_string", fun m -> function
+    VPrimitive  ("print_string", fun _ -> function
       | [ VString x ] -> print x
       | _ -> assert false (* By typing. *)
     )
@@ -498,5 +498,5 @@ and extract_observable runtime runtime' =
       runtime'.memory
   }
 
-let print_observable runtime observation =
+let print_observable _ observation =
   Environment.print observation.new_memory observation.new_environment

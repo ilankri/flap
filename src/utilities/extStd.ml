@@ -105,7 +105,7 @@ module List = struct
   let update_assoc k v l =
     let rec aux = function
       | [] -> [(k, v)]
-      | ((k', v') as x) :: l -> if k = k' then (k, v) :: l else x :: aux l
+      | (k', _) as x :: l -> if k = k' then (k, v) :: l else x :: aux l
     in
     aux l
 

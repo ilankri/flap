@@ -4,39 +4,39 @@
 type program = definition list
 
 and definition =
-  (** A toplevel declaration for an external value. *)
   | DeclareExtern of identifier
-  (** A toplevel definition for a value. *)
+  (** A toplevel declaration for an external value. *)
   | DefineValue of identifier * expression
-  (** A toplevel definition for mutually recursive values. *)
+  (** A toplevel definition for a value. *)
   | DefineRecFuns of (identifier * expression) list
+  (** A toplevel definition for mutually recursive values. *)
 
 and expression =
-  (** A literal is a constant written "as is". *)
   | Literal of literal
-  (** A variable identifies a value. *)
+  (** A literal is a constant written "as is". *)
   | Variable of identifier
-  (** A local definition [val x₁ := e₁ ; e₂]. *)
+  (** A variable identifies a value. *)
   | Define of identifier * expression * expression
-  (** Local mutually recursive values [rec x₁ := e₁ and ... and xₙ := eₙ; e]. *)
+  (** A local definition [val x₁ := e₁ ; e₂]. *)
   | DefineRec of (identifier * expression) list * expression
-  (** A function application [a (b_1, ..., b_N)]. *)
+  (** Local mutually recursive values [rec x₁ := e₁ and ... and xₙ := eₙ; e]. *)
   | Apply of expression * expression list
-  (** A conditional expression of the form [if ... then ... else ... fi]. *)
+  (** A function application [a (b_1, ..., b_N)]. *)
   | IfThenElse of expression * expression * expression
-  (** An anonymous function [ \ x => e ]. *)
+  (** A conditional expression of the form [if ... then ... else ... fi]. *)
   | Fun of identifier list * expression
-  (** Allocate a block of size n [ alloc_block n ]. *)
+  (** An anonymous function [ \ x => e ]. *)
   | AllocateBlock of expression
-  (** Write a value v at offset i of block b [ alloc_write b i v ]. *)
+  (** Allocate a block of size n [ alloc_block n ]. *)
   | WriteBlock of expression * expression * expression
-  (** Read a value at offset i of block b [ alloc_read b i ]. *)
+  (** Write a value v at offset i of block b [ alloc_write b i v ]. *)
   | ReadBlock of expression * expression
+  (** Read a value at offset i of block b [ alloc_read b i ]. *)
+  | Switch of expression * expression array * expression option
   (** Jump to the i-th branch if i < |bs|, jump to default otherwise
       if it is present. [switch i in bs orelse default] *)
-  | Switch of expression * expression array * expression option
-  (** While-loop *)
   | While of expression * expression
+  (** While-loop *)
 
 and literal =
   | LInt    of Int32.t

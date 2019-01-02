@@ -1,9 +1,7 @@
-open PPrint
 open PPrintCombinators
 open PPrintEngine
 open ExtPPrint
 open HobixAST
-open Position
 
 let int i = string (Int32.to_string i)
 

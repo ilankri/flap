@@ -1,6 +1,5 @@
 (** This module offers a pretty-printer for Stackix programs. *)
 
-open PPrint
 open PPrintCombinators
 open PPrintEngine
 
@@ -62,7 +61,7 @@ and labelled shift f x =
     :: List.map (fun x -> group (spaces ^^ f spaces x)) (List.tl x.value)
   )
 
-and instruction spaces = function
+and instruction _ = function
   | Comment s ->
       string ("# " ^ s)
 

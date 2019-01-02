@@ -1,9 +1,3 @@
-%{
-
-open MipsAST
-
-%}
-
 %token EOF
 
 %start<MipsAST.t> program

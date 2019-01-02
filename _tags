@@ -12,3 +12,6 @@ true : package(unix), package(str), package(pprint)
 <src/anfix>      : include
 <src/kontix>     : include
 <src/jakix>      : include
+
+not <**/*Parser.*>: warn(+a-4-9-41-42-44-45-48)
+<**/*Parser.*>: warn(+a-4-9-41-42-44-45-48-39)

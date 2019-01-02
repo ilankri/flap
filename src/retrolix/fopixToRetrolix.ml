@@ -54,7 +54,7 @@ and check_and_generate_new_id global env x =
       (env, x)
   | None -> ((push_global x, renaming), x)
 
-and generate_new_id renaming (S.Id s as x) =
+and generate_new_id renaming x =
   let id = S.Id (fresh_id ()) in
   (id, (x, id) :: renaming)
 
@@ -88,7 +88,7 @@ and replace_id_if_need renaming i =
   | None -> i
 
 and expression env e = match e with
-  | S.Variable (S.Id id as i) ->
+  | S.Variable i ->
       env, S.Variable (replace_id_if_need (snd env) i)
 
   | S.Define (i, e1, e2) ->
@@ -133,7 +133,7 @@ and expression env e = match e with
 (** [translate' p env] turns a Fopix program [p] into a Retrolix
     program using [env] to retrieve contextual information. *)
 let rec translate' p ((globals, _) as env) =
-  (** Then, we translate Fopix declarations into Retrolix declarations. *)
+  (* Then, we translate Fopix declarations into Retrolix declarations. *)
   let defs = List.map (declaration globals) p in
   (defs, env)
 
@@ -195,7 +195,7 @@ and declaration env = T.(function
       DExternalFunction (FId f)
 )
 
-and caller_prologue fst_four_actuals =
+and caller_prologue () =
   let lvs, save_caller_saved = save_registers MipsArch.caller_saved_registers in
   (lvs, comment "Save caller-saved registers" :: save_caller_saved)
 
@@ -210,7 +210,7 @@ and fun_call out f actuals proc_call_conv =
     if proc_call_conv then MipsArch.split_params actuals else ([], actuals)
   in
   let lvs, caller_prologue =
-    if proc_call_conv then caller_prologue fst_four_actuals else ([], [])
+    if proc_call_conv then caller_prologue () else ([], [])
   in
   let caller_epilogue =
     if proc_call_conv then caller_epilogue lvs out else []
@@ -240,9 +240,9 @@ and expression out = T.(function
       [labelled (Assign (out, Load, [ `Variable (Id x) ]))]
 
   | S.Define (S.Id x, e1, e2) ->
-      (** Hey student! The following code is wrong in general,
-          hopefully, you will implement [preprocess] in such a way that
-          it will work, right? *)
+      (* Hey student! The following code is wrong in general,
+         hopefully, you will implement [preprocess] in such a way that
+         it will work, right? *)
       expression (`Variable (Id x)) e1 @ expression out e2
 
   | S.While (c, e) ->
@@ -375,11 +375,10 @@ and labelled i =
 
 and rename_predefine_function f =
   match f with
-  (** To handle different function name change from fopix to retrolix :
+  (* To handle different function name change from fopix to retrolix :
       allocate_block -> block_create
       write_block -> block_set
-      read_block -> block_get
-  *)
+      read_block -> block_get *)
   | "allocate_block" -> "block_create"
   | "write_block" -> "block_set"
   | "read_block" -> "block_get"

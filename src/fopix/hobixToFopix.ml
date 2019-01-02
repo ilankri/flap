@@ -147,7 +147,7 @@ let free_variables =
     | s :: xs -> M.union (f s) (unions f xs)
   in
   let rec fvs = function
-    | S.Literal l ->
+    | S.Literal _ ->
         M.empty
     | S.Variable x ->
         M.singleton x
@@ -159,7 +159,7 @@ let free_variables =
         M.(union sa (remove x sb))
     | S.DefineRec (rdefs, a) ->
         let fs = List.map fst rdefs in
-        let xs = M.(unions fvs (a :: List.map snd rdefs)) in
+        let xs = unions fvs (a :: List.map snd rdefs) in
         List.fold_left (fun s x -> M.remove x s) xs fs
     | S.ReadBlock (a, b) ->
         unions fvs [a; b]
@@ -403,11 +403,11 @@ let translate (p : S.t) env =
         in
         (afs @ List.flatten bsfs @ dfs, T.Switch (a, Array.of_list bs, default))
 
-  and expressions env = function
+  and _expressions env = function
     | [] ->
         [], []
     | e :: es ->
-        let efs, es = expressions env es in
+        let efs, es = _expressions env es in
         let fs, e = expression env e in
         fs @ efs, e :: es
 

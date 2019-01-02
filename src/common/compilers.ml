@@ -67,7 +67,7 @@ let compilers_from source =
     |> map snd
   )
 
-let find compilers source target using = List.(ExtStd.List.Monad.(
+let find source target using = List.(ExtStd.List.Monad.(
   let rec search seen source target =
     if List.mem source seen then
       fail
@@ -88,7 +88,7 @@ let find compilers source target using = List.(ExtStd.List.Monad.(
 
 let get ?(using=[]) (module Source : Language) (module Target : Language) =
   let using = List.map (fun (module L : Language) -> L.name) using in
-  match find compilers Source.name Target.name using with
+  match find Source.name Target.name using with
   | [] ->
       Error.global_error
         "during compilation"

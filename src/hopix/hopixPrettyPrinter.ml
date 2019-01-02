@@ -1,4 +1,3 @@
-open PPrint
 open PPrintCombinators
 open PPrintEngine
 open ExtPPrint

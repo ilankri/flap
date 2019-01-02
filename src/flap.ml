@@ -181,7 +181,7 @@ let batch_compilation () =
         print_endline (print_typing_environment tenv)
       )
     );
-  let cast, _ = Compiler.(translate ast (initial_environment ())) in
+  let cast, _ = translate ast (initial_environment ()) in
   let output_filename = module_name ^ Target.extension in
   if Options.get_verbose_mode () then
     output_string stdout (Target.print_ast cast ^ "\n");
@@ -208,9 +208,9 @@ let batch_compilation () =
     )
   )
 
-(** -------------- **)
-(**   Entry point   *)
-(** -------------- **)
+(* -------------- *)
+(*   Entry point  *)
+(* -------------- *)
 let main =
   if !Sys.interactive
   then ()

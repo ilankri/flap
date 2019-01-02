@@ -223,4 +223,4 @@ and cmpop = function
   | Gt -> (>)
   | Ge -> (>=)
 
-let print_observable runtime obs = string_of_int obs
+let print_observable _ obs = string_of_int obs

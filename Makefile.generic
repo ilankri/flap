@@ -22,10 +22,7 @@ else
   MENHIROPT=-yaccflag --explain $(MENHIR_STRICT)
 endif
 
-# During the development phase, we disable the warnings about unused
-# variables.
-OCAMLBUILDFLAGS_COMMON = -cflag "-w" -cflag "-26" -cflag "-annot"	\
-				-cflag "-bin-annot" $(MENHIROPT)
+OCAMLBUILDFLAGS_COMMON = -cflag "-annot" -cflag "-bin-annot" $(MENHIROPT)
 
 # In Emacs, use classic display to enable error jumping.
 TERM = $(shell echo $$TERM)

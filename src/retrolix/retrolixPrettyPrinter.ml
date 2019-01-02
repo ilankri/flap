@@ -1,6 +1,5 @@
 (** This module offers a pretty-printer for Stackix programs. *)
 
-open PPrint
 open PPrintCombinators
 open PPrintEngine
 

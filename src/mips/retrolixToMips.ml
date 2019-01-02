@@ -3,9 +3,9 @@
     For details about the procedure call conventions used by GCC for
     MIPS architecture see:
 
-      - doc/resources/MIPS-specification.pdf (section A.6)
+    - doc/resources/MIPS-specification.pdf (section A.6)
 
-      - http://www.cs.umb.edu/cs641/MIPscallconvention.html
+    - http://www.cs.umb.edu/cs641/MIPscallconvention.html
 
     In the code below, we always denote by [stacksize] the size in words
     of the current stack frame.  Offsets in the stack frame are taken
@@ -62,7 +62,7 @@ let register (S.RId s) = MipsArch.register_of_string s
     of the variable [x]. If [x] is local, this address is
     located inside the stack frame. If [x] is global, this
     address is represented by a label. *)
-let variable_address stacksize env ((S.Id s) as x) =
+let variable_address env ((S.Id s) as x) =
   let offset =
     try Some (List.assoc x env) with
     | Not_found -> None
@@ -75,8 +75,8 @@ let variable_address stacksize env ((S.Id s) as x) =
 
 (** [load_variable stacksize env r x] emits the instructions
     to load a variable [x] in register [r]. *)
-let load_variable stacksize env r x =
-  match variable_address stacksize env x with
+let load_variable env r x =
+  match variable_address env x with
   | T.LabelAddress l when Options.get_gcc () -> T.([
     Lui (r, LabelAddressHi l);
     Addiu (r, r, LabelAddressLow l);
@@ -93,12 +93,12 @@ let tmp2 = MipsArch.tmp2
 (** [load_rvalue stacksize env rvalue rdest f] inspects [rvalue]
     to determine if it must be loaded into [rdest] before the
     emission of the instruction described by [f]. *)
-let load_rvalue stacksize env rvalue rdest f =
+let load_rvalue env rvalue rdest f =
   match rvalue with
   | `Register r ->
       f (register r)
   | `Variable x ->
-      load_variable stacksize env rdest x
+      load_variable env rdest x
       @ f rdest
   | `Immediate (S.LInt i) ->
       load_immediate rdest i @ f rdest
@@ -115,8 +115,8 @@ let load_rvalue stacksize env rvalue rdest f =
 
 (** [store_variable stacksize env x r] emits the instructions
     to store the value of a register [r] into a variable [x]. *)
-let store_variable (stacksize : int) env x r =
-  match variable_address stacksize env x with
+let store_variable env x r =
+  match variable_address env x with
   | T.LabelAddress l when Options.get_gcc () -> T.([
     Lui (tmp1, LabelAddressHi l);
     Sw (r, RegisterOffsetAddress (tmp1, LabelAddressLow l))
@@ -181,19 +181,19 @@ let extract_global xs = function
 
 (** First, push the rvalues [rs] on the stack and then jump to the code
     of [f].  *)
-let call stacksize env f rs =
+let call env f rs =
   let push i rv =
-    load_rvalue stacksize env rv tmp1 (fun rsrc ->
+    load_rvalue env rv tmp1 (fun rsrc ->
       [T.Sw (rsrc, sp_offset_address (i + arg_reg_count))]
     )
   in
   let jump = function
     | `Immediate (S.LFun _ as f) ->
-        load_rvalue stacksize env (`Immediate f) tmp1 (fun r ->
+        load_rvalue env (`Immediate f) tmp1 (fun r ->
           [T.Jalr r]
         )
     | `Variable _ | `Register _ ->
-        load_rvalue stacksize env f tmp1 (fun r -> [T.Jalr r])
+        load_rvalue env f tmp1 (fun r -> [T.Jalr r])
     | `Immediate (S.LInt _ | S.LChar _ | S.LString _) -> assert false
   in
   List.flatten (List.mapi push rs) @ jump f
@@ -209,23 +209,22 @@ let call stacksize env f rs =
     to the operation. [load_rvalue] is used to determine if the [rvalues] must
     be first loaded in temporary registers [tmp1] and [tmp2].
 *)
-let mk_operation stacksize env rdest r1 r2 semantics make = S.(
+let mk_operation env rdest r1 r2 semantics make =
   match r1, r2 with
   | `Immediate i, `Immediate j ->
       load_immediate rdest (semantics i j)
 
   | r1, r2 ->
-      load_rvalue stacksize env r1 tmp1 (fun r1 ->
-        load_rvalue stacksize env r2 tmp2 (fun r2 ->
+      load_rvalue env r1 tmp1 (fun r1 ->
+        load_rvalue env r2 tmp2 (fun r2 ->
           [make r1 r2]
         )
       )
-)
 
 (** [translate p env] turns a Retrolix program into a MIPS program. *)
-let rec translate (p : S.t) (env : environment) : T.t * environment =
+let translate (p : S.t) (_env : environment) : T.t * environment =
 
-  (** [block stacksize formals locals instructions] compiles a retrolix
+  (* [block stacksize formals locals instructions] compiles a retrolix
       block into a MIPS block list.  *)
   let rec block stacksize formals locals instructions =
     let env =
@@ -235,15 +234,15 @@ let rec translate (p : S.t) (env : environment) : T.t * environment =
     List.map (fun (S.Label l, i) ->
       {
         T.label = T.Label l;
-        T.value = instruction stacksize locals env l i
+        T.value = instruction stacksize env i
       }) instructions
 
-  (** [instruction stacksize locals env l i] compiles the retrolix
+  (* [instruction stacksize locals env l i] compiles the retrolix
       instruction [i] whose label is [l] into a list of MIPS
-      instructions. [stacksize] is the size of the current stack
-      frame and [locals] the list of local variables. *)
-  and instruction stacksize locals env l = T.(function
-    | S.Call (_, f, rs) -> call stacksize env f rs
+      instructions. [stacksize] is the size of the current stack frame
+      and [locals] the list of local variables. *)
+  and instruction stacksize env = function
+    | S.Call (_, f, rs) -> call env f rs
 
     | S.TailCall (_, _) -> ExtStd.failwith_todo __LOC__
 
@@ -254,19 +253,19 @@ let rec translate (p : S.t) (env : environment) : T.t * environment =
     | S.Assign (lv, S.Load, [rv]) ->
         (* We store [rv] in [tmp2] because [store_variable] may use
            [tmp1].  *)
-        load_rvalue stacksize env rv tmp2 (fun rsrc ->
+        load_rvalue env rv tmp2 (fun rsrc ->
           match lv with
           | `Register rdest -> [T.Move (register rdest, rsrc)]
-          | `Variable x -> store_variable stacksize env x rsrc
+          | `Variable x -> store_variable env x rsrc
         )
 
     | S.Assign (lv, binop, [rv1; rv2]) ->
-        load_rvalue stacksize env lv tmp2 (fun rdest ->
-          mk_operation stacksize env rdest rv1 rv2
+        load_rvalue env lv tmp2 (fun rdest ->
+          mk_operation env rdest rv1 rv2
             (semantics binop) (mk_instr_by_op binop rdest) @ (
             match lv with
             | `Register _ -> []
-            | `Variable x -> store_variable stacksize env x rdest)
+            | `Variable x -> store_variable env x rdest)
         )
 
     | S.Assign (_, _, _) -> assert false
@@ -294,8 +293,8 @@ let rec translate (p : S.t) (env : environment) : T.t * environment =
         in
         begin match rvl with
         | [r1; r2] ->
-            load_rvalue stacksize env r1 tmp1 (fun r1 ->
-              load_rvalue stacksize env r2 tmp2 (fun r2 ->
+            load_rvalue env r1 tmp1 (fun _ ->
+              load_rvalue env r2 tmp2 (fun _ ->
                 let label (S.Label l) = T.Label l in
                 extract_op c tmp1 tmp2 (label l1) (label l2)
               )
@@ -309,11 +308,10 @@ let rec translate (p : S.t) (env : environment) : T.t * environment =
 
     | S.Exit ->
         load_immediate (MipsArch.a 0) Int32.zero @ [T.J (T.Label "exit")]
-  )
 
-  (** [function_definition bs df] inserts the compiled code of [df]
-      in the block list [bs]. *)
-  and function_definition bs = T.(function
+  (* [function_definition bs df] inserts the compiled code of [df] in
+      the block list [bs]. *)
+  and function_definition bs = function
     | S.DFunction (S.FId fid, formals, (locals, instrs)) ->
         let max_argc instrs =
           let aux acc (_, instr) = S.(
@@ -331,17 +329,14 @@ let rec translate (p : S.t) (env : environment) : T.t * environment =
         block stacksize formals locals instrs @
         bs
     | S.DValue _ | S.DExternalFunction _ -> bs
-  )
   in
 
-  (**
-     [main] is the entry point of the program. It must initialize
+  (* [main] is the entry point of the program. It must initialize
      global variables and then call the standard "exit" function with
      0 as an argument.
 
-     To initialize global variables, we simply concatenate the
-     compiled code of each variable code block.
-  *)
+     To initialize global variables, we simply concatenate the compiled
+     code of each variable code block.  *)
   let main =
     let extract_locals acc = function
       | S.DValue (_, (locals, _)) -> locals @ acc
@@ -359,7 +354,7 @@ let rec translate (p : S.t) (env : environment) : T.t * environment =
     function_definition [] (S.DFunction (S.FId "main", [], (locals, instrs)))
   in
 
-  (** [code] is the program code of [p] compiled in MIPS for GCC. *)
+  (* [code] is the program code of [p] compiled in MIPS for GCC. *)
   let code = main @ List.fold_left function_definition [] (List.rev p) in
 
   let globals = List.fold_left extract_global [] (List.rev p) in

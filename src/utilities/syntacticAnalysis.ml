@@ -1,7 +1,3 @@
-exception ParsingError
-
-type 'token with_pos = 'token * Lexing.position * Lexing.position
-
 let parsing_step = "during parsing"
 
 let process ~lexer_init ~lexer_fun ~parser_fun ~input =

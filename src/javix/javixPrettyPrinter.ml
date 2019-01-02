@@ -1,56 +1,54 @@
 (** This module offers a pretty-printer for Javix programs. *)
 
-open PPrint
 open PPrintCombinators
 open PPrintEngine
 
 open JavixAST
 
 let header p =
-  ".class public "^ p.classname ^"
-.super java/lang/Object
-
-.method public static main([Ljava/lang/String;)V
-   .limit stack 2
-   ; push System.out onto the stack
-   getstatic java/lang/System/out Ljava/io/PrintStream;
-   ; launch our code and push the int result onto the stack
-   invokestatic "^p.classname^"/code()I
-   ; call the PrintStream.println() method.
-   invokevirtual java/io/PrintStream/println(I)V
-   ; done
-   return
-.end method
-
-;;; box : int --> Integer
-
-.method public static box(I)Ljava/lang/Object;
-.limit locals 1
-.limit stack 3
-   new java/lang/Integer
-   dup
-   iload 0
-   invokespecial java/lang/Integer/<init>(I)V
-   areturn
-.end method
-
-;;; unbox : Integer --> int
-
-.method public static unbox(Ljava/lang/Object;)I
-.limit locals 1
-.limit stack 1
-   aload 0
-   checkcast java/lang/Integer
-   invokevirtual java/lang/Integer/intValue()I
-   ireturn
-.end method
-
-;;; the compiled code
-
-.method public static code()I
-.limit locals "^string_of_int p.varsize^"
-.limit stack "^string_of_int p.stacksize^"
-"
+  ".class public " ^ p.classname ^ "\n"
+  ^ ".super java/lang/Object\n\
+     \n\
+     .method public static main([Ljava/lang/String;)V\n\
+     .limit stack 2\n\
+     ; push System.out onto the stack\n\
+     getstatic java/lang/System/out Ljava/io/PrintStream;\n\
+     ; launch our code and push the int result onto the stack\n\
+     invokestatic " ^ p.classname ^ "/code()I\n"
+  ^ "; call the PrintStream.println() method.\n\
+     invokevirtual java/io/PrintStream/println(I)V\n\
+     ; done\n\
+     return\n\
+     .end method\n\
+     \n\
+     ;;; box : int --> Integer\n\
+     \n\
+     .method public static box(I)Ljava/lang/Object;\n\
+     .limit locals 1\n\
+     .limit stack 3\n\
+     new java/lang/Integer\n\
+     dup\n\
+     iload 0\n\
+     invokespecial java/lang/Integer/<init>(I)V\n\
+     areturn\n\
+     .end method\n\
+     \n\
+     ;;; unbox : Integer --> int\n\
+     \n\
+     .method public static unbox(Ljava/lang/Object;)I\n\
+     .limit locals 1\n\
+     .limit stack 1\n\
+     aload 0\n\
+     checkcast java/lang/Integer\n\
+     invokevirtual java/lang/Integer/intValue()I\n\
+     ireturn\n\
+     .end method\n\
+     \n\
+     ;;; the compiled code\n\
+     \n\
+     .method public static code()I\n\
+     .limit locals " ^ string_of_int p.varsize ^ "\n"
+  ^ ".limit stack " ^ string_of_int p.stacksize ^ "\n"
 
 let rec program p =
   string (header p) ^^ code p p.code ^^ hardline ^^

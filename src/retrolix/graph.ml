@@ -18,21 +18,22 @@
 *)
 module type EdgeLabelSig = sig
   include Set.OrderedType
-  (** [all] enumerates all the possible edge labels. *)
+
   val all : t list
-  (** [to_string e] converts [e] in a human readable value. *)
+  (** [all] enumerates all the possible edge labels. *)
+
   val to_string : t -> string
+  (** [to_string e] converts [e] in a human readable value. *)
 end
 
 (** The type for node labels.
 
-    Node labels must be comparable.
-
-*)
+    Node labels must be comparable. *)
 module type NodeLabelSig = sig
   include Set.OrderedType
-  (** [to_string n] converts [n] in a human readable value. *)
+
   val to_string : t -> string
+  (** [to_string n] converts [n] in a human readable value. *)
 end
 
 (** The functor is parameterized by the previous two signatures. *)
@@ -150,7 +151,7 @@ struct
   let sanity_check = false
   exception InconsistentDegree
   let check_consistent_degree g =
-    (** The number of neighbours of [x] is the degree of [x]. *)
+    (* The number of neighbours of [x] is the degree of [x]. *)
     let valid_degree c x ngb =
       let xdegree = NodeIdSet.cardinal ngb in
       NodeIdSet.mem x (IntMap.find xdegree (EdgeLabelMap.find c g.degrees))
@@ -164,18 +165,18 @@ struct
     ) g.neighbours
 
   let update_neighbour update_set g id1 e id2 =
-    (** We focus on [e]. *)
+    (* We focus on [e]. *)
     let nbg = EdgeLabelMap.find e g.neighbours
     and deg = EdgeLabelMap.find e g.degrees in
 
-    (** What is the degree of id1? *)
+    (* What is the degree of id1? *)
     let id1_nbg = try NodeIdMap.find id1 nbg with _ -> assert false in
     let id1_deg = NodeIdSet.cardinal id1_nbg in
 
-    (** Update the neighbours of id1 with update_set id2. *)
+    (* Update the neighbours of id1 with update_set id2. *)
     let nbg = nodeid_map_update id1 nbg NodeIdSet.empty (update_set id2) in
 
-    (** Update the degree of id1. *)
+    (* Update the degree of id1. *)
     let deg =
       int_map_update id1_deg deg NodeIdSet.empty (NodeIdSet.remove id1)
     in
@@ -189,14 +190,14 @@ struct
     let id1_deg = NodeIdSet.cardinal id1_nbg in
     let deg = int_map_update id1_deg deg NodeIdSet.empty (NodeIdSet.add id1) in
 
-    (** Finally, update the graph. *)
+    (* Finally, update the graph. *)
     let neighbours = EdgeLabelMap.add e nbg g.neighbours
     and degrees = EdgeLabelMap.add e deg g.degrees in
     let g = { g with neighbours; degrees } in
 
-    (** If you suspect a bug in the implementation of the graph data
-        structure, which is always possible. Activating sanity check
-        might help you to track it down. *)
+    (* If you suspect a bug in the implementation of the graph data
+       structure, which is always possible. Activating sanity check
+       might help you to track it down. *)
     if sanity_check then check_consistent_degree g;
     g
 
@@ -210,15 +211,15 @@ struct
       In the sequel, the new node can be identified by any [nI].
   *)
   let add_node g ns =
-    (** First, a fresh identifier for the node. *)
+    (* First, a fresh identifier for the node. *)
     let nodeid = NodeId g.next_node_id in
     let next_node_id = g.next_node_id + 1 in
 
-    (** Second, we check that [ns] are not used by any other node. *)
+    (* Second, we check that [ns] are not used by any other node. *)
     if List.exists (defined_node g) ns then
       raise InvalidNode;
 
-    (** Third, update maps. *)
+    (* Third, update maps. *)
     let node_of_label =
       List.fold_left (fun m n -> NodeLabelMap.add n nodeid m) g.node_of_label ns
     in
@@ -228,7 +229,7 @@ struct
         NodeIdMap.add nodeid NodeIdSet.empty nbg
       ) g.neighbours
     in
-    (** Initially, the node has a degree 0 since it has no neighbour. *)
+    (* Initially, the node has a degree 0 since it has no neighbour. *)
     let degrees =
       EdgeLabelMap.map
         (fun deg -> int_map_update 0 deg NodeIdSet.empty (NodeIdSet.add nodeid))

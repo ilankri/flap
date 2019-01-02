@@ -89,7 +89,7 @@ let lex_join x1 x2 =
     end_p   = x2
   }
 
-let join_located l1 l2 f =
+let _join_located l1 l2 f =
   {
     value    = f l1.value l2.value;
     position = join l1.position l2.position;
@@ -124,13 +124,13 @@ let with_cpos lexbuf v =
 let string_of_cpos lexbuf =
   string_of_pos (cpos lexbuf)
 
-let joinf f t1 t2 =
+let _joinf f t1 t2 =
   join (f t1) (f t2)
 
 let ljoinf f =
   List.fold_left (fun p t -> join p (f t)) dummy
 
-let join_located_list ls f =
+let _join_located_list ls f =
   {
     value     = f (List.map (fun l -> l.value) ls);
     position  = ljoinf (fun x -> x.position) ls

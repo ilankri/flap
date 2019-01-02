@@ -39,10 +39,10 @@ let instantiate_type_scheme pos s ts =
     annotated by a type. *)
 let check_program_is_fully_annotated ast =
 
-  let rec program p = List.iter (fun item -> located definition item) p
+  let rec program p = List.iter (fun item -> definition (Position.value item)) p
 
-  and definition pos = function
-    | DefineValue (x, e) -> located expression e
+  and definition = function
+    | DefineValue (_, e) -> located expression e
     | DefineRecFuns recdefs ->
         List.iter
           (fun (_, fdef) -> located (function_definition true) fdef) recdefs;
@@ -84,7 +84,7 @@ let check_program_is_fully_annotated ast =
         List.iter (fun e -> located expression e) exprlist;
     | Case (e, branchlist) ->
         located expression e;
-        List.iter (fun br -> located branch br) branchlist;
+        List.iter (fun br -> branch (Position.value br)) branchlist;
     | TypeAnnotation (e, _) | Ref e | Read e ->
         located expression e
     | Literal _ | Variable _ -> ()
@@ -97,7 +97,7 @@ let check_program_is_fully_annotated ast =
     | PTaggedValue (_, palist) | POr palist | PAnd palist ->
         List.iter (fun p -> located pattern p) palist
 
-  and branch pos = function
+  and branch = function
     | Branch (p, e) ->
         located pattern p;
         located expression e
@@ -112,7 +112,7 @@ let check_program_is_fully_annotated ast =
 let typecheck tenv ast : typing_environment =
 
   let rec program p =
-    List.fold_left (fun env x -> located (definition env) x) tenv p
+    List.fold_left (fun env x -> definition env (Position.value x)) tenv p
 
   and rec_definition tenv recdefs =
     let fids, fdefs = List.split recdefs in
@@ -130,7 +130,7 @@ let typecheck tenv ast : typing_environment =
       ignore (located (check_function_definition tenv) fdef)) fdefs;
     tenv
 
-  and definition tenv pos = function
+  and definition tenv = function
     | DefineValue (x, e) ->
         bind_value (Position.value x) (type_scheme_of_expression' tenv e) tenv
 
@@ -145,10 +145,11 @@ let typecheck tenv ast : typing_environment =
         let ty = internalize_ty tenv ty in
         bind_value x (mk_type_scheme ty) tenv
 
-  (** [extract_function_type_scheme tenv pos fdef] constructs a type
-      scheme from the user type annotations found in the function
-      definition [fdef]. This function does not check that the function
-      definition actually has the type scheme written by the programmer. *)
+  (* [extract_function_type_scheme tenv pos fdef] constructs a type
+     scheme from the user type annotations found in the function
+     definition [fdef]. This function does not check that the function
+     definition actually has the type scheme written by the
+     programmer. *)
   and extract_function_type_scheme tenv pos (FunctionDefinition (ts, ps, e)) =
     let extract_arg_ty tenv arg = located (type_of_pattern tenv) arg in
     let tenv =
@@ -163,26 +164,26 @@ let typecheck tenv ast : typing_environment =
     in
     mk_type_scheme (ATyArrow (arg_tys, ret_ty))
 
-  (** [check_function_definition tenv pos fdef] checks that the
-      function definition [fdef] is well-typed with respect to the
-      type annotations written by the programmer. We assume that
-      [tenv] already contains the type scheme of the function [f]
-      defined by [fdef] as well as all the functions which are
-      mutually recursively defined with [f]. *)
+  (* [check_function_definition tenv pos fdef] checks that the function
+     definition [fdef] is well-typed with respect to the type
+     annotations written by the programmer. We assume that [tenv]
+     already contains the type scheme of the function [f] defined by
+     [fdef] as well as all the functions which are mutually recursively
+     defined with [f]. *)
   and check_function_definition tenv pos (FunctionDefinition (tvs, ps, e)) =
     let tenv = bind_type_variables pos tenv (List.map Position.value tvs) in
     let tenv, ts = patterns tenv ps in
     let Scheme (_, t) = type_scheme_of_expression' tenv e in
     mk_type_scheme (ATyArrow (ts, t))
 
-  (** [check_expected_type pos xty ity] verifies that the expected
-      type [xty] is syntactically equal to the inferred type [ity]
-      and raises an error otherwise. *)
+  (* [check_expected_type pos xty ity] verifies that the expected type
+     [xty] is syntactically equal to the inferred type [ity] and raises
+     an error otherwise. *)
   and check_expected_type pos xty ity =
     if xty <> ity then raise_type_error (TypeMismatch (pos, xty, ity))
 
-  (** [check_expression_monotype tenv xty e] checks if [e] has
-      the monotype [xty] under the context [tenv]. *)
+  (* [check_expression_monotype tenv xty e] checks if [e] has the
+     monotype [xty] under the context [tenv]. *)
   and check_expression_monotype tenv xty e =
     let pos = Position.position e in
     let s = type_scheme_of_expression' tenv e in
@@ -199,10 +200,9 @@ let typecheck tenv ast : typing_environment =
   and type_scheme_of_expression' tenv e =
     located (type_scheme_of_expression tenv) e
 
-  (** [type_scheme_of_expression tenv pos e] computes a type scheme
-      for [e] if it exists. Besides, this type scheme must be a
-      monotype if no type instanciation is provided in the enclosing
-      expression. *)
+  (* [type_scheme_of_expression tenv pos e] computes a type scheme for
+     [e] if it exists. Besides, this type scheme must be a monotype if
+     no type instanciation is provided in the enclosing expression. *)
   and type_scheme_of_expression tenv pos = function
     (* Γ ⊢ e : σ    Γ(x : σ) ⊢ e' : σ'
        ———————————————————————————————
@@ -308,7 +308,7 @@ let typecheck tenv ast : typing_environment =
        ——————————————————————————————————————————————————
        Γ ⊢ e ? p₁ => e₁ | … | pn => en : σ                *)
     | Case (e, bs) ->
-        let Scheme (_, t') as sigma' = type_scheme_of_expression' tenv e in
+        let Scheme (_, t') = type_scheme_of_expression' tenv e in
         mk_type_scheme (branches tenv t' bs)
 
     (* Γ ⊢ e : σ
@@ -342,17 +342,17 @@ let typecheck tenv ast : typing_environment =
         ignore (check_expression_monotype tenv hbool e);
         check_expression_monotype tenv hunit e'
 
-    | Literal l -> monotype (located type_of_literal l)
+    | Literal l -> monotype (type_of_literal (Position.value l))
 
     (* (x : σ) ∈ Γ
        ———————————
        Γ ⊢ x : σ   *)
     | Variable x -> located lookup_type_scheme_of_value x tenv
 
-  (** [apply pos tenv s types args] computes the instanciation of the
-      type scheme [s] with [types] and checks that the resulting type
-      is an arrow. The input types of this arrow must correspond to
-      the types of the expressions [args]. *)
+  (* [apply pos tenv s types args] computes the instanciation of the
+      type scheme [s] with [types] and checks that the resulting type is
+      an arrow. The input types of this arrow must correspond to the
+      types of the expressions [args]. *)
   and apply pos tenv s types args =
     let t =
       let atypes = List.map (internalize_ty tenv) types in
@@ -377,7 +377,7 @@ let typecheck tenv ast : typing_environment =
         t
     | ATyVar _ | ATyCon _ -> raise_type_error (InvalidApplication pos)
 
-  and type_of_literal pos = function
+  and type_of_literal = function
     (*
        —————————
        ⊢ n : int *)
@@ -404,9 +404,9 @@ let typecheck tenv ast : typing_environment =
         let tenv, tys = patterns tenv ps in
         tenv, ty :: tys
 
-  (** [pattern tenv pos p] computes a new environment completed with
-      the variables introduced by the pattern [p] as well as the type
-      of this pattern. *)
+  (* [pattern tenv pos p] computes a new environment completed with the
+      variables introduced by the pattern [p] as well as the type of
+      this pattern. *)
   and pattern tenv pos p =
     check_linear_pattern pos p;
     pattern' tenv pos p
@@ -434,8 +434,8 @@ let typecheck tenv ast : typing_environment =
        Γ₀ ⊢ K (p₁, …, pn) ⇒ Γn, τ
 
        Note that 'α₁ … αm' do nothing *)
-    | PTaggedValue (k, ps) as p ->
-        let (Scheme (_, tau)) as atyScheme =
+    | PTaggedValue (k, ps) ->
+        let aty_scheme =
           located lookup_type_scheme_of_constructor k tenv
         in
         let tenv', ts =
@@ -454,7 +454,7 @@ let typecheck tenv ast : typing_environment =
           in
           substitute subst xty
         in
-        let t = check_ptagged atyScheme ts in
+        let t = check_ptagged aty_scheme ts in
         (tenv', output_type_of_function t)
 
     (* ∀i Γ ⊢ pᵢ ⇒ Γᵢ, τᵢ    τ₁ = … = τn    Γ₁ = … = Γn
@@ -482,13 +482,13 @@ let typecheck tenv ast : typing_environment =
         begin
           match gamma, sigma with
           | Some x, Some y -> x, y
-          | _ -> assert false (** Never reached case *)
+          | _ -> assert false   (* Never reached case *)
         end
 
     (* ∀i Γᵢ₋₁ ⊢ pᵢ ⇒ Γᵢ, τᵢ   τ₁ = … = τn
        ———————————————————————————————————
        Γ₀ ⊢ p₁ & … & pn ⇒ Γn, τn           *)
-    | PAnd ps as p ->
+    | PAnd ps ->
         let checkEachPEqual (prevEnv, prevAty) p =
           let e, pAty = located (pattern prevEnv) p in
           match prevAty with
@@ -501,7 +501,7 @@ let typecheck tenv ast : typing_environment =
         begin
           match sigmaN with
           | Some x -> gammaN, x
-          | None -> assert false (** Never reached case *)
+          | None -> assert false (* Never reached case *)
         end
 
     (* Γ ⊢ p ⇒ Γ', τ'    τ' = τ
@@ -516,22 +516,22 @@ let typecheck tenv ast : typing_environment =
     (*
        ——————————————    ———————————————    —————————————————
        Γ ⊢ n ⇒ Γ, int    Γ ⊢ n ⇒ Γ, char    Γ ⊢ n ⇒ Γ, string *)
-    | PLiteral l -> tenv, located type_of_literal l
+    | PLiteral l -> tenv, type_of_literal (Position.value l)
 
-  (** [branches tenv sty bs] checks that the patterns of the
-      branches [bs] have type [sty] and that the bodies of these
-      branches all have the same type. *)
+  (* [branches tenv sty bs] checks that the patterns of the branches
+      [bs] have type [sty] and that the bodies of these branches all
+      have the same type. *)
   and branches tenv sty bs =
     let oty =
       List.fold_left (fun oty b ->
-        located (branch tenv sty oty) b
+        branch tenv sty oty (Position.value b)
       ) None bs
     in
     match oty with
     | None -> assert false (* By syntax. *)
     | Some oty -> oty
 
-  and branch tenv sty oty pos = function
+  and branch tenv sty oty = function
     | Branch (p, e) ->
         let envP, tyP = located (pattern tenv) p in
         let Scheme (_, atyE) = type_scheme_of_expression' envP e in

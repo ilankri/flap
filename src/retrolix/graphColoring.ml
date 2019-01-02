@@ -2,20 +2,25 @@
 
 module type ColorsSig = sig
   type t
-  (** [all] enumerates the available colors. *)
+
   val all : t list
+  (** [all] enumerates the available colors. *)
+
   val cardinal : int
+
   val to_string : t -> string
 end
 
 module Make
     (EdgeLabel : sig
        include Graph.EdgeLabelSig
-       (** A conflict edge imposes a distinct color on its two nodes. *)
+
        val conflict   : t
+       (** A conflict edge imposes a distinct color on its two nodes. *)
+
+       val preference : t
        (** A preference edge indicates that two nodes should have the
            same color if possible. *)
-       val preference : t
      end)
     (NodeLabel : Graph.NodeLabelSig)
     (Colors : ColorsSig)
@@ -133,7 +138,7 @@ struct
       number of available colors. *)
   and briggs g n1 n2 =
     let n =
-      let neighbors g n = Graph.neighbours' g EdgeLabel.all n1
+      let neighbors g _ = Graph.neighbours' g EdgeLabel.all n1
       and g = merge g n1 n2 in
       List.length @@ not_simplifiable_neighbors g n1 neighbors
     in
@@ -153,15 +158,11 @@ struct
 
   and merge g n1 n2 =
     let g = Graph.merge g n1 n2 in
-    (**
-
-        Let us write n the node for n1 and n2 in the new graph.
-        If a node n' is both in preference and in conflict with n,
-        then we remove the preference relation to keep only the
-        conflicts. Otherwise, it would contradict the initial
-        constraint.
-
-    *)
+    (* Let us write n the node for n1 and n2 in the new graph.  If
+       a node n' is both in preference and in conflict with n, then we
+       remove the preference relation to keep only the
+       conflicts. Otherwise, it would contradict the initial
+       constraint.  *)
     let i = Graph.neighbours' g [EdgeLabel.preference; EdgeLabel.conflict] n1 in
     List.fold_left (fun g ns ->
       Graph.del_edge g n1 EdgeLabel.preference (List.hd ns)
@@ -172,11 +173,10 @@ struct
 end
 
 let test () =
-  (** The test parameters
+  (* The test parameters
 
-      Customize them to test your implementation in an appropriate
-      way.
-  *)
+     Customize them to test your implementation in an appropriate
+     way. *)
   let show = true in
   let nb_test = 1 in
   let nb_color = 3 in
@@ -184,7 +184,7 @@ let test () =
   let freq_conflict = 0.2 and freq_preference = 0.3 in
   let random_seed = 33 in
 
-  (** We instantiate the functor on simple nodes, edges and colors. *)
+  (* We instantiate the functor on simple nodes, edges and colors. *)
   let module NodeLabel = struct
     type t = string
     let compare = compare
@@ -207,7 +207,7 @@ let test () =
   in
   let module GC = Make (EdgeLabel) (NodeLabel) (Colors) in GC.(
 
-    (** A function to generate a random graph. *)
+    (* A function to generate a random graph. *)
 
     Random.init random_seed;
     let random_graph () =
@@ -245,18 +245,18 @@ let test () =
     in
     let one_test () =
       let g = random_graph () in
-      (** Show the graph! *)
+      (* Show the graph! *)
       if show then Graph.show g (fun _ -> None);
-      (** Compute the coloring. *)
+      (* Compute the coloring. *)
       let coloring = colorize g in
-      (** Show the coloring! *)
+      (* Show the coloring! *)
       if show then show_coloring g coloring;
-      (** Check the coloring! *)
+      (* Check the coloring! *)
       try
         check_coloring g coloring
       with _ -> show_coloring g coloring; exit 1
     in
-    for i = 0 to nb_test - 1 do
+    for _ = 0 to nb_test - 1 do
       one_test ()
     done
   )

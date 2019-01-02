@@ -21,40 +21,40 @@ type rvalue = [ lvalue | `Immediate of literal ]
 type t = definition list
 
 and definition =
-  (** DValue (x, b) is a block [b] that defines a global variable [x]. *)
   | DValue     of identifier * block
+  (** DValue (x, b) is a block [b] that defines a global variable [x]. *)
+  | DFunction  of function_identifier * identifier list * block
   (** DFunction (f, xs, ys, b) is a function definition with formal
       parameters [xs], and block [b]. *)
-  | DFunction  of function_identifier * identifier list * block
   | DExternalFunction of function_identifier
 
 and block =
-  (** a block consists in a list of local variables and a list of
-      instructions. *)
   identifier list * labelled_instruction list
+(** a block consists in a list of local variables and a list of
+    instructions. *)
 
 and labelled_instruction =
   label * instruction
 
 and instruction =
-  (** l ← call r (r1, ⋯, rN) *)
   | Call of lvalue * rvalue * rvalue list
-  (** tailcall r (r1, ⋯, rN) *)
+  (** l ← call r (r1, ⋯, rN) *)
   | TailCall of rvalue * rvalue list
-  (** ret r *)
+  (** tailcall r (r1, ⋯, rN) *)
   | Ret of rvalue
-  (** l ← op r1, ⋯, rN *)
+  (** ret r *)
   | Assign of lvalue * op * rvalue list
-  (** jump ℓ *)
+  (** l ← op r1, ⋯, rN *)
   | Jump of label
-  (** jumpif condition r1, r2 → ℓ1, ℓ2 *)
+  (** jump ℓ *)
   | ConditionalJump of condition * rvalue list * label * label
-  (** switch r -> l1, ..., lN orelse l. *)
+  (** jumpif condition r1, r2 → ℓ1, ℓ2 *)
   | Switch of rvalue * label array * label option
-  (** ;; comment *)
+  (** switch r -> l1, ..., lN orelse l. *)
   | Comment of string
-  (** exit *)
+  (** ;; comment *)
   | Exit
+  (** exit *)
 
 and op =
   | Load

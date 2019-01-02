@@ -11,16 +11,19 @@
 
 module type EdgeLabelSig = sig
   include Set.OrderedType
-  (** [all] enumerates all the possible edge labels. *)
+
   val all : t list
-  (** [to_string e] converts [e] in a human readable value. *)
+  (** [all] enumerates all the possible edge labels. *)
+
   val to_string : t -> string
+  (** [to_string e] converts [e] in a human readable value. *)
 end
 
 module type NodeLabelSig = sig
   include Set.OrderedType
-  (** [to_string n] converts [n] in a human readable value. *)
+
   val to_string : t -> string
+  (** [to_string n] converts [n] in a human readable value. *)
 end
 
 module Make (EdgeLabel : EdgeLabelSig) (NodeLabel : NodeLabelSig) : sig

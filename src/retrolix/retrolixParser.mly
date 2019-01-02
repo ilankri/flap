@@ -1,17 +1,11 @@
-%{
-
-open RetrolixAST
-
-%}
-
 %token SEMICOLON COLON COMMA EOF DEF EXTERNAL CODE END LPAREN RPAREN
 %token LOCAL CALL RET LARROW RARROW EXIT UPPERSAND
 %token JUMP JUMPIF GT LT GTE LTE EQ
 %token ADD MUL DIV SUB LOAD
 %token<Int32.t> INT
 %token<string> ID RID COMMENT
-%type<lvalue> lvalue
-%type<rvalue> rvalue
+%type<RetrolixAST.lvalue> lvalue
+%type<RetrolixAST.rvalue> rvalue
 %start<RetrolixAST.t> program
 
 %%
@@ -26,18 +20,18 @@ program: ds=definition* EOF
  }
 
 definition: CODE LPAREN x=identifier RPAREN b=block END {
-  DValue (x, b)
+  RetrolixAST.DValue (x, b)
 }
 | DEF f=function_identifier
   LPAREN xs=separated_list(COMMA, identifier) RPAREN
   b=block
   END
 {
-  DFunction (f, xs, b)
+  RetrolixAST.DFunction (f, xs, b)
 }
 | EXTERNAL f=function_identifier
 {
-  DExternalFunction f
+  RetrolixAST.DExternalFunction f
 }
 
 locals: LOCAL xs=separated_nonempty_list(COMMA, identifier)
@@ -55,7 +49,7 @@ block: xs=locals COLON ls=labelled_instruction*
 }
 
 identifier: x=ID {
-  Id x
+  RetrolixAST.Id x
 }
 
 labelled_instruction: l=label COLON i=instruction SEMICOLON {
@@ -63,7 +57,7 @@ labelled_instruction: l=label COLON i=instruction SEMICOLON {
 }
 
 label: l=ID {
-  Label l
+  RetrolixAST.Label l
 }
 
 instruction:
@@ -71,54 +65,54 @@ instruction:
   LARROW CALL f=rvalue
   LPAREN xs=separated_list(COMMA, rvalue) RPAREN
 {
-  Call (l, f, xs)
+  RetrolixAST.Call (l, f, xs)
 }
 | l=lvalue
   LARROW f=function_identifier
   LPAREN xs=separated_list(COMMA, rvalue) RPAREN
 {
-  Call (l, `Immediate (LFun f), xs)
+  RetrolixAST.Call (l, `Immediate (RetrolixAST.LFun f), xs)
 }
 | RET r=rvalue
 {
-  Ret r
+  RetrolixAST.Ret r
 }
 | l=lvalue LARROW o=op xs=separated_list(COMMA, rvalue)
 {
-  Assign (l, o, xs)
+  RetrolixAST.Assign (l, o, xs)
 }
 | JUMP l=label
 {
-  Jump l
+  RetrolixAST.Jump l
 }
 | JUMPIF c=condition xs=separated_list(COMMA, rvalue)
   RARROW l1=label COMMA l2=label
 {
-  ConditionalJump (c, xs, l1, l2)
+  RetrolixAST.ConditionalJump (c, xs, l1, l2)
 }
 | c=COMMENT
 {
-  Comment c
+  RetrolixAST.Comment c
 }
 | EXIT
 {
-  Exit
+  RetrolixAST.Exit
 }
 
 condition:
-  GT  { GT }
-| LT  { LT }
-| GTE { GTE }
-| LTE { LTE }
-| EQ  { EQ }
+  GT  { RetrolixAST.GT }
+| LT  { RetrolixAST.LT }
+| GTE { RetrolixAST.GTE }
+| LTE { RetrolixAST.LTE }
+| EQ  { RetrolixAST.EQ }
 
 op:
-  ADD { Add }
-| MUL { Mul }
-| DIV { Div }
-| SUB { Sub }
-| LOAD { Load }
-| c=condition { Bool c }
+  ADD { RetrolixAST.Add }
+| MUL { RetrolixAST.Mul }
+| DIV { RetrolixAST.Div }
+| SUB { RetrolixAST.Sub }
+| LOAD { RetrolixAST.Load }
+| c = condition { RetrolixAST.Bool c }
 
 lvalue:
  v=identifier
@@ -132,13 +126,13 @@ lvalue:
 
 register: r=RID
 {
-  RId r
+  RetrolixAST.RId r
 }
 
 rvalue:
   l=lvalue
 {
-  (l :> rvalue)
+  (l :> RetrolixAST.rvalue)
 }
 | l=literal
 {
@@ -147,11 +141,11 @@ rvalue:
 
 literal: x=INT
 {
-  LInt x
+  RetrolixAST.LInt x
 }
 | UPPERSAND x=function_identifier
 {
-  LFun x
+  RetrolixAST.LFun x
 }
 
 %inline located(X): x=X {
@@ -160,5 +154,5 @@ literal: x=INT
 
 function_identifier: x=ID
 {
-  FId x
+  RetrolixAST.FId x
 }

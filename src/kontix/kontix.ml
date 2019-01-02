@@ -32,5 +32,5 @@ let evaluate r ast = FopixInterpreter.evaluate r (KontixToFopix.program ast)
 (* No typechecking for Kontix *)
 type typing_environment = unit
 let initial_typing_environment () = ()
-let typecheck () ast = ()
+let typecheck () _ = ()
 let print_typing_environment () = ""

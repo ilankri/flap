@@ -58,13 +58,11 @@ let href ty = ATyCon (tcref, [ty])
 exception NotAReference
 
 let type_of_reference_type = function
-  (**
-      | Pattern(p) when conditionP -> return
+  (* | Pattern(p) when conditionP -> return
 
      equals to
 
-      | Pattern(p) -> (match p with | Condition -> return )
-  *)
+     | Pattern(p) -> (match p with | Condition -> return ) *)
   | ATyCon (t, [ty]) when t = tcref ->
       ty
   | _ ->
@@ -269,7 +267,7 @@ let unify_types ty1 ty2 =
   );
   phi
 
-let guess_instantiation (Scheme (ts1, ty1)) ts2 ty2 =
+let guess_instantiation (Scheme (_ts1, _ty1)) _ts2 _ty2 =
   ExtStd.failwith_todo __LOC__
 
 type typing_environment = {
@@ -283,7 +281,7 @@ and type_information = {
   data_constructors : constructor list
 }
 
-let is_type_variable_defined pos env tv =
+let is_type_variable_defined env tv =
   List.mem tv env.type_variables
 
 let lookup_type_info_of_ty_cons pos tc env =
@@ -303,7 +301,7 @@ let check_ty_cons_data_cons pos data_constructors =
 
 let rec check_well_formed_type pos env = function
   | ATyVar tv ->
-      if not (is_type_variable_defined pos env tv) then
+      if not (is_type_variable_defined env tv) then
         raise_type_error (UnboundTyVar (pos, tv))
   | ATyCon (tc, ts) ->
       let tc_info = lookup_type_info_of_ty_cons pos tc env in

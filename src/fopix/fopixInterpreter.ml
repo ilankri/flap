@@ -1,4 +1,3 @@
-open Position
 open Error
 open FopixAST
 

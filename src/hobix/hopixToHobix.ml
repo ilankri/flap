@@ -122,11 +122,10 @@ let conj e1 e2 =
   HobixAST.(Apply (Variable (Id "`&&"), [ e1; e2 ]))
 
 (** [conjs [e1; ..; eN]] is the boolean expression [e1 && .. && eN]. *)
-let rec conjs = HobixAST.(function
+let rec conjs = function
   | [] -> htrue
   | [c] -> c
   | c :: cs -> conj c (conjs cs)
-)
 
 let int32_literal i = HobixAST.(Literal (LInt i))
 
@@ -260,7 +259,7 @@ and expression env = HobixAST.(function
       DefineRec (List.map (function_definition env) recs,
                  located (expression env) e)
 
-  | HopixAST.TypeAnnotation (e, ty) ->
+  | HopixAST.TypeAnnotation (e, _) ->
       located (expression env) e
 
   | HopixAST.If (conditions, final) ->
@@ -350,7 +349,7 @@ and pattern env scrutinee = HobixAST.(function
       let l = literal' l in
       (is_equal l scrutinee (Literal l), [])
 
-  | HopixAST.POr ps -> assert false
+  | HopixAST.POr _ -> assert false
 
   | HopixAST.PAnd ps ->
       let conds, defs = List.split (List.map (pattern' env scrutinee) ps) in

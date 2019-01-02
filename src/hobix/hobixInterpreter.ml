@@ -1,4 +1,3 @@
-open Position
 open Error
 open HobixAST
 
@@ -281,12 +280,12 @@ and expression environment memory = function
   | Apply (a, b) ->
       let vbs () = expressions environment memory b in
       begin match expression environment memory a with
-      | VPrimitive ("`||", f) ->
+      | VPrimitive ("`||", _) ->
           begin match expression environment memory (List.nth b 0) with
           | VBool true -> VBool true
           | _ -> expression environment memory (List.nth b 1)
           end
-      | VPrimitive ("`&&", f) ->
+      | VPrimitive ("`&&", _) ->
           begin match expression environment memory (List.nth b 0) with
           | VBool false -> VBool false
           | _ -> expression environment memory (List.nth b 1)
@@ -420,5 +419,5 @@ and extract_observable runtime runtime' =
       runtime'.memory
   }
 
-let print_observable runtime observation =
+let print_observable _ observation =
   Environment.print observation.new_memory observation.new_environment

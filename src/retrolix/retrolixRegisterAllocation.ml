@@ -40,10 +40,6 @@ module LSet = Set.Make (struct
     let compare = compare
   end)
 
-(**
- * For each IN and OUT, we have a Map in structure :
-   LabelOrd -> LSet
- * *)
 type liveness_analysis_result =
   {
     (* live_def and live_use are here for quick reference only for calculation.
@@ -218,23 +214,34 @@ and calc_in l res =
 
 *)
 let liveness_analysis p : liveness_analysis_result =
-  List.fold_left definition empty_results p
+  let {live_in; live_out} = List.fold_left definition empty_results p in
+  let globals = globals p in
+  let exclude_globals lmap =
+    LabelMap.map (fun l ->
+      LSet.filter (function
+        | `Register _ -> true
+        | `Variable id -> not @@ IdSet.mem id globals
+      ) l
+    ) lmap
+  in
+  {live_in = exclude_globals live_in; live_out = exclude_globals live_out}
 
-(** Interference graph. *)
-(** In the interference graph, there will be two kinds of edges: *)
+(* Interference graph. *)
+
+(* In the interference graph, there will be two kinds of edges: *)
 type relation =
-  (** If two variables cannot be represented in the same register
+  (* If two variables cannot be represented in the same register
       because their liveness ranges intersect, we say that they are in
       a conflict relation. *)
   | Conflict
 
-  (** If two variables are related by a MOVE instruction, we will try
+  (* If two variables are related by a MOVE instruction, we will try
       to put them in the same register, we say that they are in
       a preference relation. *)
   | Preference
 
-(** The node of the interference graph are lvalues and its edges are
-    labelled by [relation]. *)
+(* The node of the interference graph are lvalues and its edges are
+   labelled by [relation]. *)
 module IGraphColoring = GraphColoring.Make
     (struct
       type t = relation

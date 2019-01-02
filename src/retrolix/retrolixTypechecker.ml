@@ -4,4 +4,4 @@ let initial_typing_environment () = ()
 
 let print_typing_environment () = ""
 
-let typecheck () ast = ()
+let typecheck () _ = ()

@@ -13,7 +13,7 @@ type observable = int
 
 let initial_runtime () = ()
 
-let show_runtime runtime = ()
+let show_runtime = ()
 
 (** -------------------------- *)
 (** {1 Instruction execution } *)
@@ -28,5 +28,5 @@ let evaluate runtime (ast : t) =
   let status = Sys.command (Printf.sprintf "spim -file %s" fname) in
   (runtime, status)
 
-let print_observable (runtime : runtime) (obs : observable) =
+let print_observable _ (obs : observable) =
   "spim exited with status " ^ string_of_int obs

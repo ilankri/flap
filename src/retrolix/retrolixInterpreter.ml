@@ -150,8 +150,7 @@ let evaluate runtime0 (ast : t) =
         { runtime with functions =
                          FIdMap.add f { formals; body } runtime.functions
         }
-    | DExternalFunction f ->
-        runtime
+    | DExternalFunction _ -> runtime
   in
   let rec program runtime ds =
     let runtime = List.fold_left extract_function_definition runtime ds in
@@ -165,10 +164,7 @@ let evaluate runtime0 (ast : t) =
         | Some v ->
             { runtime with gvariables = IdMap.add x v runtime.gvariables }
         end
-    | DFunction (f, xs, b) ->
-        runtime
-    | DExternalFunction f ->
-        runtime
+    | DFunction _ | DExternalFunction _ -> runtime
   and block runtime b =
     let jump_table = Hashtbl.create 13 in
     let rec make = function
@@ -217,7 +213,7 @@ let evaluate runtime0 (ast : t) =
     | Ret r ->
         { runtime with return = Some (rvalue runtime r) }
     | Assign (x, o, rs) ->
-        assign runtime x (op runtime o (List.map (rvalue runtime) rs))
+        assign runtime x (op o (List.map (rvalue runtime) rs))
         |> continue
     | Jump l ->
         jump l runtime
@@ -264,7 +260,7 @@ let evaluate runtime0 (ast : t) =
         )
     | `Immediate l ->
         literal l
-  and op runtime o vs =
+  and op o vs =
     match o, vs with
     | Load, [ v ] -> v
     | Add, [ DInt x; DInt y ] ->

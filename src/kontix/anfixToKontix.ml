@@ -38,7 +38,7 @@ let rec free_variables : S.expression -> VarSet.t = function
         free_simple_variables c, free_variables e1, free_variables e2 in
       VarSet.union freeV_c (VarSet.union freeV_e1 freeV_e2)
 
-  | S.BinOp (binop,e1,e2) ->
+  | S.BinOp (_, e1, e2) ->
       let freeVar_e1, freeVar_e2  =
         free_simple_variables e1, free_simple_variables e2 in
       VarSet.union freeVar_e1 freeVar_e2
@@ -60,16 +60,16 @@ let rec free_variables : S.expression -> VarSet.t = function
         free_simple_variables f, List.map free_simple_variables args in
       VarSet.union freeV_f (List.fold_left VarSet.union VarSet.empty freeV_args)
 
-  | S.Print s -> VarSet.empty
+  | S.Print _ -> VarSet.empty
 
 let translate_simplexpr : S.simplexpr -> T.basicexpr = function
   | S.Num i -> T.Num i
   | S.FunName f -> T.FunName f
   | S.Var v -> T.Var v
 
-let rec as_basicexpr : S.expression -> T.basicexpr option = function
+let as_basicexpr : S.expression -> T.basicexpr option = function
   | S.Simple e -> Some(translate_simplexpr e)
-  | S.Let (id,e1,e2) -> None
+  | S.Let _ -> None
   | S.IfThenElse _ -> None
   | S.BinOp (binop,e1,e2) ->
       let e1' = translate_simplexpr e1 in
