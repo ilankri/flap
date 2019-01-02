@@ -473,53 +473,53 @@ let translate (p : S.t) (env : environment) : T.t * environment =
 
 (** Remarks:
     - When using this compiler from fopix to javix, flap will
-    produce some .j files.
-    {ol
-    {- Compile them to .class via: jasmin Foobar.j}
-    {- Run them with: java -noverify Foobar}
-    }
+      produce some .j files.
+      {ol
+      {- Compile them to .class via: jasmin Foobar.j}
+      {- Run them with: java -noverify Foobar}
+      }
 
     - Final answer:
-    your code should contain a final [Ireturn] that should
-    return the value of the last DefVal (supposed to be
-    an Integer).
+      your code should contain a final [Ireturn] that should
+      return the value of the last DefVal (supposed to be
+      an Integer).
 
     - Function Call Convention:
-    {ol
-    {- When a function starts, the stack should contain the
+      {ol
+      {- When a function starts, the stack should contain the
       return address (a label encoded as a number, see Labels.encode)
       then the n arguments of the function.}
-    {- The function could freely use an modify any variable. So at least
+      {- The function could freely use an modify any variable. So at least
       the variables that are reused after this call should have
       their contents saved in stack before the call and restored
       afterwards.}
-    {- The function starts by moving its arguments from the stack to
+      {- The function starts by moving its arguments from the stack to
       some variables.}
-    {- When the function returns, the result should be on the top
+      {- When the function returns, the result should be on the top
       of the stack.}
-    }
+      }
 
     - Boxing:
-    The stack could contain both unboxed elements (Java int)
-    or boxed elements (Java objects such as Integer or java arrays).
-    We place into variables or in array cells only boxed values.
-    The arithmetical operations (iadd, if_icmpeq, ...) only works
-    on unboxed numbers.
-    Conversion between int and Integer is possible via the
-    Box and Unboxed pseudo-instructions (translated into correct
-    calls to some ad-hoc methods we provide). You may try to
-    do some obvious optimisations such as removing [Box;Unbox] or
-    [Unbox;Box].
+      The stack could contain both unboxed elements (Java int)
+      or boxed elements (Java objects such as Integer or java arrays).
+      We place into variables or in array cells only boxed values.
+      The arithmetical operations (iadd, if_icmpeq, ...) only works
+      on unboxed numbers.
+      Conversion between int and Integer is possible via the
+      Box and Unboxed pseudo-instructions (translated into correct
+      calls to some ad-hoc methods we provide). You may try to
+      do some obvious optimisations such as removing [Box;Unbox] or
+      [Unbox;Box].
 
     - Tail-recursive calls : if the body of f ends with a call to
-    another function g (which may be f itself in case of recursion),
-    no need to save any variables, nor to push a new return address:
-    just reuse the return address of the current call to f when
-    jumping to g !
+      another function g (which may be f itself in case of recursion),
+      no need to save any variables, nor to push a new return address:
+      just reuse the return address of the current call to f when
+      jumping to g !
 
     - Variable size and stack size
-    Your code should determine the number of variables used by the
-    produced code. You might also try to compute the maximum
-    stack size when the code is non-recursive or 100% tail-recursive.
+      Your code should determine the number of variables used by the
+      produced code. You might also try to compute the maximum
+      stack size when the code is non-recursive or 100% tail-recursive.
 
 *)
