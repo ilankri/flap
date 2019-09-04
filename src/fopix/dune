@@ -1,0 +1,5 @@
+(ocamllex fopixLexer)
+
+(menhir
+ (modules fopixParser)
+ (flags --explain --strict))

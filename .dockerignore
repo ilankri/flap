@@ -1,10 +1,9 @@
 **/_build/
-**/*.byte
-**/*.native
+**/*.bc
+**/*.exe
+.merlin
 
 /*.log
 /flap
-/flap.docdir
-/myocamlbuild_config.ml
 **/debian_wheezy_mips_standard.qcow2
 **/vmlinux-3.2.0-4-4kc-malta

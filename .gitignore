@@ -1,8 +1,7 @@
 _build/
-*.byte
-*.native
+*.bc
+*.exe
+.merlin
 
 /*.log
 /flap
-/flap.docdir
-/myocamlbuild_config.ml

@@ -1,6 +1,6 @@
 # -*- Makefile -*-
-BTARGET	 = $(TARGET).byte
-OTARGET	 = $(TARGET).native
+BTARGET	 = $(TARGET).bc
+OTARGET	 = $(TARGET).exe
 BLTARGET = $(TARGET).cma
 BNTARGET = $(TARGET).cmxa
 STARGET	 = $(OTARGET)
@@ -9,33 +9,8 @@ STARGET	 = $(OTARGET)
 ## Tools configuration ##
 #########################
 
-# The flag STRICT asks Menhir to turn warnings into errors.
-ifeq ($(STRICT), yes)
-  MENHIR_STRICT = -yaccflag --strict
-endif
+DUNE = dune
 
-# Menhir can be told to produce a parser that explains what
-# it is doing.
-ifeq ($(DEBUGPARSING), yes)
-  MENHIROPT=-yaccflag --explain -yaccflag --trace $(MENHIR_STRICT)
-else
-  MENHIROPT=-yaccflag --explain $(MENHIR_STRICT)
-endif
-
-OCAMLBUILDFLAGS_COMMON = -cflag "-annot" -cflag "-bin-annot" $(MENHIROPT)
-
-# In Emacs, use classic display to enable error jumping.
-TERM = $(shell echo $$TERM)
-ifeq ($(TERM), dumb)
- OCAMLBUILDFLAGS = $(OCAMLBUILDFLAGS_COMMON) -tag debug -classic-display
-else
- OCAMLBUILDFLAGS = $(OCAMLBUILDFLAGS_COMMON)
-endif
-
-OCAMLBUILD = ocamlbuild -use-ocamlfind -use-menhir $(OCAMLBUILDFLAGS)	\
-		-docflag "-charset" -docflag "utf-8"
-
-OCAMLDOC = ocamldoc
 HEADACHE = headache
 
 # Macros to run tests locally.
@@ -51,8 +26,8 @@ TESTS = hopix fopix
 # Rules #
 #########
 
-.PHONY: configure all-generic byte opt doc clean install uninstall	\
-	headers clear byte-debug all-debug check $(TESTS) install-tests
+.PHONY: configure all-generic byte opt clean install uninstall headers	\
+	clear byte-debug all-debug check $(TESTS) install-tests
 
 all-generic: configure clear $(STARGET) $(TARGET)
 
@@ -63,16 +38,16 @@ clear:
 	rm -f $(STARGET)
 
 opt: $(OTARGET)
-	@ $(OCAMLBUILD) src/$<
+	@ $(DUNE) build src/$<
 
 byte: $(BTARGET)
-	@ $(OCAMLBUILD) src/$<
+	@ $(DUNE) build src/$<
 
 %:
-	@ $(OCAMLBUILD) src/$@
+	@ $(DUNE) build src/$@
+	ln -s _build/default/src/$@ $@
 
-byte-debug:
-	$(OCAMLBUILD) -tag debug src/$(BTARGET)
+byte-debug: byte
 	rm -f $(STARGET)
 	ln -s $(BTARGET) $(STARGET)
 
@@ -123,9 +98,6 @@ headers:
 	done
 
 clean:
-	@ $(OCAMLBUILD) -clean
+	@ $(DUNE) clean
 	find . -name '*~' -exec rm '{}' \;
-	rm -fr *~ $(TARGET) $(TARGET).docdir/
-
-doc: byte
-	$(OCAMLBUILD) $(TARGET).docdir/index.html
+	rm -fr *~ $(TARGET) $(BTARGET) $(OTARGET)

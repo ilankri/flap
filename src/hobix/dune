@@ -1,0 +1,5 @@
+(ocamllex hobixLexer)
+
+(menhir
+ (modules hobixParser)
+ (flags --explain --strict))

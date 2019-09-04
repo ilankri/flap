@@ -1,0 +1,5 @@
+(ocamllex javixLexer)
+
+(menhir
+ (modules javixParser)
+ (flags --explain --strict))

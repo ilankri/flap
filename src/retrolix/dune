@@ -1,0 +1,5 @@
+(ocamllex retrolixLexer)
+
+(menhir
+ (modules retrolixParser)
+ (flags --explain --strict))
