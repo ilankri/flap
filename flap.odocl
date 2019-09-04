@@ -71,8 +71,6 @@ MipsArch
 MipsAST
 MipsInitialization
 MipsInterpreter
-MipsLexer
-MipsParser
 MipsPrettyPrinter
 MipsTypechecker
 Option

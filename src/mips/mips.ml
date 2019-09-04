@@ -8,10 +8,11 @@ let name =
 type ast = MipsAST.t
 
 let parse lexer_init input =
+  let fail_no_mips what = failwith @@ Format.sprintf "No %s for MIPS" what in
   SyntacticAnalysis.process
     ~lexer_init
-    ~lexer_fun:MipsLexer.token
-    ~parser_fun:MipsParser.program
+    ~lexer_fun:(fun _ -> fail_no_mips "lexer")
+    ~parser_fun:(fun _ _ -> fail_no_mips "parser")
     ~input
 
 let parse_filename filename =
