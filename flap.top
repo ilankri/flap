@@ -7,18 +7,7 @@
 *)
 
 #use "topfind";;
-#directory "_build/src";;
-#directory "_build/src/common";;
-#directory "_build/src/utilities";;
-#directory "_build/src/hopix";;
-#directory "_build/src/hobix";;
-#directory "_build/src/fopix";;
-#directory "_build/src/retrolix";;
-#directory "_build/src/mips";;
-#directory "_build/src/javix";;
-#directory "_build/src/anfix";;
-#directory "_build/src/kontix";;
-#directory "_build/src/jakix";;
+#directory "_build/default/src/.flap.eobjs/byte";;
 #load "str.cma";;
 #load "unix.cma";;
 #require "pprint";;
