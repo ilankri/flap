@@ -9,6 +9,8 @@ STARGET	 = $(OTARGET)
 ## Tools configuration ##
 #########################
 
+OPAM = opam
+
 DUNE = dune
 
 HEADACHE = headache
@@ -27,9 +29,13 @@ TESTS = hopix fopix
 #########
 
 .PHONY: configure all-generic byte opt clean install uninstall headers	\
-	clear byte-debug all-debug check $(TESTS) install-tests
+	clear byte-debug all-debug check $(TESTS) install-tests dependencies
 
 all-generic: configure clear $(STARGET) $(TARGET)
+
+dependencies:
+	$(OPAM) update -y
+	$(OPAM) pin add -k path -y flap .
 
 $(TARGET):
 	ln -s $(STARGET) $(TARGET)
