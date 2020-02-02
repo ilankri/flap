@@ -1,36 +1,9 @@
-(** The kontix programming language :
-    similar to fopix, but with tail calls only *)
+module ToFopix = ToFopix
 
-module AST = KontixAST
+include Language
 
-type ast = KontixAST.t
-
-let name = "kontix"
-
-let parse lexer_init input =
-  SyntacticAnalysis.process
-    ~lexer_init
-    ~lexer_fun:KontixLexer.token
-    ~parser_fun:KontixParser.program
-    ~input
-
-let parse_filename filename =
-  parse Lexing.from_channel (open_in filename)
-
-let extension =
-  ".kontix"
-
-let parse_string = parse Lexing.from_string
-
-let print_ast ast =
-  KontixPrettyPrinter.(to_string program ast)
-
-(* For the moment, the interpretor is the one of Fopix *)
-include FopixInterpreter
-let evaluate r ast = FopixInterpreter.evaluate r (KontixToFopix.program ast)
-
-(* No typechecking for Kontix *)
-type typing_environment = unit
-let initial_typing_environment () = ()
-let typecheck () _ = ()
-let print_typing_environment () = ""
+let initialize () =
+  Common.Languages.register (module Language);
+  Common.Compilers.register
+    (module Common.Compilers.Identity (Language) : Common.Compilers.Compiler);
+  Common.Compilers.register (module FromAnfix : Common.Compilers.Compiler)

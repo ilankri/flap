@@ -42,7 +42,7 @@ struct
 
   (** A type for maps whose keys are integers. *)
   module IntMap = Map.Make (struct type t = int let compare = compare end)
-  let int_map_update k m d f = ExtStd.update IntMap.find IntMap.add k m d f
+  let int_map_update k m d f = Util.ExtStd.update IntMap.find IntMap.add k m d f
 
   (** A type for maps whose keys are edge labels. *)
   module EdgeLabelMap = Map.Make (EdgeLabel)
@@ -57,7 +57,7 @@ struct
   (** A type for maps whose keys are node identifiers. *)
   module NodeIdMap = Map.Make (IdCmp)
   let nodeid_map_update k m d f =
-    ExtStd.update NodeIdMap.find NodeIdMap.add k m d f
+    Util.ExtStd.update NodeIdMap.find NodeIdMap.add k m d f
 
   (** A type for sets of node identifiers. *)
   module NodeIdSet = Set.Make (IdCmp)
@@ -327,7 +327,7 @@ struct
     ) edges
     in
     let edges = List.sort compare edges in
-    ExtStd.List.uniq edges
+    Util.ExtStd.List.uniq edges
 
   let min_degree g c nc =
     let cdegrees = EdgeLabelMap.find c g.degrees in

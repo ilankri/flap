@@ -1,0 +1,3 @@
+(library
+ (libraries util str unix)
+ (name arch))

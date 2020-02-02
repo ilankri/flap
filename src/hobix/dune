@@ -1,5 +1,9 @@
-(ocamllex hobixLexer)
+(ocamllex lexer)
 
 (menhir
- (modules hobixParser)
+ (modules parser)
  (flags --explain --strict))
+
+(library
+ (libraries hopix)
+ (name hobix))

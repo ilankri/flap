@@ -1,29 +1,9 @@
-(** The fopix programming language. *)
+module PrettyPrinter = PrettyPrinter
+module Interpreter = Interpreter
 
-module AST = FopixAST
+include Language
 
-let name = "fopix"
-
-type ast = FopixAST.t
-
-let parse lexer_init input =
-  SyntacticAnalysis.process
-    ~lexer_init
-    ~lexer_fun:FopixLexer.token
-    ~parser_fun:FopixParser.program
-    ~input
-
-let parse_filename filename =
-  parse Lexing.from_channel (open_in filename)
-
-let extension =
-  ".fopix"
-
-let parse_string =
-  parse Lexing.from_string
-
-let print_ast ast =
-  FopixPrettyPrinter.(to_string program ast)
-
-include FopixInterpreter
-include FopixTypechecker
+let initialize () =
+  Common.Languages.register (module Language);
+  Common.Compilers.register (module Common.Compilers.Identity (Language));
+  Common.Compilers.register (module FromHobix)

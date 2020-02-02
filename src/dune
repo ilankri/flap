@@ -1,7 +1,5 @@
 (env (_ (flags (:standard -w +a-4-9-41-42-44-45-48))))
 
-(include_subdirs unqualified)
-
 (executable
- (libraries pprint str unix)
+ (libraries mips jakix)
  (name flap))

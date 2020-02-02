@@ -1,5 +1,9 @@
-(ocamllex fopixLexer)
+(ocamllex lexer)
 
 (menhir
- (modules fopixParser)
+ (modules parser)
  (flags --explain --strict))
+
+(library
+ (libraries hobix options)
+ (name fopix))

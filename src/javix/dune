@@ -1,5 +1,9 @@
-(ocamllex javixLexer)
+(ocamllex lexer)
 
 (menhir
- (modules javixParser)
+ (modules parser)
  (flags --explain --strict))
+
+(library
+ (libraries fopix)
+ (name javix))

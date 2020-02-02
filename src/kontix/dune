@@ -1,5 +1,9 @@
-(ocamllex kontixLexer)
+(ocamllex lexer)
 
 (menhir
- (modules kontixParser)
+ (modules parser)
  (flags --explain --strict))
+
+(library
+ (libraries anfix)
+ (name kontix))

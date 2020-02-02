@@ -115,7 +115,7 @@ struct
     let coloring = colorize @@ Graph.del_node g n in
     let remaining_colors =
       let neighbor_colors =
-        ExtStd.List.filter_map (function
+        Util.ExtStd.List.filter_map (function
           | [] -> assert false
           | n :: _ -> color_of_node coloring n
         ) (Graph.neighbours g EdgeLabel.conflict n)
@@ -200,7 +200,7 @@ let test () =
   end in
   let module Colors = struct
     type t = int
-    let all = ExtStd.List.range 0 (nb_color - 1)
+    let all = Util.ExtStd.List.range 0 (nb_color - 1)
     let cardinal = nb_color
     let to_string = string_of_int
   end
@@ -211,11 +211,11 @@ let test () =
 
     Random.init random_seed;
     let random_graph () =
-      let nb_nodes = ExtStd.Random.int_in_range min_nodes max_nodes in
+      let nb_nodes = Util.ExtStd.Random.int_in_range min_nodes max_nodes in
       let ns =
         List.map
           (fun i -> "n" ^ string_of_int i)
-          (ExtStd.List.range 0 (nb_nodes - 1))
+          (Util.ExtStd.List.range 0 (nb_nodes - 1))
       in
       let g =
         List.fold_left (fun g n -> Graph.add_node g [n]) Graph.empty ns
@@ -239,7 +239,7 @@ let test () =
     let show_coloring g coloring =
       Graph.show g (fun n ->
         try
-          Option.map Colors.to_string (color_of_node coloring n)
+          Util.Option.map Colors.to_string (color_of_node coloring n)
         with Not_found -> Some "!"
       )
     in

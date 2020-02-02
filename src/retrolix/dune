@@ -1,5 +1,9 @@
-(ocamllex retrolixLexer)
+(ocamllex lexer)
 
 (menhir
- (modules retrolixParser)
+ (modules parser)
  (flags --explain --strict))
+
+(library
+ (libraries arch fopix)
+ (name retrolix))

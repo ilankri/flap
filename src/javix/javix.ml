@@ -1,33 +1,15 @@
-(** The javix programming language. *)
+module Lexer = Lexer
+module Parser = Parser
+module PrettyPrinter = PrettyPrinter
+module Interpreter = Interpreter
+module Typechecker = Typechecker
+module FromFopix = FromFopix
 
-module AST = JavixAST
+include Language
 
-type ast =
-  JavixAST.t
-
-let name = "javix"
-
-let parse lexer_init input =
-  SyntacticAnalysis.process
-    ~lexer_init
-    ~lexer_fun:JavixLexer.token
-    ~parser_fun:JavixParser.program
-    ~input
-
-let parse_filename filename =
-  parse Lexing.from_channel (open_in filename)
-
-let extension =
-  ".j"
-
-let parse_string =
-  parse Lexing.from_string
-
-let print_ast ast =
-  let ast' =
-    { ast with AST.classname = !Options.compilation_unit_name }
-  in
-  JavixPrettyPrinter.(to_string program ast')
-
-include JavixInterpreter
-include JavixTypechecker
+(** Register some compilers that have Javix as a target or source language. *)
+let initialize () =
+  Common.Languages.register (module Language);
+  Common.Compilers.register
+    (module Common.Compilers.Identity (Language) : Common.Compilers.Compiler);
+  Common.Compilers.register (module FromFopix : Common.Compilers.Compiler)

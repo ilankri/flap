@@ -21,25 +21,25 @@ let rec initialize () =
   initialize_prompt ();
 
 and initialize_prompt () =
-  UserInput.set_prompt "flap> "
+  Util.UserInput.set_prompt "flap> "
 
 and initialize_options () =
-  CommandLineOptions.parse ()
+  Options.CommandLine.parse ()
 
 and initialize_languages () =
-  HopixInitialization.initialize ();
-  HobixInitialization.initialize ();
-  FopixInitialization.initialize ();
-  RetrolixInitialization.initialize ();
-  MipsInitialization.initialize ();
-  JavixInitialization.initialize ();
-  AnfixInitialization.initialize ();
-  KontixInitialization.initialize ();
-  JakixInitialization.initialize ()
+  Hopix.initialize ();
+  Hobix.initialize ();
+  Fopix.initialize ();
+  Retrolix.initialize ();
+  Mips.initialize ();
+  Javix.initialize ();
+  Anfix.initialize ();
+  Kontix.initialize ();
+  Jakix.initialize ()
 
 (** Given the source language and the target language returns
     the right compiler (as a first-class module). *)
-let get_compiler () : (module Compilers.Compiler) =
+let get_compiler () : (module Common.Compilers.Compiler) =
   let source_language =
     get_source_language ()
   in
@@ -49,9 +49,11 @@ let get_compiler () : (module Compilers.Compiler) =
     else
       source_language
   in
-  let using = List.map Languages.get (Options.get_using ()) in
-  Compilers.get
-    ~using (Languages.get source_language) (Languages.get target_language)
+  let using = List.map Common.Languages.get (Options.get_using ()) in
+  Common.Compilers.get
+    ~using
+    (Common.Languages.get source_language)
+    (Common.Languages.get target_language)
 
 (** The evaluation function evaluates some code and prints the results
     into the standard output. It also benchmarks the time taken to
@@ -78,20 +80,20 @@ let interactive_loop () =
 
   Printf.printf "        Flap version %s\n\n%!" Version.number;
 
-  let module Compiler = (val get_compiler () : Compilers.Compiler) in
+  let module Compiler = (val get_compiler () : Common.Compilers.Compiler) in
   let open Compiler in
 
   let read () =
     initialize_prompt ();
     let b = Buffer.create 13 in
     let rec read prev =
-      let c = UserInput.input_char stdin in
+      let c = Util.UserInput.input_char stdin in
       if c = "\n" then
         if prev <> "\\" then (
           Buffer.add_string b prev;
           Buffer.contents b
         ) else (
-          UserInput.set_prompt "....> ";
+          Util.UserInput.set_prompt "....> ";
           read c
         )
       else (
@@ -134,8 +136,8 @@ let interactive_loop () =
             step runtime cenvironment tenvironment
       with
       | e when !Sys.interactive -> raise e (* display exception at toplevel *)
-      | Error.Error (positions, msg) ->
-          output_string stdout (Error.print_error positions msg);
+      | Util.Error.Error (positions, msg) ->
+          output_string stdout (Util.Error.print_error positions msg);
           step runtime cenvironment tenvironment
       | End_of_file ->
           (runtime, cenvironment, tenvironment)
@@ -144,7 +146,7 @@ let interactive_loop () =
           print_endline (Printexc.to_string e);
           step runtime cenvironment tenvironment
   in
-  Error.resume_on_error ();
+  Util.Error.resume_on_error ();
   ignore (step
             (Target.initial_runtime ())
             (Compiler.initial_environment ())
@@ -168,8 +170,8 @@ let interactive_loop () =
 
 *)
 let batch_compilation () =
-  Error.exit_on_error ();
-  let module Compiler = (val get_compiler () : Compilers.Compiler) in
+  Util.Error.exit_on_error ();
+  let module Compiler = (val get_compiler () : Common.Compilers.Compiler) in
   let open Compiler in
   let input_filename = Options.get_input_filename () in
   let module_name = Filename.chop_extension input_filename in

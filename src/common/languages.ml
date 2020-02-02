@@ -75,7 +75,7 @@ let get (l : string) : (module Language) =
   try
     Hashtbl.find languages l
   with Not_found ->
-    Error.global_error "initialization" "There is no such language."
+    Util.Error.global_error "initialization" "There is no such language."
 
 let register (module L : Language) =
   Hashtbl.add languages L.name (module L)

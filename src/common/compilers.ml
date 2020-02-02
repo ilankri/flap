@@ -67,7 +67,7 @@ let compilers_from source =
     |> map snd
   )
 
-let find source target using = List.(ExtStd.List.Monad.(
+let find source target using = List.(Util.ExtStd.List.Monad.(
   let rec search seen source target =
     if List.mem source seen then
       fail
@@ -90,13 +90,13 @@ let get ?(using=[]) (module Source : Language) (module Target : Language) =
   let using = List.map (fun (module L : Language) -> L.name) using in
   match find Source.name Target.name using with
   | [] ->
-      Error.global_error
+      Util.Error.global_error
         "during compilation"
         "Sorry, there is no such compiler in flap."
   | [x] ->
       join x
   | xs ->
-      Error.global_error
+      Util.Error.global_error
         "during compilation"
         ("Sorry, there are many ways to implement this compiler in flap:\n" ^
          String.concat "\n" (List.map string_of_compiler_passes xs))

@@ -1,0 +1,3 @@
+(library
+ (libraries javix kontix)
+ (name jakix))
