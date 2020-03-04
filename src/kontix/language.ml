@@ -27,7 +27,7 @@ let print_ast ast =
 
 (* For the moment, the interpretor is the one of Fopix *)
 include Fopix.Interpreter
-let evaluate r ast = Fopix.Interpreter.evaluate r (ToFopix.program ast)
+let evaluate ast = Fopix.Interpreter.evaluate (ToFopix.program ast)
 
 (* No typechecking for Kontix *)
 type typing_environment = unit

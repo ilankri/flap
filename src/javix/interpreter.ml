@@ -104,6 +104,8 @@ let string_of_runtime r =
 
 type observable = int
 
+module Machine = Util.StateMonad.Make (struct type t = runtime end)
+
 let initial_runtime () =
   { code = [||];
     jumptbl = [];
@@ -112,16 +114,19 @@ let initial_runtime () =
     pc = 0;
     time = 0 }
 
-let rec evaluate runtime (ast : t) =
-  runtime.code <- Array.of_list (List.map snd ast.code);
-  List.iteri (fun i (labo,_) ->
-    match labo with
-    | Some lab -> runtime.jumptbl <- (lab,i)::runtime.jumptbl
-    | None -> ())
-    ast.code;
-  runtime.vars <- Array.make ast.varsize VNil;
-  let ret = interp runtime in
-  runtime, ret
+let rec evaluate (ast : t) =
+  let open Machine.Infix in
+  Machine.modify (fun runtime ->
+    runtime.code <- Array.of_list (List.map snd ast.code);
+    List.iteri (fun i (labo,_) ->
+      match labo with
+      | Some lab -> runtime.jumptbl <- (lab,i)::runtime.jumptbl
+      | None -> ())
+      ast.code;
+    runtime.vars <- Array.make ast.varsize VNil;
+    runtime) >>= fun () ->
+  Machine.get >>= fun runtime ->
+  Machine.return @@ interp runtime
 
 and interp r =
   assert (0 <= r.pc && r.pc < Array.length r.code);

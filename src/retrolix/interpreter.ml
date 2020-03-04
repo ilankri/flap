@@ -101,6 +101,8 @@ type observable = {
   new_variables : data IdMap.t
 }
 
+module Machine = Util.StateMonad.Make (struct type t = runtime end)
+
 let initial_runtime () = {
   return     = None;
   gvariables = IdMap.empty;
@@ -143,7 +145,7 @@ let print_runtime runtime =
 (** {1 Instruction execution } *)
 (** -------------------------- *)
 
-let evaluate runtime0 (ast : t) =
+let evaluate (ast : t) =
   let extract_function_definition runtime = function
     | DValue _ -> runtime
     | DFunction (f, formals, body) ->
@@ -376,7 +378,7 @@ let evaluate runtime0 (ast : t) =
   and bind_local runtime x v =
     { runtime with lvariables = IdMap.add x v runtime.lvariables }
   in
-  let extract_observable runtime =
+  let extract_observable runtime0 runtime =
     { new_variables =
         IdMap.filter
           (fun x _ -> not
@@ -384,9 +386,11 @@ let evaluate runtime0 (ast : t) =
           runtime.gvariables
     }
   in
-  let runtime = program runtime0 ast in
-  let observable = extract_observable runtime in
-  (runtime, observable)
+  let open Machine.Infix in
+  Machine.get >>= fun runtime0 ->
+  Machine.modify (fun runtime -> program runtime ast) >>= fun () ->
+  Machine.get >>= fun runtime ->
+  Machine.return @@ extract_observable runtime0 runtime
 
 let print_observable runtime obs =
   String.concat "\n" (List.map (fun (Id k, v) ->

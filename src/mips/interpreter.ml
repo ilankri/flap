@@ -11,6 +11,8 @@ type runtime = unit
 
 type observable = int
 
+module Machine = Util.StateMonad.Make (struct type t = runtime end)
+
 let initial_runtime () = ()
 
 let show_runtime = ()
@@ -19,14 +21,14 @@ let show_runtime = ()
 (** {1 Instruction execution } *)
 (** -------------------------- *)
 
-let evaluate runtime (ast : t) =
+let evaluate (ast : t) =
   let fname = Filename.temp_file "flap" "mips" in
   let cout = open_out fname in
   output_string cout (PrettyPrinter.(to_string program ast));
   close_out cout;
   Printf.eprintf "Running spim in %s\n%!" fname;
   let status = Sys.command (Printf.sprintf "spim -file %s" fname) in
-  (runtime, status)
+  Machine.return status
 
 let print_observable _ (obs : observable) =
   "spim exited with status " ^ string_of_int obs

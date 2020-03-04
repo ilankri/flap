@@ -37,10 +37,12 @@ module type Language = sig
   (** The evaluation starts with an initial runtime. *)
   val initial_runtime : unit -> runtime
 
-  (** [evaluate runtime p] executes the program [p] and
+  module Machine : Util.StateMonad.S with type state = runtime
+
+  (** [evaluate p] executes the program [p] and
       produces a new runtime as well as an observation
       of this runtime. *)
-  val evaluate : runtime -> ast -> runtime * observable
+  val evaluate : ast -> observable Machine.t
 
   (** [print_observable o] returns a human-readable
       representation of an observable. *)

@@ -167,6 +167,8 @@ type observable = {
   new_environment : Environment.t;
 }
 
+module Machine = Util.StateMonad.Make (struct type t = runtime end)
+
 (** [primitives] is an environment that contains the implementation
     of all primitives (+, <, ...). *)
 let primitives =
@@ -251,10 +253,14 @@ let initial_runtime () = {
     pattern.  *)
 exception Pattern_mismatch of Util.Position.t
 
-let rec evaluate runtime ast =
+let rec evaluate ast =
   try
-    let runtime' = List.fold_left definition runtime ast in
-    (runtime', extract_observable runtime runtime')
+    let open Machine.Infix in
+    Machine.get >>= fun runtime ->
+    Machine.modify (fun runtime ->
+      List.fold_left definition runtime ast) >>= fun () ->
+    Machine.get >>= fun runtime' ->
+    Machine.return @@ extract_observable runtime runtime'
   with Environment.UnboundIdentifier (Id x, pos) ->
     Util.Error.error "interpretation" pos (Printf.sprintf "`%s' is unbound." x)
 

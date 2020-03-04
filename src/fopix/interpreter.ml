@@ -120,6 +120,8 @@ type observable = {
   new_environment : Environment.t;
 }
 
+module Machine = Util.StateMonad.Make (struct type t = runtime end)
+
 let initial_runtime () =
   let bind_bool s b env = Environment.bind env (Id s) (VBool b) in
   let bind_unit s env = Environment.bind env (Id s) VUnit in
@@ -133,10 +135,15 @@ let initial_runtime () =
     functions  = [];
   }
 
-let rec evaluate runtime ast =
-  let runtime = List.fold_left bind_function runtime ast in
-  let runtime' = List.fold_left declaration runtime ast in
-  (runtime', extract_observable runtime runtime')
+let rec evaluate ast =
+  let open Machine.Infix in
+  Machine.get >>= fun runtime ->
+  Machine.modify (fun runtime ->
+    List.fold_left bind_function runtime ast) >>= fun () ->
+  Machine.modify (fun runtime ->
+    List.fold_left declaration runtime ast) >>= fun () ->
+  Machine.get >>= fun runtime' ->
+  Machine.return @@ extract_observable runtime runtime'
 
 and bind_function runtime = function
   | DefineValue _ ->

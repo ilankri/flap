@@ -60,7 +60,7 @@ let get_compiler () : (module Common.Compilers.Compiler) =
     evaluates the code, if asked. *)
 let eval runtime eval print =
   let now = Unix.gettimeofday () in
-  let runtime, observation = eval runtime in
+  let observation, runtime = eval runtime in
   let elapsed_time = Unix.gettimeofday () -. now in
   if Options.get_benchmark () then
     print_endline ("(" ^ string_of_float elapsed_time ^ "s)");
@@ -130,7 +130,10 @@ let interactive_loop () =
             if Options.get_verbose_mode () then
               print_endline (Target.print_ast cast);
             let runtime = Compiler.Target.(
-              eval runtime (fun r -> evaluate r cast) print_observable
+              eval
+                runtime
+                (fun init -> Machine.run ~init (evaluate cast))
+                print_observable
             )
             in
             step runtime cenvironment tenvironment
@@ -201,7 +204,10 @@ let batch_compilation () =
           else
             fun _ _ -> ""
         in
-        eval (initial_runtime ()) (fun r -> evaluate r cast) print
+        eval
+          (initial_runtime ())
+          (fun init -> Machine.run ~init (evaluate cast))
+          print
       with
       | e ->
           print_endline (Printexc.get_backtrace ());
