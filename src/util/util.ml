@@ -9,3 +9,4 @@ module Gensym = Gensym
 module Option = Option
 module Int16 = Int16
 module UserInput = UserInput
+module Monad = Monad
