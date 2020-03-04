@@ -1,12 +1,15 @@
-type 'a t = 'a list
+include Monad.Make (struct
+    type 'a t = 'a list
+
+    let return a = [a]
+
+    let bind m f = List.(flatten (map f m))
+  end)
 
 let pick cs = cs
 
-let return a = [a]
-
 let fail = []
 
-let ( >>= ) m f =
-  List.(flatten (map f m))
+let ( >>= ) m f = bind m f
 
 let run m = m
