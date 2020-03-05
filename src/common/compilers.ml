@@ -12,7 +12,8 @@ module type Compiler = sig
   type environment
   val initial_environment : unit -> environment
 
-  val translate : Source.ast -> environment -> Target.ast * environment
+  val translate :
+    Source.Parser.ast -> environment -> Target.Parser.ast * environment
 
 end
 

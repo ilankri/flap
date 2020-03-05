@@ -105,8 +105,10 @@ let interactive_loop () =
   in
 
   let rec step
-    : Target.runtime -> Compiler.environment -> Source.typing_environment
-      -> Target.runtime * Compiler.environment * Source.typing_environment =
+    : Target.Interpreter.runtime ->
+      Compiler.environment -> Source.Typechecker.typing_environment
+      -> Target.Interpreter.runtime * Compiler.environment *
+         Source.Typechecker.typing_environment =
     fun runtime cenvironment tenvironment ->
       try
         match read () with
@@ -119,21 +121,22 @@ let interactive_loop () =
             step runtime cenvironment tenvironment
 
         | input ->
-            let ast = Compiler.Source.parse_string input in
+            let ast = Compiler.Source.Parser.parse_string input in
             let tenvironment =
               if Options.get_unsafe () then
                 tenvironment
               else
-                Compiler.Source.typecheck tenvironment ast
+                Compiler.Source.Typechecker.typecheck tenvironment ast
             in
             let cast, cenvironment = Compiler.translate ast cenvironment in
             if Options.get_verbose_mode () then
-              print_endline (Target.print_ast cast);
+              print_endline (Target.Parser.print_ast cast);
             let runtime = Compiler.Target.(
               eval
                 runtime
-                (fun init -> Machine.run ~init (evaluate cast))
-                print_observable
+                (fun init ->
+                   Interpreter.Machine.run ~init (Interpreter.evaluate cast))
+                Interpreter.print_observable
             )
             in
             step runtime cenvironment tenvironment
@@ -151,9 +154,9 @@ let interactive_loop () =
   in
   Util.Error.resume_on_error ();
   ignore (step
-            (Target.initial_runtime ())
+            (Target.Interpreter.initial_runtime ())
             (Compiler.initial_environment ())
-            (Source.initial_typing_environment ())
+            (Source.Typechecker.initial_typing_environment ())
          )
 
 (* ------------- **)
@@ -178,21 +181,23 @@ let batch_compilation () =
   let open Compiler in
   let input_filename = Options.get_input_filename () in
   let module_name = Filename.chop_extension input_filename in
-  let ast = Source.parse_filename input_filename in
+  let ast = Source.Parser.parse_filename input_filename in
   if not (Options.get_unsafe ()) then
     Compiler.Source.(
-      let tenv = typecheck (initial_typing_environment ()) ast in
+      let tenv =
+        Typechecker.typecheck (Typechecker.initial_typing_environment ()) ast
+      in
       if Options.get_show_types () then (
-        print_endline (print_typing_environment tenv)
+        print_endline (Typechecker.print_typing_environment tenv)
       )
     );
   let cast, _ = translate ast (initial_environment ()) in
   let output_filename = module_name ^ Target.extension in
   if Options.get_verbose_mode () then
-    output_string stdout (Target.print_ast cast ^ "\n");
+    output_string stdout (Target.Parser.print_ast cast ^ "\n");
   if not (Options.get_dry_mode ()) then (
     let cout = open_out output_filename in
-    output_string cout (Target.print_ast cast);
+    output_string cout (Target.Parser.print_ast cast);
     close_out cout;
   );
   if Options.get_running_mode () then Compiler.Target.(
@@ -200,13 +205,14 @@ let batch_compilation () =
       try
         let print =
           if Options.get_verbose_eval () then
-            print_observable
+            Interpreter.print_observable
           else
             fun _ _ -> ""
         in
         eval
-          (initial_runtime ())
-          (fun init -> Machine.run ~init (evaluate cast))
+          (Interpreter.initial_runtime ())
+          (fun init ->
+             Interpreter.Machine.run ~init (Interpreter.evaluate cast))
           print
       with
       | e ->

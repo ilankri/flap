@@ -1,8 +1,5 @@
 module Lexer = Lexer
-module Parser = Parser
 module PrettyPrinter = PrettyPrinter
-module Interpreter = Interpreter
-module Typechecker = Typechecker
 module FromFopix = FromFopix
 
 include Language

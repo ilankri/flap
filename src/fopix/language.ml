@@ -4,26 +4,29 @@ module Ast = Ast
 
 let name = "fopix"
 
-type ast = Ast.t
-
-let parse lexer_init input =
-  Util.SyntacticAnalysis.process
-    ~lexer_init
-    ~lexer_fun:Lexer.token
-    ~parser_fun:Parser.program
-    ~input
-
-let parse_filename filename =
-  parse Lexing.from_channel (open_in filename)
-
 let extension =
   ".fopix"
 
-let parse_string =
-  parse Lexing.from_string
+module Parser = struct
+  type ast = Ast.t
 
-let print_ast ast =
-  PrettyPrinter.(to_string program ast)
+  let parse lexer_init input =
+    Util.SyntacticAnalysis.process
+      ~lexer_init
+      ~lexer_fun:Lexer.token
+      ~parser_fun:Parser.program
+      ~input
 
-include Interpreter
-include Typechecker
+  let parse_filename filename =
+    parse Lexing.from_channel (open_in filename)
+
+  let parse_string =
+    parse Lexing.from_string
+
+  let print_ast ast =
+    PrettyPrinter.(to_string program ast)
+end
+
+module Interpreter = Interpreter
+
+module Typechecker = Typechecker

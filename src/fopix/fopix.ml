@@ -1,5 +1,4 @@
 module PrettyPrinter = PrettyPrinter
-module Interpreter = Interpreter
 
 include Language
 

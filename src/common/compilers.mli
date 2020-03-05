@@ -21,7 +21,8 @@ module type Compiler = sig
       equivalent to [source] as a well as an enriched environment
       [env] that contains information related to the compilation of
       [source]. *)
-  val translate : Source.ast -> environment -> Target.ast * environment
+  val translate :
+    Source.Parser.ast -> environment -> Target.Parser.ast * environment
 
 end
 
