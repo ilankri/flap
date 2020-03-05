@@ -124,94 +124,110 @@ let rec evaluate (ast : t) =
       | None -> ())
       ast.code;
     runtime.vars <- Array.make ast.varsize VNil;
-    runtime) >>= fun () ->
-  Machine.get >>= fun runtime ->
-  Machine.return @@ interp runtime
+    runtime) >>=
+  interp
 
-and interp r =
-  assert (0 <= r.pc && r.pc < Array.length r.code);
-  if Options.get_verbose_mode () then
-    (print_string ((string_of_runtime r)^"\n"); flush_all ());
-  r.time <- r.time + 1;
+and interp () =
+  let open Machine.Infix in
+  Machine.modify (fun r ->
+    assert (0 <= r.pc && r.pc < Array.length r.code);
+    if Options.get_verbose_mode () then
+      (print_string ((string_of_runtime r)^"\n"); flush_all ());
+    r.time <- r.time + 1;
+    r) >>= fun () ->
+  Machine.get >>= fun r ->
   match r.code.(r.pc) with
   | Box ->
-      let i = pop_int r "Box" in push (VBox i) r; next r
+      pop_int "Box" >>= fun i -> push (VBox i) >>= next
   | Unbox ->
-      (match pop r "Unbox" with
-       | VBox i -> push (VInt i) r; next r
-       | _ -> failwith "Incorrect stack head for Unbox")
-  | Bipush i -> push (VInt i) r; next r
-  | Pop -> let _ = pop r "Pop" in next r
+      pop "Unbox" >>= (function
+        | VBox i -> push (VInt i) >>= next
+        | _ -> failwith "Incorrect stack head for Unbox")
+  | Bipush i -> push (VInt i) >>= next
+  | Pop -> pop "Pop" >>= fun _ -> next ()
   | Swap ->
-      let v2 = pop r "Swap" in
-      let v1 = pop r "Swap" in
-      push v2 r; push v1 r; next r
+      pop "Swap" >>= fun v2 ->
+      pop "Swap" >>= fun v1 ->
+      push v2 >>= fun () ->
+      push v1 >>=
+      next
   | Dup ->
-      let v = pop r "Dup" in
-      push v r; push v r; next r
+      pop "Dup" >>= fun v ->
+      push v >>= fun () ->
+      push v >>=
+      next
   | Binop op ->
-      let i2 = pop_int r "Binop" in
-      let i1 = pop_int r "Binop" in
-      push (VInt (binop op i1 i2)) r; next r
+      pop_int "Binop" >>= fun i2 ->
+      pop_int "Binop" >>= fun i1 ->
+      push (VInt (binop op i1 i2)) >>=
+      next
   | Astore (Var var) ->
-      (match pop r "Astore" with
-       | VInt _ -> failwith "Astore on a non-boxed integer"
-       | v -> r.vars.(var) <- v; next r)
-  | Aload (Var var) -> push (r.vars.(var)) r; next r
-  | Goto lab -> goto lab r
+      pop "Astore" >>= (function
+        | VInt _ -> failwith "Astore on a non-boxed integer"
+        | v -> Machine.modify (fun r -> r.vars.(var) <- v; r) >>= next)
+  | Aload (Var var) -> push (r.vars.(var)) >>= next
+  | Goto lab -> goto lab
   | If_icmp (op, lab) ->
-      let i2 = pop_int r "If_icmp" in
-      let i1 = pop_int r "If_icmp" in
-      if cmpop op i1 i2 then goto lab r else next r
+      pop_int "If_icmp" >>= fun i2 ->
+      pop_int "If_icmp" >>= fun i1 ->
+      if cmpop op i1 i2 then goto lab else next ()
   | Anewarray ->
-      let i = pop_int r "Anewarray" in
-      push (VArray (Array.make i VNil)) r; next r
+      pop_int "Anewarray" >>= fun i ->
+      push (VArray (Array.make i VNil)) >>=
+      next
   | AAstore ->
-      let v = pop r "AAstore" in
-      let i = pop_int r "AAstore" in
-      let a = pop r "AAstore" in
+      pop "AAstore" >>= fun v ->
+      pop_int "AAstore" >>= fun i ->
+      pop "AAstore" >>= fun a ->
       (match v,a with
        | VInt _, _ -> failwith "AAstore of a non-boxed integer"
-       | _,VArray a -> a.(i) <- v; next r
+       | _,VArray a -> a.(i) <- v; next ()
        | _ -> failwith "AAstore on a non-VArray")
   | AAload ->
-      let i = pop_int r "AAstore" in
-      let a = pop r "AAstore" in
+      pop_int "AAstore" >>= fun i ->
+      pop "AAstore" >>= fun a ->
       (match a with
-       | VArray a -> push a.(i) r; next r
+       | VArray a -> push a.(i) >>= next
        | _ -> failwith "AAload on a non-VArray")
   | Ireturn ->
-      let i = pop_int r "Ireturn" in
+      pop_int "Ireturn" >|= fun i ->
       if r.stack <> []
       then print_string "Warning: Ireturn discards some stack\n";
       i
-  | Comment _ -> next r
+  | Comment _ -> next ()
   | Tableswitch (n, labs, lab) ->
-      let i = pop_int r "Tableswitch" in
-      if 0 <= i-n && i-n < List.length labs then goto (List.nth labs (i-n)) r
-      else goto lab r
+      pop_int "Tableswitch" >>= fun i ->
+      if 0 <= i-n && i-n < List.length labs then goto (List.nth labs (i-n))
+      else goto lab
   | Checkarray ->
-      let a = pop r "Checkarray" in
+      pop "Checkarray" >>= fun a ->
       (match a with
-       | VArray _ -> push a r; next r
+       | VArray _ -> push a >>= next
        | _ -> failwith "Checkarray on a non-VArray")
-  | Print s -> Printf.printf "%s" s; push (VInt 0) r; next r
+  | Print s -> Printf.printf "%s" s; push (VInt 0) >>= next
 
-and next r = r.pc <- r.pc + 1; interp r
+and next () =
+  let open Machine.Infix in
+  Machine.modify (fun r -> r.pc <- r.pc + 1; r) >>= interp
 
-and goto lab r = r.pc <- List.assoc lab r.jumptbl; interp r
+and goto lab =
+  let open Machine.Infix in
+  Machine.modify (fun r -> r.pc <- List.assoc lab r.jumptbl; r) >>= interp
 
-and pop r msg =
+and pop msg =
+  let open Machine.Infix in
+  Machine.get >>= fun r ->
   match r.stack with
-  | v :: l -> r.stack <- l; v
+  | v :: l -> Machine.modify (fun r -> r.stack <- l; r) >|= fun () -> v
   | [] -> failwith ("Not enough stack for "^msg)
 
-and pop_int r msg =
-  match pop r msg with
-  | VInt i -> i
+and pop_int msg =
+  let open Machine.Infix in
+  pop msg >>= function
+  | VInt i -> Machine.return i
   | _ -> failwith ("Incorrect stack head for "^msg)
 
-and push v r = r.stack <- v :: r.stack
+and push v = Machine.modify (fun r -> r.stack <- v :: r.stack; r)
 
 and binop = function
   | Add -> (+)
