@@ -1,5 +1,5 @@
 let make prefix =
-  let r = ref 0 in
+  let r = ref 0L in
   fun () ->
-    incr r;
-    prefix ^ string_of_int !r
+    r := Int64.add !r 1L;
+    Format.sprintf "%s%Ld" prefix !r
