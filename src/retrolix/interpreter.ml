@@ -146,28 +146,40 @@ let print_runtime runtime =
 (** -------------------------- *)
 
 let evaluate (ast : t) =
-  let extract_function_definition runtime = function
-    | DValue _ -> runtime
+  let open Machine.Infix in
+  let extract_function_definition = function
+    | DValue _ -> Machine.return ()
     | DFunction (f, formals, body) ->
-        { runtime with functions =
-                         FIdMap.add f { formals; body } runtime.functions
-        }
-    | DExternalFunction _ -> runtime
+        Machine.modify (fun runtime ->
+          { runtime with functions =
+                           FIdMap.add f { formals; body } runtime.functions
+          })
+    | DExternalFunction _ -> Machine.return ()
   in
-  let rec program runtime ds =
-    let runtime = List.fold_left extract_function_definition runtime ds in
-    List.fold_left definition runtime ds
-  and definition runtime = function
+  let extract_function_definitions ds =
+    List.fold_left (fun acc d ->
+      acc >>= fun () -> extract_function_definition d
+    ) (Machine.return ()) ds
+  in
+  let rec program ds =
+    extract_function_definitions ds >>= fun () ->
+    definitions ds
+  and definition = function
     | DValue (x, b) ->
-        let runtime = block runtime b in
-        begin match runtime.return with
-        | None ->
-            runtime
-        | Some v ->
-            { runtime with gvariables = IdMap.add x v runtime.gvariables }
-        end
-    | DFunction _ | DExternalFunction _ -> runtime
-  and block runtime b =
+        block b >>= fun () ->
+        Machine.modify (fun runtime ->
+          begin match runtime.return with
+          | None ->
+              runtime
+          | Some v ->
+              { runtime with gvariables = IdMap.add x v runtime.gvariables }
+          end)
+    | DFunction _ | DExternalFunction _ -> Machine.return ()
+  and definitions ds =
+    List.fold_left (fun acc d ->
+      acc >>= fun () -> definition d
+    ) (Machine.return ()) ds
+  and block b =
     let jump_table = Hashtbl.create 13 in
     let rec make = function
       | [(l, i)] ->
@@ -178,77 +190,78 @@ let evaluate (ast : t) =
       | [] -> assert false
     in
     make (snd b);
+    Machine.get >>= fun runtime ->
     let locals0 = runtime.lvariables in
     let locals = fst b in
     let start = Hashtbl.find jump_table (fst (List.hd (snd b))) in
-    let runtime =
-      List.fold_left (fun r x -> bind_local r x (DInt Int32.zero)) runtime
-        locals
-    in
-    let runtime = instruction runtime jump_table start in
-    { runtime with lvariables = locals0 }
+    bind_locals
+      locals
+      (List.map (fun _ -> DInt Int32.zero) locals) >>= fun () ->
+    instruction jump_table start >>= fun () ->
+    Machine.modify (fun runtime -> { runtime with lvariables = locals0 })
 
-  and instruction runtime jump_table (i, next) =
-    let jump l runtime =
+  and instruction jump_table (i, next) =
+    let jump l =
       try
-        instruction runtime jump_table (Hashtbl.find jump_table l)
+        instruction jump_table (Hashtbl.find jump_table l)
       with Not_found ->
         let Label l = l in
         failwith (Printf.sprintf "Label %s not found" l)
     in
-    let continue runtime =
+    let continue () =
       match next with
-      | None -> runtime
-      | Some l -> jump l runtime
+      | None -> Machine.return ()
+      | Some l -> jump l
     in
     match i with
     | Call (x, f, rs) ->
-        let y, runtime =
-          call runtime (rvalue runtime f) (List.map (rvalue runtime) rs)
-        in
-        assign runtime x y |> continue
+        rvalue f >>= fun f ->
+        rvalues rs >>= fun rs ->
+        call f rs >>= fun y ->
+        assign x y >>=
+        continue
     | TailCall (f, rs) ->
-        let _, runtime =
-          call runtime (rvalue runtime f) (List.map (rvalue runtime) rs)
-        in
-        continue runtime
+        rvalue f >>= fun f ->
+        rvalues rs >>= fun rs ->
+        call f rs >>= fun _ ->
+        continue ()
     | Ret r ->
-        { runtime with return = Some (rvalue runtime r) }
+        rvalue r >>= fun r ->
+        Machine.modify (fun runtime -> { runtime with return = Some r })
     | Assign (x, o, rs) ->
-        assign runtime x (op o (List.map (rvalue runtime) rs))
-        |> continue
-    | Jump l ->
-        jump l runtime
+        rvalues rs >>= fun rs ->
+        op o rs >>= fun r ->
+        assign x r >>=
+        continue
+    | Jump l -> jump l
     | ConditionalJump (c, rs, l1, l2) ->
-        if condition c (List.map (rvalue runtime) rs) then
-          jump l1 runtime
-        else
-          jump l2 runtime
-    | Comment _ ->
-        continue runtime
+        rvalues rs >>= fun rs ->
+        condition c rs >>= fun c ->
+        if c then jump l1 else jump l2
+    | Comment _ -> continue ()
     | Switch (r, ls, default) ->
-        begin match rvalue runtime r with
+        rvalue r >>= fun r ->
+        begin match r with
         | DInt x ->
             let x = Int32.to_int x in
             if  x < Array.length ls then
-              jump ls.(x) runtime
+              jump ls.(x)
             else
               begin match default with
               | None -> failwith "Non exhaustive switch."
-              | Some l -> jump l runtime
+              | Some l -> jump l
               end
         | _ ->
             assert false (* By typing. *)
         end
-    | Exit ->
-        runtime
-  and rvalue runtime = function
+    | Exit -> Machine.return ()
+  and rvalue = function
     | `Variable x ->
-        (try
-           IdMap.find x runtime.lvariables
+        Machine.get >>= fun runtime ->
+        (try Machine.return @@ IdMap.find x runtime.lvariables
          with Not_found ->
            (try
-              IdMap.find x runtime.gvariables
+              Machine.return @@ IdMap.find x runtime.gvariables
             with Not_found ->
               let Id x = x in
               failwith (Printf.sprintf "Variable %s not found" x)
@@ -256,29 +269,30 @@ let evaluate (ast : t) =
         )
     | `Register x ->
         (try
-           RIdMap.find x runtime.registers
-         with Not_found ->
-           DInt Int32.zero
+           Machine.get >>= fun runtime ->
+           Machine.return @@ RIdMap.find x runtime.registers
+         with Not_found -> Machine.return @@ DInt Int32.zero
         )
-    | `Immediate l ->
-        literal l
+    | `Immediate l -> Machine.return @@ literal l
+  and rvalues rs =
+    List.fold_right (fun r acc ->
+      rvalue r >>= fun r -> acc >|= fun acc -> r :: acc
+    ) rs (Machine.return [])
   and op o vs =
     match o, vs with
-    | Load, [ v ] -> v
-    | Add, [ DInt x; DInt y ] ->
-        DInt (Int32.add x y)
-    | Mul, [ DInt x; DInt y ] ->
-        DInt (Int32.mul x y)
-    | Div, [ DInt x; DInt y ] ->
-        DInt (Int32.div x y)
-    | Sub, [ DInt x; DInt y ] ->
-        DInt (Int32.sub x y)
+    | Load, [ v ] -> Machine.return v
+    | Add, [ DInt x; DInt y ] -> Machine.return @@ DInt (Int32.add x y)
+    | Mul, [ DInt x; DInt y ] -> Machine.return @@ DInt (Int32.mul x y)
+    | Div, [ DInt x; DInt y ] -> Machine.return @@ DInt (Int32.div x y)
+    | Sub, [ DInt x; DInt y ] -> Machine.return @@ DInt (Int32.sub x y)
     | Bool c, vs ->
-        DInt (if condition c vs then Int32.one else Int32.zero)
+        condition c vs >>= fun c ->
+        Machine.return @@ DInt (if c then Int32.one else Int32.zero)
     | _, _ ->
         assert false
 
   and condition op vs =
+    Machine.return @@
     match op, vs with
     | GT, [ DInt x1; DInt x2 ] -> x1 > x2
     | LT, [ DInt x1; DInt x2 ] -> x1 < x2
@@ -293,79 +307,79 @@ let evaluate (ast : t) =
     | LString s -> DString s
     | LChar c -> DChar c
 
-  and assign runtime lvalue v =
-    match lvalue with
-    | `Variable x ->
-        if IdMap.mem x runtime.lvariables then
-          { runtime with lvariables = IdMap.add x v runtime.lvariables }
-        else
-          { runtime with gvariables = IdMap.add x v runtime.gvariables }
-    | `Register x ->
-        { runtime with registers = RIdMap.add x v runtime.registers }
+  and assign lvalue v =
+    Machine.modify (fun runtime ->
+      match lvalue with
+      | `Variable x ->
+          if IdMap.mem x runtime.lvariables then
+            { runtime with lvariables = IdMap.add x v runtime.lvariables }
+          else
+            { runtime with gvariables = IdMap.add x v runtime.gvariables }
+      | `Register x ->
+          { runtime with registers = RIdMap.add x v runtime.registers })
 
-  and call runtime fv vs =
+  and call fv vs =
     match fv with
     | DFun f ->
-        (try
-           let fdef = FIdMap.find f runtime.functions in
-           let runtime = List.fold_left2 bind_local runtime fdef.formals vs in
-           let runtime = block runtime fdef.body in
-           let return =
-             match runtime.return with None -> assert false | Some x -> x
-           in
-           (return, runtime)
-         with Not_found ->
-           let vs =
-             if Options.get_retromips () then
+        Machine.get >>= fun runtime -> (
+          try
+            let fdef = FIdMap.find f runtime.functions in
+            bind_locals fdef.formals vs >>= fun () ->
+            block fdef.body >>= fun () ->
+            Machine.get >>= fun runtime ->
+            Machine.return
+              (match runtime.return with None -> assert false | Some x -> x)
+          with Not_found ->
+            (if Options.get_retromips () then
                let rs =
                  List.map
                    (fun r -> `Register (RId (Arch.Mips.string_of_register r)))
                    Arch.Mips.argument_passing_registers
                in
-               (List.map (rvalue runtime) rs @ vs)
+               rvalues rs >>= fun rs ->
+               Machine.return (rs @ vs)
              else
-               vs
-           in
-           let (return, runtime) = external_function runtime vs f in
-           let runtime =
-             if Options.get_retromips () then (
+               Machine.return vs) >>= fun vs ->
+            external_function vs f >>= fun return ->
+            (if Options.get_retromips () then (
                let r =
                  `Register
                    (RId (Arch.Mips.(string_of_register return_register)))
                in
-               assign runtime r return
+               assign r return
              )
-             else
-               runtime
-           in
-           (return, runtime)
+             else Machine.return ()) >>= fun () ->
+            Machine.return return
         )
     | _ ->
         assert false
 
-  and external_function runtime vs (FId f) =
+  and external_function vs (FId f) =
     match f, vs with
     | "allocate_block", (DInt size :: _) ->
+        Machine.get >>= fun runtime ->
         let addr =
           Common.Memory.allocate runtime.memory size (DInt Int32.zero)
         in
-        (DLocation addr, runtime)
+        Machine.return @@ DLocation addr
     | "write_block", (DLocation location :: DInt i :: v :: _) ->
+        Machine.get >>= fun runtime ->
         let block = Common.Memory.dereference runtime.memory location in
         Common.Memory.write block i v;
-        (DUnit, runtime)
+        Machine.return DUnit
     | "read_block", (DLocation location :: DInt i :: _) ->
+        Machine.get >>= fun runtime ->
         let block = Common.Memory.dereference runtime.memory location in
-        (Common.Memory.read block i, runtime)
+        Machine.return @@ Common.Memory.read block i
     | "print_int", (DInt i :: _) ->
         print_string (Int32.to_string i);
-        (DUnit, runtime)
+        Machine.return DUnit
     | "print_char", (DChar i :: _) ->
         print_char i;
-        (DUnit, runtime)
+        Machine.return DUnit
     | "print_string", (DString i :: _) ->
         print_string i;
-        (DUnit, runtime)
+        Machine.return DUnit
     | _ -> failwith (
       Printf.sprintf
         "NoSuchFunction or InvalidApplication of `%s' \
@@ -375,8 +389,14 @@ let evaluate (ast : t) =
         (String.concat " " (List.map type_of vs))
     )
 
-  and bind_local runtime x v =
-    { runtime with lvariables = IdMap.add x v runtime.lvariables }
+  and bind_local x v =
+    Machine.modify (fun runtime ->
+      { runtime with lvariables = IdMap.add x v runtime.lvariables }
+    )
+  and bind_locals xs vs =
+    List.fold_left2 (fun acc x v ->
+      acc >>= fun () -> bind_local x v
+    ) (Machine.return ()) xs vs
   in
   let extract_observable runtime0 runtime =
     { new_variables =
@@ -386,9 +406,8 @@ let evaluate (ast : t) =
           runtime.gvariables
     }
   in
-  let open Machine.Infix in
   Machine.get >>= fun runtime0 ->
-  Machine.modify (fun runtime -> program runtime ast) >>= fun () ->
+  program ast >>= fun () ->
   Machine.get >>= fun runtime ->
   Machine.return @@ extract_observable runtime0 runtime
 
