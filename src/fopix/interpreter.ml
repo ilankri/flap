@@ -138,33 +138,43 @@ let initial_runtime () =
 let rec evaluate ast =
   let open Machine.Infix in
   Machine.get >>= fun runtime ->
-  Machine.modify (fun runtime ->
-    List.fold_left bind_function runtime ast) >>= fun () ->
-  Machine.modify (fun runtime ->
-    List.fold_left declaration runtime ast) >>= fun () ->
+  bind_functions ast >>= fun () ->
+  declarations ast >>= fun () ->
   Machine.get >>= fun runtime' ->
   Machine.return @@ extract_observable runtime runtime'
 
-and bind_function runtime = function
-  | DefineValue _ ->
-      runtime
+and bind_function = function
+  | DefineValue _ -> Machine.return ()
 
   | DefineFunction (f, xs, e) ->
-      { runtime with
-        functions = (f, (xs, e)) :: runtime.functions
-      }
+      Machine.modify (fun runtime ->
+        { runtime with
+          functions = (f, (xs, e)) :: runtime.functions
+        })
 
   | ExternalFunction _ ->
-      runtime (* FIXME: bind to internal primitives later. *)
+      Machine.return () (* FIXME: bind to internal primitives later. *)
 
-and declaration runtime = function
+and bind_functions fs =
+  let open Machine.Infix in
+  List.fold_left (fun acc f ->
+    acc >>= fun () -> bind_function f
+  ) (Machine.return ()) fs
+
+and declaration = Machine.Infix.(function
   | DefineValue (i, e) ->
-      let v = expression runtime e in
-      { runtime with environment = Environment.bind runtime.environment i v }
-  | DefineFunction _ ->
-      runtime
-  | ExternalFunction _ ->
-      runtime
+      expression e >>= fun v ->
+      Machine.modify (fun runtime ->
+        { runtime with environment = Environment.bind runtime.environment i v })
+  | DefineFunction _ -> Machine.return ()
+  | ExternalFunction _ -> Machine.return ()
+)
+
+and declarations ds =
+  let open Machine.Infix in
+  List.fold_left (fun acc d ->
+    acc >>= fun () -> declaration d
+  ) (Machine.return ()) ds
 
 and arith_operator_of_symbol = function
   | "`+" -> Int32.add
@@ -186,19 +196,20 @@ and boolean_operator_of_symbol = function
   | "`||" -> ( || )
   | _ -> assert false
 
-and evaluation_of_binary_symbol environment = function
+and evaluation_of_binary_symbol = function
   | ("`+" | "`-" | "`*" | "`/") as s ->
-      arith_binop environment (arith_operator_of_symbol s)
+      arith_binop (arith_operator_of_symbol s)
   | ("`<" | "`>" | "`<=" | "`>=" | "`=") as s ->
-      arith_cmpop environment (cmp_operator_of_symbol s)
+      arith_cmpop (cmp_operator_of_symbol s)
   | ("`||" | "`&&") as s ->
       fun e1 e2 ->
-        let v1 = expression environment e1 in
+        let open Machine.Infix in
+        expression e1 >>= fun v1 ->
         begin match value_as_bool v1 with
         | Some false ->
-            if s = "`||" then expression environment e2 else v1
+            if s = "`||" then expression e2 else Machine.return v1
         | Some true ->
-            if s = "`&&" then expression environment e2 else v1
+            if s = "`&&" then expression e2 else Machine.return v1
         | _ -> assert false
         end
   | _ -> assert false
@@ -208,77 +219,80 @@ and is_binary_primitive = function
   | "`&&" | "`||" -> true
   | _ -> false
 
-and expression runtime = function
+and expression = Machine.Infix.(function
   | Literal l ->
       literal l
 
-  | Variable (Id "true") ->
-      VBool true
+  | Variable (Id "true") -> Machine.return @@ VBool true
 
-  | Variable (Id "false") ->
-      VBool false
+  | Variable (Id "false") -> Machine.return @@ VBool false
 
   | Variable x ->
-      begin try Environment.lookup x runtime.environment with
+      Machine.get >>= fun runtime ->
+      begin try Machine.return @@ Environment.lookup x runtime.environment with
       | Environment.UnboundIdentifier (Id id) ->
           error' ("Unbound identifier " ^ id ^ ".")
       end
 
   | While (cond, e) ->
       let rec loop () =
-        match expression runtime cond with
-        | VBool true ->
-            ignore (expression runtime e);
-            loop ()
-        | VBool false ->
-            ()
+        expression cond >>= function
+        | VBool true -> expression e >>= fun _ -> loop ()
+        | VBool false -> Machine.return ()
         | _ ->
             assert false (* By typing. *)
       in
-      loop ();
-      VUnit
+      loop () >>= fun () -> Machine.return VUnit
 
   | Switch (e, bs, default) ->
-      begin match value_as_int (expression runtime e) with
+      expression e >>= fun v ->
+      begin match value_as_int v with
       | None -> error' "Switch on integers only."
       | Some i ->
           let i = Int32.to_int i in
           if i < Array.length bs then
-            expression runtime bs.(i)
+            expression bs.(i)
           else match default with
-            | Some t -> expression runtime t
+            | Some t -> expression t
             | None -> error' "No default case in switch."
       end
 
   | IfThenElse (c, t, f) ->
-      begin match value_as_bool (expression runtime c) with
+      expression c >>= fun v ->
+      begin match value_as_bool v with
       | None -> error' "'If' should have a condition that return boolean"
-      | Some b -> if b then expression runtime t else expression runtime f
+      | Some b -> if b then expression t else expression f
       end
 
   | Define (x, ex, e) ->
-      let v = expression runtime ex in
-      let runtime = { runtime with
-                      environment = Environment.bind runtime.environment x v
-                    }
-      in
-      expression runtime e
+      expression ex >>= fun v ->
+      Machine.modify (fun runtime ->
+        { runtime with
+          environment = Environment.bind runtime.environment x v
+        }
+      ) >>= fun () ->
+      expression e
 
   | FunCall (FunId "allocate_block", [size]) ->
-      let l = expression runtime size in
+      expression size >>= fun l ->
       begin
         match l with
         | VInt i ->
+            Machine.get >>= fun runtime ->
             let addr = Common.Memory.allocate runtime.memory i VUnit in
-            VAddress addr
+            Machine.return @@ VAddress addr
         | _ -> error' "'allocate_block' should have a size in type Literal(int)"
       end
 
   | FunCall (FunId "read_block", [location; index]) ->
-      begin match value_as_address (expression runtime location) with
+      expression location >>= fun v ->
+      begin match value_as_address v with
       | Some addr ->
-          begin match value_as_int (expression runtime index) with
+          expression index >>= fun v ->
+          begin match value_as_int v with
           | Some i ->
+              Machine.get >>= fun runtime ->
+              Machine.return @@
               Common.Memory.read
                 (Common.Memory.dereference runtime.memory addr) i
           | None -> error' "A block index must be an integer."
@@ -287,91 +301,110 @@ and expression runtime = function
       end
 
   | FunCall (FunId "equal_string", [e1; e2]) ->
-      begin match expression runtime e1, expression runtime e2 with
-      | VString s1, VString s2 -> VBool (String.compare s1 s2 = 0)
+      expression e1 >>= fun v1 ->
+      expression e2 >>= fun v2 ->
+      begin match v1, v2 with
+      | VString s1, VString s2 ->
+          Machine.return @@ VBool (String.compare s1 s2 = 0)
       | _ -> assert false (* By typing. *)
       end
 
   | FunCall (FunId "equal_char", [e1; e2]) ->
-      begin match expression runtime e1, expression runtime e2 with
-      | VChar s1, VChar s2 -> VBool (Char.compare s1 s2 = 0)
+      expression e1 >>= fun v1 ->
+      expression e2 >>= fun v2 ->
+      begin match v1, v2 with
+      | VChar s1, VChar s2 -> Machine.return @@ VBool (Char.compare s1 s2 = 0)
       | _ -> assert false (* By typing. *)
       end
 
   | FunCall (FunId "print_int", [e]) ->
-      begin match expression runtime e with
+      expression e >>= fun v ->
+      begin match  v with
       | VInt x -> print_string (Int32.to_string x)
       | _ -> assert false (* By typing. *)
       end
 
   | FunCall (FunId "print_string", [e]) ->
-      begin match expression runtime e with
+      expression e >>= fun v ->
+      begin match v with
       | VString s -> print_string s
       | _ -> assert false (* By typing. *)
       end
 
   | FunCall (FunId "write_block", [location; index; e]) ->
+      expression location >>= fun v1 ->
+      expression index >>= fun v2 ->
       begin
-        match (expression runtime location), (expression runtime index) with
+        match v1, v2 with
         | VAddress addr, VInt i ->
-            let e = expression runtime e in
+            expression e >>= fun e ->
+            Machine.get >>= fun runtime ->
             Common.Memory.(write (dereference runtime.memory addr) i e);
-            VUnit
+            Machine.return VUnit
         | _ ->
             error' "'write_block' should have 3 parameters as \
                     (VAddress, VInt, expression)"
       end
 
   | FunCall (FunId (("`&&" | "`||") as binop), [e1; e2]) ->
-      begin match expression runtime e1, binop with
-      | VBool true, "`&&" | VBool false, "`||" -> expression runtime e2
-      | VBool false, "`&&" -> VBool false
-      | VBool true, "`||" -> VBool true
+      expression e1 >>= fun v1 ->
+      begin match v1, binop with
+      | VBool true, "`&&" | VBool false, "`||" -> expression e2
+      | VBool false, "`&&" -> Machine.return @@ VBool false
+      | VBool true, "`||" -> Machine.return @@ VBool true
       | _, _ -> assert false (* By typing. *)
       end
 
   | FunCall (FunId s, [e1; e2]) when is_binary_primitive s ->
-      evaluation_of_binary_symbol runtime s e1 e2
+      evaluation_of_binary_symbol s e1 e2
 
   | FunCall (FunId id as f, es) ->
-      let formals, body =
-        try List.assoc f runtime.functions with
-        | Not_found -> error' ("Undefined function " ^ id ^ ".")
+      Machine.get >>= fun runtime ->
+      (try Machine.return @@ List.assoc f runtime.functions with
+       | Not_found ->
+           error' ("Undefined function " ^ id ^ ".")) >>= fun (formals, body) ->
+      let bind_arg acc formal e =
+        acc >>= fun () ->
+        expression e >>= fun v ->
+        Machine.modify (fun runtime -> {
+            runtime with
+            environment = Environment.bind runtime.environment formal v
+          })
       in
-      let bind_arg runtime formal e = {
-        runtime with
-        environment =
-          Environment.bind runtime.environment formal (expression runtime e)
-      } in
-      let runtime =
-        try List.fold_left2 bind_arg runtime formals es with
-        | Invalid_argument _ ->
-            error' ("Wrong number of arguments given to " ^ id ^ "." )
-      in
-      expression runtime body
+      (try List.fold_left2 bind_arg (Machine.return ()) formals es with
+       | Invalid_argument _ ->
+           error'
+             ("Wrong number of arguments given to " ^ id ^ "." )) >>= fun () ->
+      expression body >>= fun v ->
+      Machine.put runtime >>= fun () ->
+      Machine.return v
 
   | UnknownFunCall (e, es) -> (
-      match expression runtime  e with
-      | VFun f -> expression runtime (FunCall (f, es))
+      expression e >>= fun v ->
+      match v with
+      | VFun f -> expression (FunCall (f, es))
       | _ -> assert false
-    )
+    ))
 
 and binop
-  : type a b. a coercion -> b wrapper -> _ -> (a -> a -> b) -> _ -> _ -> value
-  = fun coerce wrap runtime op l r ->
-    let lv = expression runtime l
-    and rv = expression runtime r in
+  : type a b.
+    a coercion -> b wrapper -> (a -> a -> b) -> _ -> _ -> value Machine.t
+  = fun coerce wrap op l r ->
+    let open Machine.Infix in
+    expression l >>= fun lv ->
+    expression r >>= fun rv ->
     match coerce lv, coerce rv with
-    | Some li, Some ri ->
-        wrap (op li ri)
+    | Some li, Some ri -> Machine.return @@ wrap (op li ri)
     | _, _ ->
         error' "Invalid binary operation."
 
-and arith_binop env = binop value_as_int int_as_value env
-and arith_cmpop env = binop value_as_int bool_as_value env
-and boolean_binop env = binop value_as_bool bool_as_value env
+and arith_binop l r = binop value_as_int int_as_value l r
+and arith_cmpop l r = binop value_as_int bool_as_value l r
+and boolean_binop l r = binop value_as_bool bool_as_value l r
 
-and literal = function
+and literal l =
+  Machine.return @@
+  match l with
   | LInt x -> VInt x
   | LString s -> VString s
   | LChar c -> VChar c
@@ -380,7 +413,7 @@ and literal = function
 and print_string s =
   output_string stdout s;
   flush stdout;
-  VUnit
+  Machine.return VUnit
 
 and extract_observable runtime runtime' =
   let rec substract new_environment env env' =
