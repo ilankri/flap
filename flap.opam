@@ -1,5 +1,7 @@
 opam-version: "2.0"
-synopsis: "Flap"
+synopsis: """\
+A toy compiler from a functional programming language to MIPS assembly
+and Java bytecode"""
 maintainer: "Idir Lankri <ilankri@protonmail.com>"
 authors: [
   "Yung-Kun Hsieh"
