@@ -1,3 +1,3 @@
-(lang dune 1.1)
+(lang dune 1.4)
 (using menhir 2.0)
 (name flap)
