@@ -1,6 +1,15 @@
 opam-version: "2.0"
 synopsis: "Flap"
 maintainer: "Idir Lankri <ilankri@protonmail.com>"
+authors: [
+  "Yung-Kun Hsieh"
+  "Belaid Lagha"
+  "Idir Lankri <ilankri@protonmail.com>"
+  "Pierre Letouzey"
+  "Yann Régis-Gianas"
+]
+homepage: "https://gitlab.com/ilankri/flap"
+bug-reports: "https://gitlab.com/ilankri/flap/-/issues"
 depends: [
   "ocaml" {>= "4.08" & < "4.09"}
   "dune" {>= "2.1" & < "3.0"}
